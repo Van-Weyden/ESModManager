@@ -1,36 +1,33 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include <QItemSelection>
 #include <QMainWindow>
 #include <QString>
 
 class QSettings;
 class QTranslator;
-class QTableWidgetItem;
+
+class DatabaseEditor;
+class DatabaseModel;
+class SteamRequester;
 
 namespace Ui {
 	class MainWindow;
 }
-
-struct ModInfo
-{
-	QString name;
-	QString folderName;
-	bool enabled = true;
-
-	operator QString() const {return folderName;}
-};
 
 class MainWindow : public QMainWindow
 {
 	Q_OBJECT
 
 public:
-	explicit MainWindow(QWidget *parent = nullptr);
+	explicit MainWindow(QWidget *parent = nullptr, const bool &runCheck = true);
 	~MainWindow();
 
-	void fillModlistTable();
+	void checkRowsVisibility();
+	void hideAllRows();
 	void loadDatabase();
+	void requestSteamModNames();
 	void saveDatabase() const;
 	void scanMods();
 
@@ -41,7 +38,6 @@ public slots:
 	void disableAllMods();
 	void enableAllMods();
 	void eraseDatabase();
-	void modInfoChanged(QTableWidgetItem *tableItem);
 	void refreshModlist();
 
 	void runGame();
@@ -53,10 +49,18 @@ public slots:
 	void setEnglishLanguage() {setLanguage("en_US");}
 	void setRussianLanguage() {setLanguage("ru_RU");}
 
+	void setRowVisibility(const int &rowIndex, const bool &isVisibleInFirstList);
+
 	void showAboutInfo();
 
 protected:
 	void changeEvent(QEvent *event);
+
+signals:
+	void countOfScannedMods(int count);
+
+private slots:
+	void steamModNameProcessed();
 
 private:
 	bool checkGameMd5(const QString &folderPath);
@@ -65,7 +69,10 @@ private:
 	void scanMods(const QString &modsFolderPath);
 
 	Ui::MainWindow *ui = nullptr;
+	DatabaseEditor *databaseEditor_ = nullptr;
 
+	QThread *thread_;
+	SteamRequester *steamRequester_;
 	QSettings *settings_ = nullptr;
 	QTranslator *qtTranslator_ = nullptr;
 	QTranslator *translator_ = nullptr;
@@ -75,11 +82,11 @@ private:
 	QString modsFolderPath_ = "";
 	QString tempModsFolderPath_ = "";
 
-	QVector<int> modlist_;
-	QVector<ModInfo> database_;
+	DatabaseModel *model_ = nullptr;
 
 	QByteArray gameMd5_;
 	QByteArray launcherMd5_;
+	int countOfScannedMods_;
 };
 
 #endif // MAINWINDOW_H

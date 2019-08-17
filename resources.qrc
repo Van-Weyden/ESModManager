@@ -2,6 +2,7 @@
 <qresource>
     <file>images/Flag-Russia.ico</file>
     <file>images/Flag-United-States.ico</file>
+    <file>images/icon.ico</file>
     <file>lang/lang_ru.qm</file>
     <file>lang/qtbase_ru.qm</file>
 </qresource>

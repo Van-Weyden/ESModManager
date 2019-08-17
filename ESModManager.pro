@@ -6,6 +6,8 @@
 
 QT       += core gui network
 
+INCLUDEPATH += "framelesswindow"
+
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = ESModManager
@@ -25,18 +27,26 @@ DEFINES += QT_DEPRECATED_WARNINGS
 CONFIG += c++11
 
 SOURCES += \
+        databaseeditor.cpp \
+        databasemodel.cpp \
         main.cpp \
-        mainwindow.cpp
+        mainwindow.cpp \
+        steamrequester.cpp
 
 HEADERS += \
-        mainwindow.h
+        databaseeditor.h \
+        databasemodel.h \
+        mainwindow.h \
+        modinfo.h \
+        steamrequester.h
 
 FORMS += \
+        databaseeditor.ui \
         mainwindow.ui
 
 RC_FILE = icon.rc
 
-RESOURCES     = resources.qrc
+RESOURCES = resources.qrc \
 
 TRANSLATIONS += lang_ru.ts
 
