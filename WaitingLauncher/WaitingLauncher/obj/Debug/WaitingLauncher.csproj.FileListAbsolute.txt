@@ -1,0 +1,7 @@
+d:\Documents\Visual Studio 2017\source\repos\WaitingLauncher\WaitingLauncher\obj\Debug\WaitingLauncher.csprojAssemblyReference.cache
+d:\Documents\Visual Studio 2017\source\repos\WaitingLauncher\WaitingLauncher\obj\Debug\WaitingLauncher.csproj.CoreCompileInputs.cache
+d:\Documents\Visual Studio 2017\source\repos\WaitingLauncher\WaitingLauncher\bin\Debug\ESLauncher.exe.config
+d:\Documents\Visual Studio 2017\source\repos\WaitingLauncher\WaitingLauncher\bin\Debug\ESLauncher.exe
+d:\Documents\Visual Studio 2017\source\repos\WaitingLauncher\WaitingLauncher\bin\Debug\ESLauncher.pdb
+d:\Documents\Visual Studio 2017\source\repos\WaitingLauncher\WaitingLauncher\obj\Debug\ESLauncher.exe
+d:\Documents\Visual Studio 2017\source\repos\WaitingLauncher\WaitingLauncher\obj\Debug\ESLauncher.pdb
