@@ -64,6 +64,8 @@ private slots:
 
 private:
 	bool checkGameMd5(const QString &folderPath);
+	void moveModFolders(QString *unmovedModsToTempFolder = nullptr, QString *unmovedModsFromTempFolder = nullptr) const;
+	void moveModFoldersBack() const;
 	void readSettings();
 	void saveSettings() const;
 	void scanMods(const QString &modsFolderPath);

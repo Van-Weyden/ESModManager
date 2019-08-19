@@ -471,15 +471,8 @@ void MainWindow::runGame()
 	if (!dir.exists())
 		dir.mkdir(tempModsFolderPath_);
 
-	int databaseSize = model_->databaseSize();
 	QString unmovedMods;
-	for (int i = 0; i < databaseSize; ++i) {
-		if (model_->modInfo(i).existsAndEnabledCheck(true, false))
-			if (dir.exists(modsFolderPath_ + model_->modFolderName(i)) &&
-				!dir.rename(modsFolderPath_ + model_->modFolderName(i), tempModsFolderPath_ + model_->modFolderName(i))) {
-				unmovedMods.append(model_->modFolderName(i) + '\n');
-			}
-	}
+	moveModFolders(&unmovedMods);
 	if (!unmovedMods.isEmpty())
 		QMessageBox::warning(this, tr("Unmoved mods"),
 							 tr("Disabled mods in these folders failed to move into temp folder:") +
@@ -542,13 +535,7 @@ void MainWindow::runGame()
 		}
 	}
 
-	if (ui->moveModsBackCheckBox->isChecked()) {
-		for (int i = 0; i < databaseSize; ++i) {
-			if (model_->modInfo(i).existsAndEnabledCheck(true, false))
-				dir.rename(tempModsFolderPath_ + model_->modFolderName(i),
-						   modsFolderPath_ + model_->modFolderName(i));
-		}
-	}
+	moveModFoldersBack();
 
 	if (ui->autoexitCheckBox->isChecked())
 		QApplication::exit();
@@ -668,6 +655,43 @@ bool MainWindow::checkGameMd5(const QString &folderPath)
 	return true;
 }
 
+void MainWindow::moveModFolders(QString *unmovedModsToTempFolder, QString *unmovedModsFromTempFolder) const
+{
+	QDir dir;
+	int databaseSize = model_->databaseSize();
+	for (int i = 0; i < databaseSize; ++i) {
+		if (model_->modInfo(i).exists) {
+			if (model_->modInfo(i).enabled) {
+				if (dir.exists(tempModsFolderPath_ + model_->modFolderName(i)) &&
+					!dir.rename(tempModsFolderPath_ + model_->modFolderName(i), modsFolderPath_ + model_->modFolderName(i)) &&
+					unmovedModsFromTempFolder != nullptr) {
+					unmovedModsFromTempFolder->append(model_->modFolderName(i) + '\n');
+				}
+			}
+			else {
+				if (dir.exists(modsFolderPath_ + model_->modFolderName(i)) &&
+					!dir.rename(modsFolderPath_ + model_->modFolderName(i), tempModsFolderPath_ + model_->modFolderName(i)) &&
+					unmovedModsToTempFolder != nullptr) {
+					unmovedModsToTempFolder->append(model_->modFolderName(i) + '\n');
+				}
+			}
+		}
+	}
+}
+
+void MainWindow::moveModFoldersBack() const
+{
+	if (!ui->moveModsBackCheckBox->isChecked())
+		return;
+
+	QDir dir;
+	int databaseSize = model_->databaseSize();
+	for (int i = 0; i < databaseSize; ++i) {
+		if (model_->modInfo(i).exists && dir.exists(tempModsFolderPath_ + model_->modFolderName(i)))
+			dir.rename(tempModsFolderPath_ + model_->modFolderName(i), modsFolderPath_ + model_->modFolderName(i));
+	}
+}
+
 void MainWindow::readSettings()
 {
 	QVariant value;
@@ -775,18 +799,7 @@ void MainWindow::saveSettings() const
 	settings_->setValue("General/bAutoexit", ui->autoexitCheckBox->isChecked());
 
 	settings_->setValue("General/bMoveModsBack", ui->moveModsBackCheckBox->isChecked());
-	if (ui->moveModsBackCheckBox->isChecked()) {
-		QDir dir(tempModsFolderPath_);
-		if (dir.exists()) {
-			int databaseSize = model_->databaseSize();
-			for (int i = 0; i < databaseSize; ++i) {
-				if (model_->modIsExists(i) &&
-						QDir(tempModsFolderPath_ + model_->modFolderName(i)).exists())
-					dir.rename(tempModsFolderPath_ + model_->modFolderName(i),
-							   modsFolderPath_ + model_->modFolderName(i));
-			}
-		}
-	}
+	moveModFoldersBack();
 
 	settings_->setValue("General/bReplaceOriginLauncher", ui->replaceOriginLauncherCheckBox->isChecked());
 	if (ui->replaceOriginLauncherCheckBox->isChecked() && QFileInfo::exists(gameFolderPath_ + "Everlasting Summer.exe")) {
