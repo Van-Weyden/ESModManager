@@ -1,7 +1,6 @@
 #ifndef DATABASEEDITOR_H
 #define DATABASEEDITOR_H
 
-#include <QItemSelection>
 #include <QWidget>
 
 class DatabaseModel;
@@ -32,9 +31,14 @@ public slots:
 protected:
 	void changeEvent(QEvent *event);
 
-protected slots:
-	void setModsDisplayMode(const int &mode);
+private slots:
 	void adjustRow(const QModelIndex &index);
+	void openCurrentModFolder();
+	void openWorkshopPage();
+	void setModsDisplayMode(const int &mode);
+
+signals:
+	void openModFolder(const int &modIndex);
 
 private:
 	Ui::DatabaseEditor *ui;

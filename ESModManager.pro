@@ -31,6 +31,7 @@ SOURCES += \
         databasemodel.cpp \
         main.cpp \
         mainwindow.cpp \
+        modinfo.cpp \
         steamrequester.cpp
 
 HEADERS += \

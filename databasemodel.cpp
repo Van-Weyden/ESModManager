@@ -160,6 +160,26 @@ void DatabaseModel::sortDatabase()
 			});
 }
 
+//public slots:
+
+void DatabaseModel::enableMod(const QModelIndex &index)
+{
+	if (!database_.at(index.row()).enabled) {
+		database_[index.row()].enabled = true;
+		emit dataChanged(index, index);
+		emit modCheckStateChanged(index.row(), true);
+	}
+}
+
+void DatabaseModel::disableMod(const QModelIndex &index)
+{
+	if (database_.at(index.row()).enabled) {
+		database_[index.row()].enabled = false;
+		emit dataChanged(index, index);
+		emit modCheckStateChanged(index.row(), false);
+	}
+}
+
 //protected slots:
 void DatabaseModel::setCompleteModNames(const int &mode)
 {

@@ -57,6 +57,10 @@ public:
 	inline void updateRow(const int &index) {emit dataChanged(this->index(index), this->index(index));}
 	inline void updateRow(const QModelIndex &index) {emit dataChanged(index, index);}
 
+public slots:
+	void enableMod(const QModelIndex &index);
+	void disableMod(const QModelIndex &index);
+
 protected slots:
 	void setCompleteModNames(const int &mode);
 	void setUsingSteamModNames(const int &mode);

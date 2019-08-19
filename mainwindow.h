@@ -1,7 +1,6 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include <QItemSelection>
 #include <QMainWindow>
 #include <QString>
 
@@ -60,6 +59,7 @@ signals:
 	void countOfScannedMods(int count);
 
 private slots:
+	bool openModFolder(const int &modIndex);
 	void steamModNameProcessed();
 
 private:
@@ -73,8 +73,8 @@ private:
 	Ui::MainWindow *ui = nullptr;
 	DatabaseEditor *databaseEditor_ = nullptr;
 
-	QThread *thread_;
-	SteamRequester *steamRequester_;
+	QThread *thread_ = nullptr;
+	SteamRequester *steamRequester_ = nullptr;
 	QSettings *settings_ = nullptr;
 	QTranslator *qtTranslator_ = nullptr;
 	QTranslator *translator_ = nullptr;

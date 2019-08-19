@@ -13,6 +13,8 @@ struct ModInfo
 
 	inline bool existsAndEnabledCheck(const bool &existsValue, const bool &enabledValue) const
 		 {return (existsValue == exists && enabledValue == enabled);}
+
+	static bool isSteamId(QString str);
 };
 
 #endif // MODINFO_H

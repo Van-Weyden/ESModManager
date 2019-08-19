@@ -1,3 +1,6 @@
+#include <QDesktopServices>
+#include <QUrl>
+
 #include "databasemodel.h"
 
 #include "databaseeditor.h"
@@ -11,10 +14,14 @@ DatabaseEditor::DatabaseEditor(QWidget *parent) :
 {
 	ui->setupUi(this);
 
-	connect(ui->removeModPushButton, SIGNAL(clicked()),
-			this, SLOT(removeSelectedMod()));
+	connect(ui->openModFolderPushButton, SIGNAL(clicked()),
+			this, SLOT(openCurrentModFolder()));
+	connect(ui->openWorkshopPushButton, SIGNAL(clicked()),
+			this, SLOT(openWorkshopPage()));
 	connect(ui->saveModInfoPushButton, SIGNAL(clicked()),
 			this, SLOT(saveSelectedModInfo()));
+	connect(ui->removeModPushButton, SIGNAL(clicked()),
+			this, SLOT(removeSelectedMod()));
 	connect(ui->showAllModsCheckBox, SIGNAL(stateChanged(int)),
 			this, SLOT(setModsDisplayMode(const int &)));
 
@@ -139,13 +146,20 @@ void DatabaseEditor::showSelectedModInfo()
 											!model_->modIsExists(modIndex.row()));
 
 		ModInfo modInfo = model_->modInfo(modIndex.row());
+		if (modInfo.exists)
+			ui->openModFolderPushButton->setEnabled(true);
 
 		ui->modNameLineEdit->setText(modInfo.name);
 		ui->modFolderNameLineEdit->setText(modInfo.folderName);
 		ui->steamModNameLineEdit->setText(modInfo.steamName);
+		if (ModInfo::isSteamId(modInfo.folderName)) {
+			ui->openWorkshopPushButton->setEnabled(true);
+		}
 	}
 	else {
 		ui->saveModInfoPushButton->setEnabled(false);
+		ui->openModFolderPushButton->setEnabled(false);
+		ui->openWorkshopPushButton->setEnabled(false);
 		ui->removeModPushButton->setEnabled(false);
 		ui->modNameLineEdit->clear();
 		ui->modFolderNameLineEdit->clear();
@@ -163,7 +177,28 @@ void DatabaseEditor::changeEvent(QEvent *event)
 		QWidget::changeEvent(event);
 }
 
-//protected slots:
+//private slots:
+
+void DatabaseEditor::adjustRow(const QModelIndex &index)
+{
+	if (index.isValid() && index.row() < model_->databaseSize())
+		ui->databaseView->resizeRowToContents(index.row());
+}
+
+void DatabaseEditor::openCurrentModFolder()
+{
+	emit openModFolder(ui->databaseView->selectionModel()->currentIndex().row());
+}
+
+void DatabaseEditor::openWorkshopPage()
+{
+	if (ui->openWorkshopWithSteamCheckBox->isChecked())
+		QDesktopServices::openUrl(QUrl("steam://url/CommunityFilePage/" +
+									   model_->modFolderName(ui->databaseView->selectionModel()->currentIndex().row())));
+	else
+		QDesktopServices::openUrl(QUrl("https://steamcommunity.com/sharedfiles/filedetails/?id=" +
+									   model_->modFolderName(ui->databaseView->selectionModel()->currentIndex().row())));
+}
 
 void DatabaseEditor::setModsDisplayMode(const int &mode)
 {
@@ -171,10 +206,4 @@ void DatabaseEditor::setModsDisplayMode(const int &mode)
 		setModsDisplay(false);
 	else if (mode == Qt::CheckState::Unchecked)
 		setModsDisplay(true);
-}
-
-void DatabaseEditor::adjustRow(const QModelIndex &index)
-{
-	if (index.isValid() && index.row() < model_->databaseSize())
-		ui->databaseView->resizeRowToContents(index.row());
 }

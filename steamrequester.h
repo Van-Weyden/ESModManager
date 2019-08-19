@@ -16,7 +16,6 @@ public:
 	SteamRequester(DatabaseModel *model);
 	~SteamRequester();
 	bool isRunning() const {return isRunning_;}
-	bool isSteamId(QString str);
 
 public slots:
 	void processModName(QNetworkReply *reply = nullptr);

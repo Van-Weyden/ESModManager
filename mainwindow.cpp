@@ -1,4 +1,5 @@
 #include <QCollator>
+#include <QDesktopServices>
 #include <QDirIterator>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -48,9 +49,6 @@ MainWindow::MainWindow(QWidget *parent, const bool &runCheck) :
 	steamRequester_->moveToThread(thread_);
 
 	ui->setupUi(this);
-
-	connect(steamRequester_, SIGNAL(finished()), ui->progressLabel, SLOT(hide()));
-	connect(steamRequester_, SIGNAL(finished()), ui->progressBar, SLOT(hide()));
 
 	ui->engLangButton->setIcon(QIcon(":/images/Flag-United-States.ico"));
 	ui->rusLangButton->setIcon(QIcon(":/images/Flag-Russia.ico"));
@@ -102,7 +100,13 @@ MainWindow::MainWindow(QWidget *parent, const bool &runCheck) :
 	connect(ui->refreshButton, SIGNAL(clicked()), this, SLOT(refreshModlist()));
 	connect(ui->runButton, SIGNAL(clicked()), this, SLOT(runGame()));
 
+	connect(ui->enabledModsList, SIGNAL(clicked(const QModelIndex &)), model_, SLOT(disableMod(const QModelIndex &)));
+	connect(ui->disabledModsList, SIGNAL(clicked(const QModelIndex &)), model_, SLOT(enableMod(const QModelIndex &)));
+
 	//Прочие сигналы:
+	connect(steamRequester_, SIGNAL(finished()), ui->progressLabel, SLOT(hide()));
+	connect(steamRequester_, SIGNAL(finished()), ui->progressBar, SLOT(hide()));
+	connect(databaseEditor_, SIGNAL(openModFolder(const int &)), this, SLOT(openModFolder(const int &)));
 	connect(model_, SIGNAL(modCheckStateChanged(const int &, const bool &)),
 			this, SLOT(setRowVisibility(const int &, const bool &)));
 
@@ -615,7 +619,7 @@ void MainWindow::showAboutInfo()
 		tr("This program is used to 'fix' conflicts of mods and speed up the launch of the game. "
 		   "Before launching the game, all unselected mods are moved to another folder, so the game engine will not load them."));
 	messageAbout.setInformativeText(tr("You can leave your questions/suggestions") +
-									" <a href='https://steamcommunity.com/sharedfiles/itemedittext/?id=1826799366'>" + tr("here") + "</a>.");
+									" <a href='https://steamcommunity.com/sharedfiles/filedetails/?id=1826799366'>" + tr("here") + "</a>.");
 	messageAbout.exec();
 }
 
@@ -629,6 +633,16 @@ void MainWindow::changeEvent(QEvent *event)
 }
 
 //private slots:
+bool MainWindow::openModFolder(const int &modIndex)
+{
+	if (QDir().exists(modsFolderPath_ + model_->modFolderName(modIndex)))
+		return QDesktopServices::openUrl(QUrl("file:///" + modsFolderPath_ + model_->modFolderName(modIndex)));
+	else if (QDir().exists(tempModsFolderPath_ + model_->modFolderName(modIndex)))
+		return QDesktopServices::openUrl(QUrl("file:///" + tempModsFolderPath_ + model_->modFolderName(modIndex)));
+
+	return false;
+}
+
 void MainWindow::steamModNameProcessed()
 {
 	ui->progressBar->setValue(ui->progressBar->value() + 1);

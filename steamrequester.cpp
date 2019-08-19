@@ -7,7 +7,6 @@
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
-#include <QRegExpValidator>
 #include <QTimer>
 #include <QUrlQuery>
 
@@ -25,12 +24,6 @@ SteamRequester::SteamRequester(DatabaseModel *model)
  SteamRequester::~SteamRequester()
 {
 	 delete manager_;
-}
-
-bool SteamRequester::isSteamId(QString str)
-{
-	int pos = 0;
-	return !(QRegExpValidator(QRegExp("[0-9]*")).validate(str, pos) == QValidator::State::Invalid);
 }
 
 //public slots:
@@ -87,7 +80,7 @@ void SteamRequester::requestModNames()
 		if (!model_->isValidName(model_->modSteamName(i))) {
 			model_->modInfoRef(i).steamName = tr("Waiting for Steam mod name response...");
 			emit model_->dataChanged(model_->index(i, 0), model_->index(i, 1));
-			if (isSteamId(model_->modFolderName(i))) {
+			if (ModInfo::isSteamId(model_->modFolderName(i))) {
 				data.clear();
 				params.clear();
 				params.addQueryItem("itemcount", "1");
