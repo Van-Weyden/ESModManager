@@ -140,21 +140,16 @@ void DatabaseEditor::showSelectedModInfo()
 {
 	QModelIndex modIndex = ui->databaseView->selectionModel()->currentIndex();
 	if(modIndex.isValid()) {
-		ui->saveModInfoPushButton->setEnabled(true);
-
-		ui->removeModPushButton->setEnabled(ui->showAllModsCheckBox->isChecked() &&
-											!model_->modIsExists(modIndex.row()));
-
 		ModInfo modInfo = model_->modInfo(modIndex.row());
-		if (modInfo.exists)
-			ui->openModFolderPushButton->setEnabled(true);
 
 		ui->modNameLineEdit->setText(modInfo.name);
 		ui->modFolderNameLineEdit->setText(modInfo.folderName);
 		ui->steamModNameLineEdit->setText(modInfo.steamName);
-		if (ModInfo::isSteamId(modInfo.folderName)) {
-			ui->openWorkshopPushButton->setEnabled(true);
-		}
+
+		ui->saveModInfoPushButton->setEnabled(true);
+		ui->removeModPushButton->setEnabled(ui->showAllModsCheckBox->isChecked() && !modInfo.exists);
+		ui->openModFolderPushButton->setEnabled(!ui->showAllModsCheckBox->isChecked() || modInfo.exists);
+		ui->openWorkshopPushButton->setEnabled(ModInfo::isSteamId(modInfo.folderName));
 	}
 	else {
 		ui->saveModInfoPushButton->setEnabled(false);
