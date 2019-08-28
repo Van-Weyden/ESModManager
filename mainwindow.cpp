@@ -502,6 +502,10 @@ void MainWindow::runGame()
 	launcherSettingsFile.close();
 
 	if (fileChecksum(gameFolderPath_ + "Everlasting Summer.exe", QCryptographicHash::Md5) == launcherMd5_) {
+		//Проверка: удаляем "лишние" файлы
+		if (QFile(gameFolderPath_ + "Everlasting Summer (modified).exe").exists())
+			QFile(gameFolderPath_ + "Everlasting Summer (modified).exe").remove();
+
 		QFile::rename(gameFolderPath_ + "Everlasting Summer.exe", gameFolderPath_ + "Everlasting Summer (modified).exe");
 		QFile::rename(gameFolderPath_ + "Everlasting Summer (origin).exe", gameFolderPath_ + "Everlasting Summer.exe");
 	}
@@ -510,34 +514,7 @@ void MainWindow::runGame()
 	gameLauncher.waitForStarted(-1);
 	gameLauncher.waitForFinished(-1);
 
-	if (ui->replaceOriginLauncherCheckBox->isChecked()) {
-		QFile::rename(gameFolderPath_ + "Everlasting Summer.exe", gameFolderPath_ + "Everlasting Summer (origin).exe");
-		if (QFileInfo::exists(gameFolderPath_ + "Everlasting Summer (modified).exe"))
-			QFile::rename(gameFolderPath_ + "Everlasting Summer (modified).exe", gameFolderPath_ + "Everlasting Summer.exe");
-		else
-			QFile::copy("launcher\\ESLauncher.exe", gameFolderPath_ + "Everlasting Summer.exe");
-
-		launcherSettings = QDir::currentPath().replace('/', '\\').toUtf8() + "\\\nESModManager\nfalse";
-		launcherSettingsFile.setFileName(gameFolderPath_ + "LaunchedProgram.ini");
-		launcherSettingsFile.open(QFile::ReadOnly);
-		if (launcherSettingsFile.readAll() != launcherSettings) {
-			launcherSettingsFile.close();
-			launcherSettingsFile.open(QFile::WriteOnly);
-			launcherSettingsFile.write(launcherSettings);
-		}
-		launcherSettingsFile.close();
-	}
-	else {
-		if (QFileInfo::exists(gameFolderPath_ + "Everlasting Summer (modified).exe")) {
-			QFile::remove(gameFolderPath_ + "Everlasting Summer (modified).exe");
-			QFile::remove(gameFolderPath_ + "LaunchedProgram.ini");
-		}
-		else if (QFileInfo::exists(gameFolderPath_ + "Everlasting Summer (origin).exe")) {
-			QFile::remove(gameFolderPath_ + "Everlasting Summer.exe");
-			QFile::remove(gameFolderPath_ + "LaunchedProgram.ini");
-			QFile::rename(gameFolderPath_ + "Everlasting Summer (origin).exe", gameFolderPath_ + "Everlasting Summer.exe");
-		}
-	}
+	checkOriginLauncherReplacement();
 
 	moveModFoldersBack();
 
@@ -656,17 +633,56 @@ void MainWindow::steamModNameProcessed()
 
 bool MainWindow::checkGameMd5(const QString &folderPath)
 {
-	gameMd5_ = fileChecksum(folderPath + "Everlasting Summer.exe", QCryptographicHash::Md5);
+	QByteArray gameMd5 = fileChecksum(folderPath + "Everlasting Summer.exe", QCryptographicHash::Md5);
 
-	if (gameMd5_ == launcherMd5_ || gameMd5_.isNull())
-		gameMd5_ = fileChecksum(folderPath + "Everlasting Summer (origin).exe", QCryptographicHash::Md5);
+	if (gameMd5 == launcherMd5_ || gameMd5.isNull())
+		gameMd5 = fileChecksum(folderPath + "Everlasting Summer (origin).exe", QCryptographicHash::Md5);
 
-	if (gameMd5_.isNull()) {
+	if (gameMd5.isNull()) {
 		QMessageBox::critical(this, tr("Wrong game .exe"), tr("Game folder doesn't contains origin \n 'Everlasting Summer.exe' \n and there is no file \n 'Everlasting Summer (origin).exe'!"),
 							  QMessageBox::StandardButton::Ok, QMessageBox::StandardButton::NoButton);
 		return false;
 	}
 	return true;
+}
+
+void MainWindow::checkOriginLauncherReplacement() const
+{
+	if (ui->replaceOriginLauncherCheckBox) {
+		if (fileChecksum(gameFolderPath_ + "Everlasting Summer.exe", QCryptographicHash::Md5) != launcherMd5_) {
+			//Проверка: удаляем "лишние" файлы
+			if (QFile(gameFolderPath_ + "Everlasting Summer (origin).exe").exists())
+				QFile(gameFolderPath_ + "Everlasting Summer (origin).exe").remove();
+
+			QFile::rename(gameFolderPath_ + "Everlasting Summer.exe", gameFolderPath_ + "Everlasting Summer (origin).exe");
+
+			if (QFileInfo::exists(gameFolderPath_ + "Everlasting Summer (modified).exe"))
+				QFile::rename(gameFolderPath_ + "Everlasting Summer (modified).exe", gameFolderPath_ + "Everlasting Summer.exe");
+			else
+				QFile::copy("launcher\\ESLauncher.exe", gameFolderPath_ + "Everlasting Summer.exe");
+		}
+
+		QByteArray launcherSettings = QDir::currentPath().replace('/', '\\').toUtf8() + "\\\nESModManager\nfalse";
+		QFile launcherSettingsFile(gameFolderPath_ + "LaunchedProgram.ini");
+		launcherSettingsFile.open(QFile::ReadOnly);
+		if (launcherSettingsFile.readAll() != launcherSettings) {
+			launcherSettingsFile.close();
+			launcherSettingsFile.open(QFile::WriteOnly);
+			launcherSettingsFile.write(launcherSettings);
+		}
+		launcherSettingsFile.close();
+	}
+	else {
+		if (fileChecksum(gameFolderPath_ + "Everlasting Summer.exe", QCryptographicHash::Md5) == launcherMd5_) {
+			QFile::remove(gameFolderPath_ + "Everlasting Summer.exe");
+			QFile::rename(gameFolderPath_ + "Everlasting Summer (origin).exe", gameFolderPath_ + "Everlasting Summer.exe");
+		}
+		else
+			QFile::remove(gameFolderPath_ + "Everlasting Summer (origin).exe");
+
+		QFile::remove(gameFolderPath_ + "Everlasting Summer (modified).exe");
+		QFile::remove(gameFolderPath_ + "LaunchedProgram.ini");
+	}
 }
 
 void MainWindow::moveModFolders(QString *unmovedModsToTempFolder, QString *unmovedModsFromTempFolder) const
@@ -816,35 +832,7 @@ void MainWindow::saveSettings() const
 	moveModFoldersBack();
 
 	settings_->setValue("General/bReplaceOriginLauncher", ui->replaceOriginLauncherCheckBox->isChecked());
-	if (ui->replaceOriginLauncherCheckBox->isChecked() && QFileInfo::exists(gameFolderPath_ + "Everlasting Summer.exe")) {
-		QFile::rename(gameFolderPath_ + "Everlasting Summer.exe", gameFolderPath_ + "Everlasting Summer (origin).exe");
-		if (QFileInfo::exists(gameFolderPath_ + "Everlasting Summer (modified).exe")) {
-			QFile::rename(gameFolderPath_ + "Everlasting Summer (modified).exe", gameFolderPath_ + "Everlasting Summer.exe");
-		}
-		else {
-			QFile::copy("launcher\\ESLauncher.exe", gameFolderPath_ + "Everlasting Summer.exe");
-		}
-		QByteArray launcherSettings = QDir::currentPath().replace('/', '\\').toUtf8() + "\\\nESModManager\nfalse";
-		QFile launcherSettingsFile(gameFolderPath_ + "LaunchedProgram.ini");
-		launcherSettingsFile.open(QFile::ReadOnly);
-		if (launcherSettingsFile.readAll() != launcherSettings) {
-			launcherSettingsFile.close();
-			launcherSettingsFile.open(QFile::WriteOnly);
-			launcherSettingsFile.write(launcherSettings);
-		}
-		launcherSettingsFile.close();
-	}
-	else {
-		if (QFileInfo::exists(gameFolderPath_ + "Everlasting Summer (modified).exe")) {
-			QFile::remove(gameFolderPath_ + "Everlasting Summer (modified).exe");
-			QFile::remove(gameFolderPath_ + "LaunchedProgram.ini");
-		}
-		else if (QFileInfo::exists(gameFolderPath_ + "Everlasting Summer (origin).exe")) {
-			QFile::remove(gameFolderPath_ + "Everlasting Summer.exe");
-			QFile::remove(gameFolderPath_ + "LaunchedProgram.ini");
-			QFile::rename(gameFolderPath_ + "Everlasting Summer (origin).exe", gameFolderPath_ + "Everlasting Summer.exe");
-		}
-	}
+	checkOriginLauncherReplacement();
 
 	settings_->setValue("General/bCompleteModNames", ui->completeNamesCheckBox->isChecked());
 

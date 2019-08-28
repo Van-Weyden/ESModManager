@@ -64,6 +64,7 @@ private slots:
 
 private:
 	bool checkGameMd5(const QString &folderPath);
+	void checkOriginLauncherReplacement() const;
 	void moveModFolders(QString *unmovedModsToTempFolder = nullptr, QString *unmovedModsFromTempFolder = nullptr) const;
 	void moveModFoldersBack() const;
 	void readSettings();
@@ -86,7 +87,6 @@ private:
 
 	DatabaseModel *model_ = nullptr;
 
-	QByteArray gameMd5_;
 	QByteArray launcherMd5_;
 	int countOfScannedMods_;
 };

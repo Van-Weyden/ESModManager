@@ -279,7 +279,7 @@ If unchecked, display mod names from their source files.</source>
     </message>
     <message>
         <location filename="mainwindow.cpp" line="371"/>
-        <location filename="mainwindow.cpp" line="591"/>
+        <location filename="mainwindow.cpp" line="568"/>
         <source>Delete folder</source>
         <translation>Удаление папки</translation>
     </message>
@@ -307,7 +307,7 @@ Close the game before starting the manager!</source>
     </message>
     <message>
         <location filename="mainwindow.cpp" line="371"/>
-        <location filename="mainwindow.cpp" line="591"/>
+        <location filename="mainwindow.cpp" line="568"/>
         <source>Would you like to delete old mods temp folder?</source>
         <translation>Вы хотите удалить старую временную папку?</translation>
     </message>
@@ -337,64 +337,64 @@ Close the game before starting the manager!</source>
         <translation>перед закрытием этого окна, иначе игра загрузит их.</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="552"/>
+        <location filename="mainwindow.cpp" line="529"/>
         <source>Select Everlasting Summer folder</source>
         <translation>Выберите папку с игрой &quot;Бесконечное Лето&quot;</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="561"/>
+        <location filename="mainwindow.cpp" line="538"/>
         <source>Wrong game folder</source>
         <translation>Неверная папка с игрой</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="561"/>
+        <location filename="mainwindow.cpp" line="538"/>
         <source>Game folder doesn&apos;t contains 
  &apos;Everlasting Summer.exe&apos;!</source>
         <translation>Папка с игрой не содержит файл 
  &apos;Everlasting Summer.exe&apos;!</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="570"/>
+        <location filename="mainwindow.cpp" line="547"/>
         <source>Select folder of Everlasting Summer mods</source>
         <translation>Выберите папку с модами игры &quot;Бесконечное Лето&quot;</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="585"/>
+        <location filename="mainwindow.cpp" line="562"/>
         <source>Select temp folder for unused Everlasting Summer mods</source>
         <translation>Выберите временную папку для неиспользуемых модов игры &quot;Бесконечное Лето&quot;</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="611"/>
+        <location filename="mainwindow.cpp" line="588"/>
         <source>About </source>
         <translation>О программе </translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="615"/>
+        <location filename="mainwindow.cpp" line="592"/>
         <source>Everlasting Summer mod manager v.1.1.</source>
         <translation>Менеджер модов для игры &quot;Бесконечное Лето&quot;. Версия 1.1.</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="616"/>
+        <location filename="mainwindow.cpp" line="593"/>
         <source>Author:</source>
         <translation>Автор:</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="617"/>
+        <location filename="mainwindow.cpp" line="594"/>
         <source>Help in testing:</source>
         <translation>Помощь в тестировании:</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="618"/>
+        <location filename="mainwindow.cpp" line="595"/>
         <source>Alexey Golikov</source>
         <translation>Алексей Голиков</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="619"/>
+        <location filename="mainwindow.cpp" line="596"/>
         <source>This program is used to &apos;fix&apos; conflicts of mods and speed up the launch of the game. Before launching the game, all unselected mods are moved to another folder, so the game engine will not load them.</source>
         <translation>Эта программа предназначена для &quot;исправления&quot; конфликтов модов и ускорения загрузки игры. Перед запуском игры она перемещает все моды, не выбранные пользователем, в другую папку, поэтому игра не будет их загружать.</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="962"/>
+        <location filename="mainwindow.cpp" line="950"/>
         <source>WARNING: couldn&apos;t get the name of the mod. Set the name manually.</source>
         <translation>ВНИМАНИЕ: не удалось получить название мода. Задайте имя вручную.</translation>
     </message>
@@ -409,7 +409,7 @@ This program is used to &apos;fix&apos; conflicts of mods and speed up the launc
 Эта программа предназначена для &quot;исправления&quot; конфликтов модов и ускорения загрузки игры. Перед запуском игры она перемещает все моды, не выбранные пользователем, в другую папку, поэтому игра не будет их загружать.</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="941"/>
+        <location filename="mainwindow.cpp" line="929"/>
         <source> [filter]</source>
         <translation> [фильтр]</translation>
     </message>
@@ -418,22 +418,22 @@ This program is used to &apos;fix&apos; conflicts of mods and speed up the launc
         <translation type="vanished">ВНИМАНИЕ: неизвестное название мода. Задайте имя вручную.</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="621"/>
+        <location filename="mainwindow.cpp" line="598"/>
         <source>You can leave your questions/suggestions</source>
         <translation>Вы можете оставить свои вопросы/предложения</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="622"/>
+        <location filename="mainwindow.cpp" line="599"/>
         <source>here</source>
         <translation>здесь</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="665"/>
+        <location filename="mainwindow.cpp" line="642"/>
         <source>Wrong game .exe</source>
         <translation>Неверный файл .exe</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="665"/>
+        <location filename="mainwindow.cpp" line="642"/>
         <source>Game folder doesn&apos;t contains origin 
  &apos;Everlasting Summer.exe&apos; 
  and there is no file 
