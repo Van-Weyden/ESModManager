@@ -343,6 +343,30 @@ If unchecked, display mod names from their source files.</string>
        </layout>
       </item>
       <item>
+       <layout class="QHBoxLayout" name="searchHorizontalLayout">
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QLineEdit" name="searchLineEdit">
+          <property name="frame">
+           <bool>true</bool>
+          </property>
+          <property name="placeholderText">
+           <string>Enter mod name for search...</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="clearSearchPushButton">
+          <property name="text">
+           <string>Clear</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
        <layout class="QHBoxLayout" name="buttonsHorizontalLayout">
         <property name="spacing">
          <number>0</number>

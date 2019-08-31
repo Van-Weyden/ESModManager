@@ -24,6 +24,7 @@ public:
 	~MainWindow();
 
 	void checkRowsVisibility();
+	void clearSearchField();	//does not emit filterModsDisplay slot
 	void hideAllRows();
 	void loadDatabase();
 	void requestSteamModNames();
@@ -37,6 +38,7 @@ public slots:
 	void disableAllMods();
 	void enableAllMods();
 	void eraseDatabase();
+	void filterModsDisplay(const QString &str);
 	void refreshModlist();
 
 	void runGame();

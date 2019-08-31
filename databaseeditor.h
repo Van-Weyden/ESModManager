@@ -23,6 +23,7 @@ public:
 	void setModsDisplay(const bool &modlistOnly = true);
 
 public slots:
+	void filterModsDisplay(const QString &str);
 	void removeSelectedMod();
 	void saveSelectedModInfo();
 	void show();

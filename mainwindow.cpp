@@ -60,7 +60,7 @@ MainWindow::MainWindow(QWidget *parent, const bool &runCheck) :
 	ui->disabledModsList->setStyleSheet("QListView::item:!selected:!hover { border-bottom: 1px solid #E5E5E5; }");
 	ui->disabledModsList->setModel(model_);
 
-	//Небольшой костыль, чтобы работала подсветка при наведении мышью, но нельзя было выделить строку
+	//A small crutch for highlighting when you hover the mouse, but you couldn't select the line
 	connect(ui->enabledModsList->selectionModel(), SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
 			ui->enabledModsList, SLOT(clearSelection()));
 	connect(ui->disabledModsList->selectionModel(), SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
@@ -78,7 +78,7 @@ MainWindow::MainWindow(QWidget *parent, const bool &runCheck) :
 
 	//connections:
 
-	//Сигналы с объектов формы:
+	//Signals from form objects:
 	connect(ui->actionGame_folder, SIGNAL(triggered()), this, SLOT(selectGameFolder()));
 	connect(ui->actionMods_folder, SIGNAL(triggered()), this, SLOT(selectModsFolder()));
 	connect(ui->actionTemp_mods_folder, SIGNAL(triggered()), this, SLOT(selectTempModsFolder()));
@@ -103,7 +103,11 @@ MainWindow::MainWindow(QWidget *parent, const bool &runCheck) :
 	connect(ui->enabledModsList, SIGNAL(clicked(const QModelIndex &)), model_, SLOT(disableMod(const QModelIndex &)));
 	connect(ui->disabledModsList, SIGNAL(clicked(const QModelIndex &)), model_, SLOT(enableMod(const QModelIndex &)));
 
-	//Прочие сигналы:
+	connect(ui->clearSearchPushButton, SIGNAL(clicked()), ui->searchLineEdit, SLOT(clear()));
+	connect(ui->searchLineEdit, SIGNAL(textChanged(const QString &)), this, SLOT(filterModsDisplay(const QString &)));
+
+
+	//Other signals:
 	connect(steamRequester_, SIGNAL(finished()), ui->progressLabel, SLOT(hide()));
 	connect(steamRequester_, SIGNAL(finished()), ui->progressBar, SLOT(hide()));
 	connect(databaseEditor_, SIGNAL(openModFolder(const int &)), this, SLOT(openModFolder(const int &)));
@@ -129,7 +133,7 @@ MainWindow::MainWindow(QWidget *parent, const bool &runCheck) :
 		setLanguage(lang_);
 	}
 
-	///Блок проверки процессов (не запущены ли уже игра/менеджер
+	///Process check block (whether the game / manager is already running)
 	if (runCheck)
 	{
 		QProcess processChecker;
@@ -153,7 +157,7 @@ MainWindow::MainWindow(QWidget *parent, const bool &runCheck) :
 			return;
 		}
 	}
-	///Конец блока проверки
+	///End of check block
 
 	if (gameFolderPath_.isEmpty()) {
 		QString gamePath = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Everlasting Summer\\";
@@ -169,8 +173,8 @@ MainWindow::MainWindow(QWidget *parent, const bool &runCheck) :
 		}
 	}
 	else {
-		///Начало блока обратной совместимости
-		///Исправление бага старых версий, когда в пути оказывался "Everlasting Summer.exe"
+		///Begin of backward compatibility block
+		///Fix bug from old versions when game folder path contained "Everlasting Summer.exe"
 		{
 			if (gameFolderPath_.contains("Everlasting Summer.exe"))
 				gameFolderPath_.remove("Everlasting Summer.exe");
@@ -179,7 +183,7 @@ MainWindow::MainWindow(QWidget *parent, const bool &runCheck) :
 			if (tempModsFolderPath_.contains("Everlasting Summer.exe"))
 				tempModsFolderPath_.remove("Everlasting Summer.exe");
 		}
-		///Конец блока обратной совместимости
+		///End of backward compatibility block
 
 		ui->gameFolderLineEdit->setText(gameFolderPath_);
 		ui->modsFolderLineEdit->setText(modsFolderPath_);
@@ -212,6 +216,8 @@ MainWindow::~MainWindow()
 
 void MainWindow::checkRowsVisibility()
 {
+	clearSearchField();
+
 	bool enabled, exists;
 	int databaseSize = model_->databaseSize();
 	for (int rowIndex = 0; rowIndex < databaseSize; ++rowIndex) {
@@ -223,8 +229,17 @@ void MainWindow::checkRowsVisibility()
 	}
 }
 
+void MainWindow::clearSearchField()
+{
+	ui->searchLineEdit->blockSignals(true);
+	ui->searchLineEdit->clear();
+	ui->searchLineEdit->blockSignals(false);
+}
+
 void MainWindow::hideAllRows()
 {
+	clearSearchField();
+
 	int rowCount = model_->databaseSize();
 	for (int rowIndex = 0; rowIndex < rowCount; ++rowIndex) {
 		ui->enabledModsList->setRowHidden(rowIndex, true);
@@ -236,8 +251,8 @@ void MainWindow::loadDatabase()
 {
 	QFile file;
 
-	///Начало блока обратной совместимости
-	///Конвертация из старой версии БД
+	///Begin of backward compatibility block
+	///Conversion from old version of DB
 	{
 		file.setFileName("mods_database.dat");
 		if (file.exists()) {
@@ -271,7 +286,7 @@ void MainWindow::loadDatabase()
 			return;
 		}
 	}
-	///Конец блока обратной совместимости
+	///End of backward compatibility block
 
 	file.setFileName("mods_database.json");
 	if (file.exists()) {
@@ -406,6 +421,8 @@ void MainWindow::disableAllMods()
 	}
 
 	model_->blockSignals(false);
+
+	ui->searchLineEdit->clear();
 }
 
 void MainWindow::enableAllMods()
@@ -421,6 +438,8 @@ void MainWindow::enableAllMods()
 	}
 
 	model_->blockSignals(false);
+
+	ui->searchLineEdit->clear();
 }
 
 void MainWindow::eraseDatabase()
@@ -428,6 +447,25 @@ void MainWindow::eraseDatabase()
 	QFile::remove("mods_database.json");
 	model_->clearDatabase();
 	refreshModlist();
+}
+
+void MainWindow::filterModsDisplay(const QString &str)
+{
+	int rowCount = model_->databaseSize();
+	bool enabled;
+	for (int rowIndex = 0; rowIndex < rowCount; ++rowIndex)
+		if (model_->modIsExists(rowIndex)) {
+			enabled = model_->modIsEnabled(rowIndex);
+			ui->enabledModsList->setRowHidden(rowIndex, !enabled);
+			ui->disabledModsList->setRowHidden(rowIndex, enabled);
+
+			if (!model_->data(model_->index(rowIndex)).toString().contains(str, Qt::CaseSensitivity::CaseInsensitive)) {
+				if (enabled)
+					ui->enabledModsList->setRowHidden(rowIndex, true);
+				else
+					ui->disabledModsList->setRowHidden(rowIndex, true);
+			}
+		}
 }
 
 void MainWindow::refreshModlist()
@@ -502,7 +540,7 @@ void MainWindow::runGame()
 	launcherSettingsFile.close();
 
 	if (fileChecksum(gameFolderPath_ + "Everlasting Summer.exe", QCryptographicHash::Md5) == launcherMd5_) {
-		//Проверка: удаляем "лишние" файлы
+		//Remove "extra" files
 		if (QFile(gameFolderPath_ + "Everlasting Summer (modified).exe").exists())
 			QFile(gameFolderPath_ + "Everlasting Summer (modified).exe").remove();
 
@@ -592,6 +630,7 @@ void MainWindow::showAboutInfo()
 		tr("Everlasting Summer mod manager v.1.1.") + "<br>" +
 		tr("Author:") + " <a href='https://steamcommunity.com/id/van_weyden/'>Slavyan</a><br>" +
 		tr("Help in testing:") + " <a href='https://steamcommunity.com/profiles/76561198058938676/'>Hatsune Miku</a>,"
+								 " 🔰 <a href='https://steamcommunity.com/id/lena_sova/'>" + tr("Lena") + "</a>🔰 ," +
 								 " <a href='https://vk.com/svet_mag'>" + tr("Alexey Golikov") + "</a><br><br>" +
 		tr("This program is used to 'fix' conflicts of mods and speed up the launch of the game. "
 		   "Before launching the game, all unselected mods are moved to another folder, so the game engine will not load them."));
@@ -650,7 +689,7 @@ void MainWindow::checkOriginLauncherReplacement() const
 {
 	if (ui->replaceOriginLauncherCheckBox) {
 		if (fileChecksum(gameFolderPath_ + "Everlasting Summer.exe", QCryptographicHash::Md5) != launcherMd5_) {
-			//Проверка: удаляем "лишние" файлы
+			//Remove "extra" files
 			if (QFile(gameFolderPath_ + "Everlasting Summer (origin).exe").exists())
 				QFile(gameFolderPath_ + "Everlasting Summer (origin).exe").remove();
 
@@ -775,8 +814,8 @@ void MainWindow::readSettings()
 			ui->moveModsBackCheckBox->setChecked(value.toBool());
 	}
 
-	///Условие для обратной совместимости
-	///Сбрасываем состояние флажка замены файлов игры для старых версий, т.к. сменились умолчания
+	///Condition for backward compatibility
+	///Reset the checkbox for replacing game files for older versions, as defaults changed
 	if (settings_->contains("General/bMaximized"))
 		if (settings_->contains("General/bReplaceOriginLauncher")) {
 			value = settings_->value("General/bReplaceOriginLauncher");
@@ -908,11 +947,11 @@ void MainWindow::scanMods(const QString &modsFolderPath)
 		while (it.hasNext()) {
 			file.setFileName(it.next());
 			file.open(QFile::ReadOnly);
-			//QFile::canReadLine() может выдавать false в некоторых случаях, поэтому проверяем конец файла через QFile::atEnd()
+			//'QFile::canReadLine()' may return false in some cases, so check the end of the file with 'QFile::atEnd()'
 			while (!file.atEnd()) {
 				tmp = file.readLine();
 				if (!tmp.contains(QRegExp("(\\[|\\{)[^\\]\\}]*#[^\\]\\}]*(\\]|\\})")))
-					tmp.remove(QRegExp("#.*$"));	//Удаление питоноских комментариев
+					tmp.remove(QRegExp("#.*$"));	//Removing Python comments
 				isModTagsFounded = tmp.contains(modTagsRegExp);
 				if (tmp.contains(initRegExp)) {
 					initKeyRegExp.indexIn(tmp);

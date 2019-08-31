@@ -148,7 +148,7 @@ void DatabaseModel::setUsingSteamModNames(const bool &use)
 
 void DatabaseModel::sortDatabase()
 {
-	//Сортировка имён, чтобы порядок сответвовал тому, что в проводнике
+	//Names sorting (order like in Windows explorer)
 	QCollator collator;
 	collator.setNumericMode(true);
 	std::sort(database_.begin(), database_.end(),

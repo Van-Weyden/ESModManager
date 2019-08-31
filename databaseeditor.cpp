@@ -22,6 +22,12 @@ DatabaseEditor::DatabaseEditor(QWidget *parent) :
 			this, SLOT(saveSelectedModInfo()));
 	connect(ui->removeModPushButton, SIGNAL(clicked()),
 			this, SLOT(removeSelectedMod()));
+
+	connect(ui->clearSearchPushButton, SIGNAL(clicked()),
+			ui->searchLineEdit, SLOT(clear()));
+	connect(ui->searchLineEdit, SIGNAL(textChanged(const QString &)),
+			this, SLOT(filterModsDisplay(const QString &)));
+
 	connect(ui->showAllModsCheckBox, SIGNAL(stateChanged(int)),
 			this, SLOT(setModsDisplayMode(const int &)));
 
@@ -43,6 +49,10 @@ void DatabaseEditor::hideAllRows()
 {
 	if (model_ == nullptr)
 		return;
+
+	ui->searchLineEdit->blockSignals(true);
+	ui->searchLineEdit->clear();
+	ui->searchLineEdit->blockSignals(false);
 
 	int rowCount = model_->databaseSize();
 	for (int rowIndex = 0; rowIndex < rowCount; ++rowIndex)
@@ -97,6 +107,20 @@ void DatabaseEditor::setModsDisplay(const bool &modlistOnly)
 }
 
 //public slots:
+
+void DatabaseEditor::filterModsDisplay(const QString &str)
+{
+	if (model_ == nullptr)
+		return;
+
+	int rowCount = model_->databaseSize();
+	for (int rowIndex = 0; rowIndex < rowCount; ++rowIndex)
+		if (ui->showAllModsCheckBox->isChecked() || model_->modIsExists(rowIndex)) {
+			ui->databaseView->setRowHidden(rowIndex, false);
+			if (!model_->data(model_->index(rowIndex)).toString().contains(str, Qt::CaseSensitivity::CaseInsensitive))
+				ui->databaseView->setRowHidden(rowIndex, true);
+		}
+}
 
 void DatabaseEditor::removeSelectedMod()
 {

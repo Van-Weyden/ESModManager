@@ -43,7 +43,7 @@ void SteamRequester::processModName(QNetworkReply *reply)
 
 		for (int i = 0; i < model_->databaseSize(); ++i) {
 			if (model_->modFolderName(i) == modKey) {
-				//За время обработки запроса данные могли измениться, поэтому проверяем ещё раз
+				//During the processing of the request, the data could change, so check again
 				if (model_->modSteamName(i).contains(tr("Waiting for Steam mod name response..."))) {
 					model_->modInfoRef(i).steamName = steamModName;
 					emit model_->dataChanged(model_->index(i, 0), model_->index(i, 1));
@@ -52,7 +52,7 @@ void SteamRequester::processModName(QNetworkReply *reply)
 			}
 		}
 	}
-	///Блок отладки
+	///Debug block
 //	else if (reply != nullptr) {
 //		ModInfo tmp;
 //		tmp.name = reply->readAll();
