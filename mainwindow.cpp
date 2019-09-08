@@ -508,21 +508,44 @@ void MainWindow::runGame()
 
 	if (databaseEditor_->isVisible())
 		databaseEditor_->close();
-	this->hide();
+
 	QDir dir(tempModsFolderPath_);
 	if (!dir.exists())
 		dir.mkdir(tempModsFolderPath_);
 
 	QString unmovedMods;
 	moveModFolders(&unmovedMods);
-	if (!unmovedMods.isEmpty())
-		QMessageBox::warning(this, tr("Unmoved mods"),
-							 tr("Disabled mods in these folders failed to move into temp folder:") +
-								"\n\n" + unmovedMods + "\n" +
-							 tr("Please move these folders manually from the mods folder:") + "\n\n" + modsFolderPath_ + "\n\n" +
-							 tr("to the temp mods folder:") + "\n\n" + tempModsFolderPath_ + "\n\n" +
-							 tr("before closing this message box, otherwise the game will load them."),
-								QMessageBox::StandardButton::Ok, QMessageBox::StandardButton::NoButton);
+	if (!unmovedMods.isEmpty()) {
+		QMessageBox warningMessage(QMessageBox::Warning, tr("Unmoved mods"),
+						tr("Disabled mods in these folders failed to move into temp folder:") + "\n\n" + unmovedMods + "\n" +
+						tr("If you press the 'OK' button, the game will load these mods.") + "\n\n" +
+						tr("You may move these folders manually from the mods folder:") + "\n\n" + modsFolderPath_ + "\n\n" +
+						tr("to the temp mods folder:") + "\n\n" + tempModsFolderPath_ + "\n\n" +
+						tr("before pressing the 'OK' button to fix this issue."),
+						QMessageBox::StandardButton::Ok | QMessageBox::StandardButton::Open | QMessageBox::StandardButton::Cancel,
+						this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
+		warningMessage.button(QMessageBox::StandardButton::Open)->setText(tr("Open mods folder and temp folder in explorer"));
+		warningMessage.setDefaultButton(QMessageBox::StandardButton::Cancel);
+		warningMessage.setTextInteractionFlags(Qt::TextSelectableByMouse);
+		QMessageBox::StandardButton pressedButton = QMessageBox::StandardButton(warningMessage.exec());
+
+		if (pressedButton == QMessageBox::StandardButton::Open) {
+			warningMessage.setStandardButtons(QMessageBox::StandardButton::Ok | QMessageBox::StandardButton::Cancel);
+			warningMessage.show();	//Must call show() before openUrl(), or exec() will not work properly
+
+			QDesktopServices::openUrl(QUrl("file:///" + tempModsFolderPath_));
+			QDesktopServices::openUrl(QUrl("file:///" + modsFolderPath_));
+
+			pressedButton = QMessageBox::StandardButton(warningMessage.exec());
+		}
+
+		if (pressedButton == QMessageBox::StandardButton::Cancel) {
+			moveModFoldersBack();
+			return;
+		}
+	}
+
+	this->hide();
 
 	QProcess gameLauncher;
 	gameLauncher.setWorkingDirectory("launcher\\");
@@ -687,7 +710,7 @@ bool MainWindow::checkGameMd5(const QString &folderPath)
 
 void MainWindow::checkOriginLauncherReplacement() const
 {
-	if (ui->replaceOriginLauncherCheckBox) {
+	if (ui->replaceOriginLauncherCheckBox->isChecked()) {
 		if (fileChecksum(gameFolderPath_ + "Everlasting Summer.exe", QCryptographicHash::Md5) != launcherMd5_) {
 			//Remove "extra" files
 			if (QFile(gameFolderPath_ + "Everlasting Summer (origin).exe").exists())
