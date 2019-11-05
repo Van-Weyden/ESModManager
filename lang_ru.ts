@@ -513,13 +513,14 @@ Close the game before starting the manager!</source>
     </message>
     <message>
         <location filename="steamrequester.cpp" line="47"/>
-        <location filename="steamrequester.cpp" line="81"/>
-        <location filename="steamrequester.cpp" line="109"/>
+        <location filename="steamrequester.cpp" line="82"/>
+        <location filename="steamrequester.cpp" line="111"/>
         <source>Waiting for Steam mod name response...</source>
         <translation>Ожидание ответа с названием мода от Steam...</translation>
     </message>
     <message>
-        <location filename="steamrequester.cpp" line="110"/>
+        <location filename="steamrequester.cpp" line="94"/>
+        <location filename="steamrequester.cpp" line="112"/>
         <source>WARNING: couldn&apos;t get the name of mod. Set the name manually.</source>
         <translation>ВНИМАНИЕ: не удалось получить название мода. Задайте имя вручную.</translation>
     </message>

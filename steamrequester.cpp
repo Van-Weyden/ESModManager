@@ -78,9 +78,9 @@ void SteamRequester::requestModNames()
 	QNetworkRequest request(QUrl("https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/"));
 	for (int i = 0; i < model_->databaseSize(); ++i) {
 		if (!model_->isValidName(model_->modSteamName(i))) {
-			model_->modInfoRef(i).steamName = tr("Waiting for Steam mod name response...");
-			emit model_->dataChanged(model_->index(i, 0), model_->index(i, 1));
 			if (ModInfo::isSteamId(model_->modFolderName(i))) {
+				model_->modInfoRef(i).steamName = tr("Waiting for Steam mod name response...");
+				emit model_->dataChanged(model_->index(i, 0), model_->index(i, 1));
 				data.clear();
 				params.clear();
 				params.addQueryItem("itemcount", "1");
@@ -91,11 +91,13 @@ void SteamRequester::requestModNames()
 				manager_->post(request, data);
 			}
 			else {
-				processModName();
+				model_->modInfoRef(i).steamName = tr("WARNING: couldn't get the name of mod. Set the name manually.");
+				emit model_->dataChanged(model_->index(i, 0), model_->index(i, 1));
+				modNameProcessed();
 			}
 		}
 		else {
-			processModName();
+			modNameProcessed();
 		}
 	}
 }
