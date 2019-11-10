@@ -488,6 +488,26 @@ If unchecked, display mod names from their source files.</string>
   </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <tabstops>
+  <tabstop>runButton</tabstop>
+  <tabstop>searchLineEdit</tabstop>
+  <tabstop>clearSearchPushButton</tabstop>
+  <tabstop>refreshButton</tabstop>
+  <tabstop>enableAllButton</tabstop>
+  <tabstop>disableAllButton</tabstop>
+  <tabstop>replaceOriginLauncherCheckBox</tabstop>
+  <tabstop>moveModsBackCheckBox</tabstop>
+  <tabstop>autoexitCheckBox</tabstop>
+  <tabstop>completeNamesCheckBox</tabstop>
+  <tabstop>useSteamModNamesCheckBox</tabstop>
+  <tabstop>databaseEditorButton</tabstop>
+  <tabstop>eraseDatabaseButton</tabstop>
+  <tabstop>engLangButton</tabstop>
+  <tabstop>rusLangButton</tabstop>
+  <tabstop>gameFolderLineEdit</tabstop>
+  <tabstop>modsFolderLineEdit</tabstop>
+  <tabstop>tempModsFolderLineEdit</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>
