@@ -7,6 +7,10 @@ struct ModInfo
 {
 	static bool isSteamId(QString str);
 
+	static QString generateUnknownNameStub();
+	static QString generateFailedToGetNameStub();
+	static QString generateWaitingForSteamResponseStub();
+
 	inline bool existsAndEnabledCheck(const bool existsValue, const bool enabledValue) const;
 
 	QString name;

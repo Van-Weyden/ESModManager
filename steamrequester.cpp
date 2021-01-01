@@ -42,7 +42,7 @@ void SteamRequester::processModName(QNetworkReply *reply)
 		for (int i = 0; i < m_model->databaseSize(); ++i) {
 			if (m_model->modFolderName(i) == modKey) {
 				//During the processing of the request, the data could change, so check again
-				if (m_model->modSteamName(i).contains(tr("Waiting for Steam mod name response...")) && !steamModName.isEmpty()) {
+				if (m_model->modSteamName(i).contains(ModInfo::generateWaitingForSteamResponseStub()) && !steamModName.isEmpty()) {
 					m_model->modInfoRef(i).steamName = steamModName;
 					emit m_model->dataChanged(m_model->index(i, 0), m_model->index(i, 1));
 				}
@@ -76,7 +76,7 @@ void SteamRequester::requestModNames()
 	for (int i = 0; i < m_model->databaseSize(); ++i) {
 		if (!m_model->isNameValid(m_model->modSteamName(i))) {
 			if (ModInfo::isSteamId(m_model->modFolderName(i))) {
-				m_model->modInfoRef(i).steamName = tr("Waiting for Steam mod name response...");
+				m_model->modInfoRef(i).steamName = ModInfo::generateWaitingForSteamResponseStub();
 				emit m_model->dataChanged(m_model->index(i, 0), m_model->index(i, 1));
 				data.clear();
 				params.clear();
@@ -87,7 +87,7 @@ void SteamRequester::requestModNames()
 
 				m_manager->post(request, data);
 			} else {
-				m_model->modInfoRef(i).steamName = tr("WARNING: couldn't get the name of mod. Set the name manually.");
+				m_model->modInfoRef(i).steamName = ModInfo::generateFailedToGetNameStub();
 				emit m_model->dataChanged(m_model->index(i, 0), m_model->index(i, 1));
 				modNameProcessed();
 			}
@@ -104,8 +104,8 @@ void SteamRequester::modNameProcessed()
 
 	if (!m_countOfRemainingMods) {
 		for (int i = 0; i < m_model->databaseSize(); ++i) {
-			if (m_model->modSteamName(i).contains(tr("Waiting for Steam mod name response..."))) {
-				m_model->modInfoRef(i).steamName = tr("WARNING: couldn't get the name of mod. Set the name manually.");
+			if (m_model->modSteamName(i).contains(ModInfo::generateWaitingForSteamResponseStub())) {
+				m_model->modInfoRef(i).steamName = ModInfo::generateFailedToGetNameStub();
 				emit m_model->dataChanged(m_model->index(i, 0), m_model->index(i, 1));
 			}
 		}

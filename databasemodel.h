@@ -69,9 +69,9 @@ private:
 inline bool DatabaseModel::isNameValid(const QString &name) const
 {
 	return !(name.isEmpty() ||
-			 name.contains(tr("WARNING: unknown mod name. Set the name manually.")) ||
-			 name.contains(tr("WARNING: couldn't get the name of the mod. Set the name manually."))
-			 /* || name == tr("Waiting for Steam mod name response...")*/
+			 name.contains(ModInfo::generateUnknownNameStub()) ||
+			 name.contains(ModInfo::generateFailedToGetNameStub()) ||
+			 //name == ModInfo::generateWaitingForSteamResponseStub() ||
 	);
 }
 

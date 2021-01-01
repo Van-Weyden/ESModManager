@@ -1011,7 +1011,7 @@ void MainWindow::scanMods(const QString &modsFolderPath)
 		modInfo.name.clear();
 		out = '/' + QString::number(initMap.count()) + "]: ";
 		if (initMap.isEmpty()) {
-			modInfo.name = tr("WARNING: couldn't get the name of the mod. Set the name manually.");
+			modInfo.name = ModInfo::generateFailedToGetNameStub();
 		} else {
 			if (initMap.count() == 1) {
 				modInfo.name = initMap[initKey];

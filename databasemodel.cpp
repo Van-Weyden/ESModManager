@@ -18,8 +18,8 @@ void DatabaseModel::appendDatabase(const ModInfo &modInfo)
 	emit beginInsertRows(QModelIndex(), m_database.size(), m_database.size());
 	m_database.append(modInfo);
 	if (m_database.last().steamName.isEmpty())
-		m_database.last().steamName = tr("WARNING: couldn't get the name of the mod. Set the name manually.");
-		//m_database.last().steamName = tr("Waiting for Steam mod name response...");
+		m_database.last().steamName = ModInfo::generateFailedToGetNameStub();
+		//m_database.last().steamName = ModInfo::generateWaitingForSteamResponseStub();
 
 	emit endInsertRows();
 }

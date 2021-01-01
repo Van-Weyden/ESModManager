@@ -84,21 +84,6 @@ If unchecked, only installed mods are displayed.</source>
         <source>Mod name</source>
         <translation>Название мода</translation>
     </message>
-    <message>
-        <location filename="databasemodel.h" line="72"/>
-        <source>WARNING: unknown mod name. Set the name manually.</source>
-        <translation>ВНИМАНИЕ: неизвестное название мода. Задайте имя вручную.</translation>
-    </message>
-    <message>
-        <location filename="databasemodel.cpp" line="21"/>
-        <location filename="databasemodel.h" line="73"/>
-        <source>WARNING: couldn&apos;t get the name of the mod. Set the name manually.</source>
-        <translation>ВНИМАНИЕ: не удалось получить название мода. Задайте имя вручную.</translation>
-    </message>
-    <message>
-        <source>Waiting for Steam mod name response...</source>
-        <translation type="vanished">Ожидание ответа с названием мода от Steam...</translation>
-    </message>
 </context>
 <context>
     <name>MainWindow</name>
@@ -363,10 +348,6 @@ Close the game before starting the manager!</source>
         <translation>Менеджер модов для игры &quot;Бесконечное Лето&quot;. Версия </translation>
     </message>
     <message>
-        <source>before closing this message box, otherwise the game will load them.</source>
-        <translation type="vanished">перед закрытием этого окна, иначе игра загрузит их.</translation>
-    </message>
-    <message>
         <location filename="mainwindow.cpp" line="523"/>
         <source>before pressing the &apos;OK&apos; button to fix this issue.</source>
         <translation>перед нажатием на кнопку &apos;ОК&apos;, чтобы исправить эту проблему.</translation>
@@ -409,10 +390,6 @@ Close the game before starting the manager!</source>
         <translation>О программе </translation>
     </message>
     <message>
-        <source>Everlasting Summer mod manager v.1.1.</source>
-        <translation type="vanished">Менеджер модов для игры &quot;Бесконечное Лето&quot;. Версия 1.1.</translation>
-    </message>
-    <message>
         <location filename="mainwindow.cpp" line="653"/>
         <source>Author:</source>
         <translation>Автор:</translation>
@@ -438,28 +415,9 @@ Close the game before starting the manager!</source>
         <translation>Эта программа предназначена для &quot;исправления&quot; конфликтов модов и ускорения загрузки игры. Перед запуском игры она перемещает все моды, не выбранные пользователем, в другую папку, поэтому игра не будет их загружать.</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="1014"/>
-        <source>WARNING: couldn&apos;t get the name of the mod. Set the name manually.</source>
-        <translation>ВНИМАНИЕ: не удалось получить название мода. Задайте имя вручную.</translation>
-    </message>
-    <message>
-        <source>Everlasting Summer mod manager v.1.1.
-Author: Slavyan
-
-This program is used to &apos;fix&apos; conflicts of mods and speed up the launch of the game. Before launching the game, all unselected mods are moved to another folder, so the game engine will not load them.</source>
-        <translation type="vanished">Менеджер модов для игры &quot;Бесконечное Лето&quot;. Версия 1.1.
-Автор: Slavyan
-
-Эта программа предназначена для &quot;исправления&quot; конфликтов модов и ускорения загрузки игры. Перед запуском игры она перемещает все моды, не выбранные пользователем, в другую папку, поэтому игра не будет их загружать.</translation>
-    </message>
-    <message>
-        <location filename="mainwindow.cpp" line="993"/>
+        <location filename="mainwindow.cpp" line="1039"/>
         <source> [filter]</source>
         <translation> [фильтр]</translation>
-    </message>
-    <message>
-        <source>WARNING: unknown mod name. Set the name manually.</source>
-        <translation type="vanished">ВНИМАНИЕ: неизвестное название мода. Задайте имя вручную.</translation>
     </message>
     <message>
         <location filename="mainwindow.cpp" line="659"/>
@@ -489,44 +447,21 @@ This program is used to &apos;fix&apos; conflicts of mods and speed up the launc
     </message>
 </context>
 <context>
-    <name>QObject</name>
+    <name>QCoreApplication</name>
     <message>
-        <source>Game is running</source>
-        <translation type="vanished">Игра запущена</translation>
-    </message>
-    <message>
-        <source>Everlasting Summer is running!
-Close the game before starting the manager!</source>
-        <translation type="vanished">Бесконечное Лето запущено!
-Закройте игру перед запуском менеджера!</translation>
-    </message>
-    <message>
-        <source>Mod manager is running</source>
-        <translation type="vanished">Менеджер модов запущен</translation>
-    </message>
-    <message>
-        <source>Mod manager is already running!</source>
-        <translation type="vanished">Менеджер модов уже запущен!</translation>
-    </message>
-</context>
-<context>
-    <name>SteamRequester</name>
-    <message>
+        <location filename="modinfo.cpp" line="8"/>
         <source>WARNING: unknown mod name. Set the name manually.</source>
-        <translation type="vanished">ВНИМАНИЕ: неизвестное название мода. Задайте имя вручную.</translation>
+        <translation>ВНИМАНИЕ: неизвестное название мода. Задайте имя вручную.</translation>
     </message>
     <message>
-        <location filename="steamrequester.cpp" line="45"/>
-        <location filename="steamrequester.cpp" line="79"/>
-        <location filename="steamrequester.cpp" line="107"/>
+        <location filename="modinfo.cpp" line="13"/>
+        <source>WARNING: couldn&apos;t get the name of the mod. Set the name manually.</source>
+        <translation>ВНИМАНИЕ: не удалось получить название мода. Задайте имя вручную.</translation>
+    </message>
+    <message>
+        <location filename="modinfo.cpp" line="18"/>
         <source>Waiting for Steam mod name response...</source>
         <translation>Ожидание ответа с названием мода от Steam...</translation>
-    </message>
-    <message>
-        <location filename="steamrequester.cpp" line="90"/>
-        <location filename="steamrequester.cpp" line="108"/>
-        <source>WARNING: couldn&apos;t get the name of mod. Set the name manually.</source>
-        <translation>ВНИМАНИЕ: не удалось получить название мода. Задайте имя вручную.</translation>
     </message>
 </context>
 </TS>
