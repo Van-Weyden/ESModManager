@@ -20,7 +20,9 @@ class MainWindow : public QMainWindow
 	Q_OBJECT
 
 public:
-	explicit MainWindow(QWidget *parent = nullptr, const bool &runCheck = true);
+	static constexpr const char *ApplicationVersion = "1.1";
+
+	explicit MainWindow(QWidget *parent = nullptr, const bool runCheck = true);
 	~MainWindow();
 
 	void checkRowsVisibility();
@@ -47,10 +49,10 @@ public slots:
 	void selectModsFolder();
 	void selectTempModsFolder();
 
-	void setEnglishLanguage() {setLanguage("en_US");}
-	void setRussianLanguage() {setLanguage("ru_RU");}
+	void setEnglishLanguage(); //inline
+	void setRussianLanguage(); //inline
 
-	void setRowVisibility(const int &rowIndex, const bool &isVisibleInFirstList);
+	void setRowVisibility(const int rowIndex, const bool isVisibleInFirstList);
 
 	void showAboutInfo();
 
@@ -61,7 +63,7 @@ signals:
 	void countOfScannedMods(int count);
 
 private slots:
-	bool openModFolder(const int &modIndex);
+	bool openModFolder(const int modIndex);
 	void steamModNameProcessed();
 
 private:
@@ -74,23 +76,37 @@ private:
 	void scanMods(const QString &modsFolderPath);
 
 	Ui::MainWindow *ui = nullptr;
-	DatabaseEditor *databaseEditor_ = nullptr;
+	DatabaseEditor *m_databaseEditor = nullptr;
 
-	QThread *thread_ = nullptr;
-	SteamRequester *steamRequester_ = nullptr;
-	QSettings *settings_ = nullptr;
-	QTranslator *qtTranslator_ = nullptr;
-	QTranslator *translator_ = nullptr;
+	QThread *m_thread = nullptr;
+	SteamRequester *m_steamRequester = nullptr;
+	QSettings *m_settings = nullptr;
+	QTranslator *m_qtTranslator = nullptr;
+	QTranslator *m_translator = nullptr;
 
-	QString lang_ = "";
-	QString gameFolderPath_ = "";
-	QString modsFolderPath_ = "";
-	QString tempModsFolderPath_ = "";
+	QString m_lang = "";
+	QString m_gameFolderPath = "";
+	QString m_modsFolderPath = "";
+	QString m_tempModsFolderPath = "";
 
-	DatabaseModel *model_ = nullptr;
+	DatabaseModel *m_model = nullptr;
 
-	QByteArray launcherMd5_;
-	int countOfScannedMods_;
+	QByteArray m_launcherMd5;
+	int m_countOfScannedMods;
 };
+
+
+
+//public:
+
+inline void MainWindow::setEnglishLanguage()
+{
+	setLanguage("en_US");
+}
+
+inline void MainWindow::setRussianLanguage()
+{
+	setLanguage("ru_RU");
+}
 
 #endif // MAINWINDOW_H

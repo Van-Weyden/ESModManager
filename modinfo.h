@@ -5,16 +5,22 @@
 
 struct ModInfo
 {
+	static bool isSteamId(QString str);
+
+	inline bool existsAndEnabledCheck(const bool existsValue, const bool enabledValue) const;
+
 	QString name;
 	QString steamName;
 	QString folderName;
 	bool enabled = true;
 	bool exists = true;
-
-	inline bool existsAndEnabledCheck(const bool &existsValue, const bool &enabledValue) const
-		 {return (existsValue == exists && enabledValue == enabled);}
-
-	static bool isSteamId(QString str);
 };
+
+
+
+inline bool ModInfo::existsAndEnabledCheck(const bool existsValue, const bool enabledValue) const
+{
+	return (existsValue == exists && enabledValue == enabled);
+}
 
 #endif // MODINFO_H

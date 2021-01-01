@@ -14,16 +14,13 @@
 
 #include "steamrequester.h"
 
+//public:
+
 SteamRequester::SteamRequester(DatabaseModel *model)
 {
-	model_ = model;
-	manager_ = new QNetworkAccessManager(this);
-	connect(manager_, SIGNAL(finished(QNetworkReply *)), this, SLOT(processModName(QNetworkReply *)));
-}
-
- SteamRequester::~SteamRequester()
-{
-	 delete manager_;
+	m_model = model;
+	m_manager = new QNetworkAccessManager(this);
+	connect(m_manager, SIGNAL(finished(QNetworkReply *)), this, SLOT(processModName(QNetworkReply *)));
 }
 
 //public slots:
@@ -35,18 +32,19 @@ void SteamRequester::processModName(QNetworkReply *reply)
 	if (reply != nullptr && reply->error() == QNetworkReply::NoError) {
 		modData = QJsonDocument::fromJson(reply->readAll())
 					["response"].toObject()
-					["publishedfiledetails"].toArray()[0].toObject();
+					["publishedfiledetails"].toArray()
+					[0].toObject();
 		reply->deleteLater();
 
 		modKey = modData["publishedfileid"].toString();
 		steamModName = modData["title"].toString();
 
-		for (int i = 0; i < model_->databaseSize(); ++i) {
-			if (model_->modFolderName(i) == modKey) {
+		for (int i = 0; i < m_model->databaseSize(); ++i) {
+			if (m_model->modFolderName(i) == modKey) {
 				//During the processing of the request, the data could change, so check again
-				if (model_->modSteamName(i).contains(tr("Waiting for Steam mod name response...")) && !steamModName.isEmpty()) {
-					model_->modInfoRef(i).steamName = steamModName;
-					emit model_->dataChanged(model_->index(i, 0), model_->index(i, 1));
+				if (m_model->modSteamName(i).contains(tr("Waiting for Steam mod name response...")) && !steamModName.isEmpty()) {
+					m_model->modInfoRef(i).steamName = steamModName;
+					emit m_model->dataChanged(m_model->index(i, 0), m_model->index(i, 1));
 				}
 				break;
 			}
@@ -58,45 +56,42 @@ void SteamRequester::processModName(QNetworkReply *reply)
 //		tmp.name = reply->readAll();
 //		tmp.folderName = reply->errorString();
 //		tmp.steamName = QString::number(reply->attribute( QNetworkRequest::HttpStatusCodeAttribute).toInt());
-//		model_->appendDatabase(tmp);
+//		m_model->appendDatabase(tmp);
 //	}
-
 
 	modNameProcessed();
 }
 
 void SteamRequester::requestModNames()
 {
-	if (isRunning_) {
+	if (m_isRunning) {
 		return;
 	}
 
-	isRunning_ = true;
-	countOfRemainingMods_ = model_->databaseSize();
+	m_isRunning = true;
+	m_countOfRemainingMods = m_model->databaseSize();
 	QByteArray data;
 	QUrlQuery params;
 	QNetworkRequest request(QUrl("https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/"));
-	for (int i = 0; i < model_->databaseSize(); ++i) {
-		if (!model_->isValidName(model_->modSteamName(i))) {
-			if (ModInfo::isSteamId(model_->modFolderName(i))) {
-				model_->modInfoRef(i).steamName = tr("Waiting for Steam mod name response...");
-				emit model_->dataChanged(model_->index(i, 0), model_->index(i, 1));
+	for (int i = 0; i < m_model->databaseSize(); ++i) {
+		if (!m_model->isNameValid(m_model->modSteamName(i))) {
+			if (ModInfo::isSteamId(m_model->modFolderName(i))) {
+				m_model->modInfoRef(i).steamName = tr("Waiting for Steam mod name response...");
+				emit m_model->dataChanged(m_model->index(i, 0), m_model->index(i, 1));
 				data.clear();
 				params.clear();
 				params.addQueryItem("itemcount", "1");
-				params.addQueryItem("publishedfileids[0]", model_->modFolderName(i));
-				data.append(params.toString());
+				params.addQueryItem("publishedfileids[0]", m_model->modFolderName(i));
+				data.append(params.toString().toUtf8());
 				request.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("application/x-www-form-urlencoded"));
 
-				manager_->post(request, data);
-			}
-			else {
-				model_->modInfoRef(i).steamName = tr("WARNING: couldn't get the name of mod. Set the name manually.");
-				emit model_->dataChanged(model_->index(i, 0), model_->index(i, 1));
+				m_manager->post(request, data);
+			} else {
+				m_model->modInfoRef(i).steamName = tr("WARNING: couldn't get the name of mod. Set the name manually.");
+				emit m_model->dataChanged(m_model->index(i, 0), m_model->index(i, 1));
 				modNameProcessed();
 			}
-		}
-		else {
+		} else {
 			modNameProcessed();
 		}
 	}
@@ -105,15 +100,16 @@ void SteamRequester::requestModNames()
 void SteamRequester::modNameProcessed()
 {
 	emit modProcessed();
-	--countOfRemainingMods_;
-	if (!countOfRemainingMods_) {
-		for (int i = 0; i < model_->databaseSize(); ++i)
-			if (model_->modSteamName(i).contains(tr("Waiting for Steam mod name response..."))) {
-				model_->modInfoRef(i).steamName = tr("WARNING: couldn't get the name of mod. Set the name manually.");
-				emit model_->dataChanged(model_->index(i, 0), model_->index(i, 1));
+	--m_countOfRemainingMods;
+
+	if (!m_countOfRemainingMods) {
+		for (int i = 0; i < m_model->databaseSize(); ++i) {
+			if (m_model->modSteamName(i).contains(tr("Waiting for Steam mod name response..."))) {
+				m_model->modInfoRef(i).steamName = tr("WARNING: couldn't get the name of mod. Set the name manually.");
+				emit m_model->dataChanged(m_model->index(i, 0), m_model->index(i, 1));
 			}
-		isRunning_ = false;
+		}
+		m_isRunning = false;
 		emit finished();
 	}
-
 }

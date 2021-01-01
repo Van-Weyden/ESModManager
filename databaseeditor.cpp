@@ -25,11 +25,11 @@ DatabaseEditor::DatabaseEditor(QWidget *parent) :
 
 	connect(ui->clearSearchPushButton, SIGNAL(clicked()),
 			ui->searchLineEdit, SLOT(clear()));
-	connect(ui->searchLineEdit, SIGNAL(textChanged(const QString &)),
-			this, SLOT(filterModsDisplay(const QString &)));
+	connect(ui->searchLineEdit, SIGNAL(textChanged(QString)),
+			this, SLOT(filterModsDisplay(QString)));
 
 	connect(ui->showAllModsCheckBox, SIGNAL(stateChanged(int)),
-			this, SLOT(setModsDisplayMode(const int &)));
+			this, SLOT(setModsDisplayMode(int)));
 
 	connect(ui->databaseView->horizontalHeader(), SIGNAL(geometriesChanged()),
 			ui->databaseView, SLOT(resizeRowsToContents()));
@@ -47,58 +47,59 @@ void DatabaseEditor::checkModsDisplay()
 
 void DatabaseEditor::hideAllRows()
 {
-	if (model_ == nullptr)
+	if (m_model == nullptr)
 		return;
 
 	ui->searchLineEdit->blockSignals(true);
 	ui->searchLineEdit->clear();
 	ui->searchLineEdit->blockSignals(false);
 
-	int rowCount = model_->databaseSize();
+	int rowCount = m_model->databaseSize();
 	for (int rowIndex = 0; rowIndex < rowCount; ++rowIndex)
 		ui->databaseView->setRowHidden(rowIndex, true);
 }
 
-void DatabaseEditor::setModel(DatabaseModel *&model, const int &columnIndex)
+void DatabaseEditor::setModel(DatabaseModel *model, const int columnIndex)
 {
-	if (model == model_ || model == nullptr)
+	if (model == m_model || model == nullptr)
 		return;
 
-	if (model_ != nullptr) {
-		disconnect(ui->databaseView->selectionModel(), SIGNAL(currentChanged(const QModelIndex &, const QModelIndex &)),
-				this, SLOT(showSelectedModInfo(/*const QItemSelection &*/)));
-		disconnect(model_, SIGNAL(dataChanged(QModelIndex &, QModelIndex &, QVector<int>)),
-				this, SLOT(adjustRow(QModelIndex &)));
+	if (m_model != nullptr) {
+		disconnect(ui->databaseView->selectionModel(), SIGNAL(currentChanged(QModelIndex, QModelIndex)),
+				this, SLOT(showSelectedModInfo()));
+		disconnect(m_model, SIGNAL(dataChanged(QModelIndex, QModelIndex, QVector<int>)),
+				this, SLOT(adjustRow(QModelIndex)));
 	}
 
-	model_ = model;
-	ui->databaseView->setModel(model_);
-	for (int i = 0; i < model_->columnCount(); ++i)
+	m_model = model;
+	ui->databaseView->setModel(m_model);
+	for (int i = 0; i < m_model->columnCount(); ++i)
 		ui->databaseView->hideColumn(i);
 	ui->databaseView->showColumn(columnIndex);
 	ui->databaseView->horizontalHeader()->setSectionResizeMode(columnIndex, QHeaderView::Stretch);
 
 	setModsDisplay(!ui->showAllModsCheckBox->isChecked());
-	connect(ui->databaseView->selectionModel(), SIGNAL(currentChanged(const QModelIndex &, const QModelIndex &)),
-			this, SLOT(showSelectedModInfo(/*const QItemSelection &*/)));
-	connect(model_, SIGNAL(dataChanged(QModelIndex, QModelIndex)),
+	connect(ui->databaseView->selectionModel(), SIGNAL(currentChanged(QModelIndex, QModelIndex)),
+			this, SLOT(showSelectedModInfo()));
+	connect(m_model, SIGNAL(dataChanged(QModelIndex, QModelIndex)),
 			this, SLOT(adjustRow(QModelIndex)));
 }
 
-void DatabaseEditor::setModsDisplay(const bool &modlistOnly)
+void DatabaseEditor::setModsDisplay(const bool modlistOnly)
 {
-	if (model_ == nullptr)
+	if (m_model == nullptr)
 		return;
 
 	hideAllRows();
 	if (this->isVisible())
 		QApplication::processEvents();
 
-	int databaseSize = model_->databaseSize();
+	int databaseSize = m_model->databaseSize();
 	if (modlistOnly) {
-		for (int modIndex = 0; modIndex < databaseSize; ++modIndex)
-			if (model_->modIsExists(modIndex))
+		for (int modIndex = 0; modIndex < databaseSize; ++modIndex) {
+			if (m_model->modIsExists(modIndex))
 				ui->databaseView->setRowHidden(modIndex, false);
+		}
 	}
 	else {
 		for (int modIndex = 0; modIndex < databaseSize; ++modIndex)
@@ -110,16 +111,17 @@ void DatabaseEditor::setModsDisplay(const bool &modlistOnly)
 
 void DatabaseEditor::filterModsDisplay(const QString &str)
 {
-	if (model_ == nullptr)
+	if (m_model == nullptr)
 		return;
 
-	int rowCount = model_->databaseSize();
-	for (int rowIndex = 0; rowIndex < rowCount; ++rowIndex)
-		if (ui->showAllModsCheckBox->isChecked() || model_->modIsExists(rowIndex)) {
+	int rowCount = m_model->databaseSize();
+	for (int rowIndex = 0; rowIndex < rowCount; ++rowIndex) {
+		if (ui->showAllModsCheckBox->isChecked() || m_model->modIsExists(rowIndex)) {
 			ui->databaseView->setRowHidden(rowIndex, false);
-			if (!model_->data(model_->index(rowIndex)).toString().contains(str, Qt::CaseSensitivity::CaseInsensitive))
+			if (!m_model->data(m_model->index(rowIndex)).toString().contains(str, Qt::CaseSensitivity::CaseInsensitive))
 				ui->databaseView->setRowHidden(rowIndex, true);
 		}
+	}
 }
 
 void DatabaseEditor::removeSelectedMod()
@@ -128,7 +130,7 @@ void DatabaseEditor::removeSelectedMod()
 	if (!modIndex.isValid())
 		return;
 
-	model_->removeFromDatabase(modIndex.row());
+	m_model->removeFromDatabase(modIndex.row());
 }
 
 void DatabaseEditor::saveSelectedModInfo()
@@ -137,19 +139,19 @@ void DatabaseEditor::saveSelectedModInfo()
 	if (!modIndex.isValid())
 		return;
 
-	ModInfo modInfo = model_->modInfo(modIndex.row());
+	ModInfo modInfo = m_model->modInfo(modIndex.row());
 	QString text;
 
 	text = ui->modNameLineEdit->text();
 	if (!text.isEmpty() && text != modInfo.name) {
-		model_->modInfoRef(modIndex.row()).name = text;
-		model_->updateRow(modIndex);
+		m_model->modInfoRef(modIndex.row()).name = text;
+		m_model->updateRow(modIndex);
 	}
 
 	text = ui->steamModNameLineEdit->text();
 	if (!text.isEmpty() && text != modInfo.steamName) {
-		model_->modInfoRef(modIndex.row()).steamName = text;
-		model_->updateRow(modIndex);
+		m_model->modInfoRef(modIndex.row()).steamName = text;
+		m_model->updateRow(modIndex);
 	}
 }
 
@@ -164,7 +166,7 @@ void DatabaseEditor::showSelectedModInfo()
 {
 	QModelIndex modIndex = ui->databaseView->selectionModel()->currentIndex();
 	if(modIndex.isValid()) {
-		ModInfo modInfo = model_->modInfo(modIndex.row());
+		ModInfo modInfo = m_model->modInfo(modIndex.row());
 
 		ui->modNameLineEdit->setText(modInfo.name);
 		ui->modFolderNameLineEdit->setText(modInfo.folderName);
@@ -174,8 +176,7 @@ void DatabaseEditor::showSelectedModInfo()
 		ui->removeModPushButton->setEnabled(ui->showAllModsCheckBox->isChecked() && !modInfo.exists);
 		ui->openModFolderPushButton->setEnabled(!ui->showAllModsCheckBox->isChecked() || modInfo.exists);
 		ui->openWorkshopPushButton->setEnabled(ModInfo::isSteamId(modInfo.folderName));
-	}
-	else {
+	} else {
 		ui->saveModInfoPushButton->setEnabled(false);
 		ui->openModFolderPushButton->setEnabled(false);
 		ui->openWorkshopPushButton->setEnabled(false);
@@ -190,17 +191,18 @@ void DatabaseEditor::showSelectedModInfo()
 
 void DatabaseEditor::changeEvent(QEvent *event)
 {
-   if (event->type() == QEvent::LanguageChange)
+   if (event->type() == QEvent::LanguageChange) {
 		ui->retranslateUi(this);
-   else
+   } else {
 		QWidget::changeEvent(event);
+   }
 }
 
 //private slots:
 
 void DatabaseEditor::adjustRow(const QModelIndex &index)
 {
-	if (index.isValid() && index.row() < model_->databaseSize())
+	if (index.isValid() && index.row() < m_model->databaseSize())
 		ui->databaseView->resizeRowToContents(index.row());
 }
 
@@ -211,18 +213,20 @@ void DatabaseEditor::openCurrentModFolder()
 
 void DatabaseEditor::openWorkshopPage()
 {
-	if (ui->openWorkshopWithSteamCheckBox->isChecked())
+	if (ui->openWorkshopWithSteamCheckBox->isChecked()) {
 		QDesktopServices::openUrl(QUrl("steam://url/CommunityFilePage/" +
-									   model_->modFolderName(ui->databaseView->selectionModel()->currentIndex().row())));
-	else
+									   m_model->modFolderName(ui->databaseView->selectionModel()->currentIndex().row())));
+	} else {
 		QDesktopServices::openUrl(QUrl("https://steamcommunity.com/sharedfiles/filedetails/?id=" +
-									   model_->modFolderName(ui->databaseView->selectionModel()->currentIndex().row())));
+									   m_model->modFolderName(ui->databaseView->selectionModel()->currentIndex().row())));
+	}
 }
 
-void DatabaseEditor::setModsDisplayMode(const int &mode)
+void DatabaseEditor::setModsDisplayMode(const int mode)
 {
-	if (mode == Qt::CheckState::Checked)
+	if (mode == Qt::CheckState::Checked) {
 		setModsDisplay(false);
-	else if (mode == Qt::CheckState::Unchecked)
+	} else if (mode == Qt::CheckState::Unchecked) {
 		setModsDisplay(true);
+	}
 }

@@ -36,17 +36,17 @@ QByteArray fileChecksum(const QString &fileName, QCryptographicHash::Algorithm h
 
 //public:
 
-MainWindow::MainWindow(QWidget *parent, const bool &runCheck) :
+MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
 	QMainWindow(parent),
 	ui(new Ui::MainWindow)
 {
-	model_ = new DatabaseModel();
-	steamRequester_ = new SteamRequester(model_);
-	thread_ = new QThread;
-	connect(thread_, SIGNAL(started()), steamRequester_, SLOT(requestModNames()));
-	connect(steamRequester_, SIGNAL(modProcessed()), this, SLOT(steamModNameProcessed()), Qt::BlockingQueuedConnection);
-	connect(steamRequester_, SIGNAL(finished()), thread_, SLOT(quit()));
-	steamRequester_->moveToThread(thread_);
+	m_model = new DatabaseModel();
+	m_steamRequester = new SteamRequester(m_model);
+	m_thread = new QThread;
+	connect(m_thread, SIGNAL(started()), m_steamRequester, SLOT(requestModNames()));
+	connect(m_steamRequester, SIGNAL(modProcessed()), this, SLOT(steamModNameProcessed()), Qt::BlockingQueuedConnection);
+	connect(m_steamRequester, SIGNAL(finished()), m_thread, SLOT(quit()));
+	m_steamRequester->moveToThread(m_thread);
 
 	ui->setupUi(this);
 
@@ -54,27 +54,27 @@ MainWindow::MainWindow(QWidget *parent, const bool &runCheck) :
 	ui->rusLangButton->setIcon(QIcon(":/images/Flag-Russia.ico"));
 
 	ui->enabledModsList->setStyleSheet("QListView::item:!selected:!hover { border-bottom: 1px solid #E5E5E5; }");
-	ui->enabledModsList->setModel(model_);
+	ui->enabledModsList->setModel(m_model);
 
 
 	ui->disabledModsList->setStyleSheet("QListView::item:!selected:!hover { border-bottom: 1px solid #E5E5E5; }");
-	ui->disabledModsList->setModel(model_);
+	ui->disabledModsList->setModel(m_model);
 
 	//A small crutch for highlighting when you hover the mouse, but you couldn't select the line
-	connect(ui->enabledModsList->selectionModel(), SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
+	connect(ui->enabledModsList->selectionModel(), SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
 			ui->enabledModsList, SLOT(clearSelection()));
-	connect(ui->disabledModsList->selectionModel(), SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
+	connect(ui->disabledModsList->selectionModel(), SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
 			ui->disabledModsList, SLOT(clearSelection()));
 
 	ui->progressLabel->hide();
 	ui->progressBar->hide();
 
-	databaseEditor_ = new DatabaseEditor();
+	m_databaseEditor = new DatabaseEditor();
 
-	settings_ = new QSettings(QString("settings.ini"), QSettings::IniFormat, this);
-	qtTranslator_ = new QTranslator();
-	translator_ = new QTranslator();
-	launcherMd5_ = fileChecksum(QDir::currentPath() + "/launcher/ESLauncher.exe", QCryptographicHash::Md5);
+	m_settings = new QSettings(QString("settings.ini"), QSettings::IniFormat, this);
+	m_qtTranslator = new QTranslator();
+	m_translator = new QTranslator();
+	m_launcherMd5 = fileChecksum(QDir::currentPath() + "/launcher/ESLauncher.exe", QCryptographicHash::Md5);
 
 	//connections:
 
@@ -85,12 +85,12 @@ MainWindow::MainWindow(QWidget *parent, const bool &runCheck) :
 	connect(ui->actionAbout, SIGNAL(triggered()), this, SLOT(showAboutInfo()));
 
 	connect(ui->completeNamesCheckBox, SIGNAL(stateChanged(int)),
-			model_, SLOT(setCompleteModNames(const int &)));
+			m_model, SLOT(setCompleteModNames(int)));
 	connect(ui->useSteamModNamesCheckBox, SIGNAL(stateChanged(int)),
-			model_, SLOT(setUsingSteamModNames(const int &)));
+			m_model, SLOT(setUsingSteamModNames(int)));
 
 	connect(ui->eraseDatabaseButton, SIGNAL(clicked()), this, SLOT(eraseDatabase()));
-	connect(ui->databaseEditorButton, SIGNAL(clicked()), databaseEditor_, SLOT(show()));
+	connect(ui->databaseEditorButton, SIGNAL(clicked()), m_databaseEditor, SLOT(show()));
 
 	connect(ui->engLangButton, SIGNAL(clicked()), this, SLOT(setEnglishLanguage()));
 	connect(ui->rusLangButton, SIGNAL(clicked()), this, SLOT(setRussianLanguage()));
@@ -100,37 +100,36 @@ MainWindow::MainWindow(QWidget *parent, const bool &runCheck) :
 	connect(ui->refreshButton, SIGNAL(clicked()), this, SLOT(refreshModlist()));
 	connect(ui->runButton, SIGNAL(clicked()), this, SLOT(runGame()));
 
-	connect(ui->enabledModsList, SIGNAL(clicked(const QModelIndex &)), model_, SLOT(disableMod(const QModelIndex &)));
-	connect(ui->disabledModsList, SIGNAL(clicked(const QModelIndex &)), model_, SLOT(enableMod(const QModelIndex &)));
+	connect(ui->enabledModsList, SIGNAL(clicked(QModelIndex)), m_model, SLOT(disableMod(QModelIndex)));
+	connect(ui->disabledModsList, SIGNAL(clicked(QModelIndex)), m_model, SLOT(enableMod(QModelIndex)));
 
 	connect(ui->clearSearchPushButton, SIGNAL(clicked()), ui->searchLineEdit, SLOT(clear()));
-	connect(ui->searchLineEdit, SIGNAL(textChanged(const QString &)), this, SLOT(filterModsDisplay(const QString &)));
+	connect(ui->searchLineEdit, SIGNAL(textChanged(QString)), this, SLOT(filterModsDisplay(QString)));
 
 
 	//Other signals:
-	connect(steamRequester_, SIGNAL(finished()), ui->progressLabel, SLOT(hide()));
-	connect(steamRequester_, SIGNAL(finished()), ui->progressBar, SLOT(hide()));
-	connect(databaseEditor_, SIGNAL(openModFolder(const int &)), this, SLOT(openModFolder(const int &)));
-	connect(model_, SIGNAL(modCheckStateChanged(const int &, const bool &)),
-			this, SLOT(setRowVisibility(const int &, const bool &)));
+	connect(m_steamRequester, SIGNAL(finished()), ui->progressLabel, SLOT(hide()));
+	connect(m_steamRequester, SIGNAL(finished()), ui->progressBar, SLOT(hide()));
+	connect(m_databaseEditor, SIGNAL(openModFolder(int)), this, SLOT(openModFolder(int)));
+	connect(m_model, SIGNAL(modCheckStateChanged(int, bool)), this, SLOT(setRowVisibility(int, bool)));
 
 	//this->adjustSize();
 
 	readSettings();
 
-	if (lang_.isEmpty()) {
-		if (translator_->load(QString(":/lang/lang_") + QLocale::system().name(), ":/lang/")) {
-			QApplication::installTranslator(translator_);
-			qtTranslator_->load(QString(":/lang/qtbase_") + QLocale::system().name(), ":/lang/");
-			QApplication::installTranslator(qtTranslator_);
-			lang_ = QLocale::system().name();
+	if (m_lang.isEmpty()) {
+		if (m_translator->load(QString(":/lang/lang_") + QLocale::system().name(), ":/lang/")) {
+			QApplication::installTranslator(m_translator);
+			m_qtTranslator->load(QString(":/lang/qtbase_") + QLocale::system().name(), ":/lang/");
+			QApplication::installTranslator(m_qtTranslator);
+			m_lang = QLocale::system().name();
 		}
 		else {
-			lang_ = "en_US";
+			m_lang = "en_US";
 		}
 	}
 	else {
-		setLanguage(lang_);
+		setLanguage(m_lang);
 	}
 
 	///Process check block (whether the game / manager is already running)
@@ -159,7 +158,7 @@ MainWindow::MainWindow(QWidget *parent, const bool &runCheck) :
 	}
 	///End of check block
 
-	if (gameFolderPath_.isEmpty()) {
+	if (m_gameFolderPath.isEmpty()) {
 		QString gamePath = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Everlasting Summer\\";
 		if (QFileInfo::exists(gamePath + "Everlasting Summer.exe")) {
 			setGameFolder(gamePath);
@@ -176,40 +175,40 @@ MainWindow::MainWindow(QWidget *parent, const bool &runCheck) :
 		///Begin of backward compatibility block
 		///Fix bug from old versions when game folder path contained "Everlasting Summer.exe"
 		{
-			if (gameFolderPath_.contains("Everlasting Summer.exe"))
-				gameFolderPath_.remove("Everlasting Summer.exe");
-			if (modsFolderPath_.contains("Everlasting Summer.exe"))
-				modsFolderPath_.remove("Everlasting Summer.exe");
-			if (tempModsFolderPath_.contains("Everlasting Summer.exe"))
-				tempModsFolderPath_.remove("Everlasting Summer.exe");
+			if (m_gameFolderPath.contains("Everlasting Summer.exe"))
+				m_gameFolderPath.remove("Everlasting Summer.exe");
+			if (m_modsFolderPath.contains("Everlasting Summer.exe"))
+				m_modsFolderPath.remove("Everlasting Summer.exe");
+			if (m_tempModsFolderPath.contains("Everlasting Summer.exe"))
+				m_tempModsFolderPath.remove("Everlasting Summer.exe");
 		}
 		///End of backward compatibility block
 
-		ui->gameFolderLineEdit->setText(gameFolderPath_);
-		ui->modsFolderLineEdit->setText(modsFolderPath_);
-		ui->tempModsFolderLineEdit->setText(tempModsFolderPath_);
+		ui->gameFolderLineEdit->setText(m_gameFolderPath);
+		ui->modsFolderLineEdit->setText(m_modsFolderPath);
+		ui->tempModsFolderLineEdit->setText(m_tempModsFolderPath);
 		loadDatabase();
 		refreshModlist();
 	}
 
-	databaseEditor_->setModel(model_, 1);
+	m_databaseEditor->setModel(m_model, 1);
 }
 
 MainWindow::~MainWindow()
 {
-	model_->sortDatabase();
+	m_model->sortDatabase();
 
 	saveSettings();
 
-	QApplication::removeTranslator(translator_);
-	QApplication::removeTranslator(qtTranslator_);
-	steamRequester_->deleteLater();
-	thread_->deleteLater();
-	delete translator_;
-	delete qtTranslator_;
-	delete settings_;
-	delete model_;
-	delete databaseEditor_;
+	QApplication::removeTranslator(m_translator);
+	QApplication::removeTranslator(m_qtTranslator);
+	m_steamRequester->deleteLater();
+	m_thread->deleteLater();
+	delete m_translator;
+	delete m_qtTranslator;
+	delete m_settings;
+	delete m_model;
+	delete m_databaseEditor;
 
 	delete ui;
 }
@@ -219,10 +218,10 @@ void MainWindow::checkRowsVisibility()
 	clearSearchField();
 
 	bool enabled, exists;
-	int databaseSize = model_->databaseSize();
+	int databaseSize = m_model->databaseSize();
 	for (int rowIndex = 0; rowIndex < databaseSize; ++rowIndex) {
-		enabled = model_->modIsEnabled(rowIndex);
-		exists = model_->modIsExists(rowIndex);
+		enabled = m_model->modIsEnabled(rowIndex);
+		exists = m_model->modIsExists(rowIndex);
 
 		ui->enabledModsList->setRowHidden(rowIndex, !exists || !enabled);
 		ui->disabledModsList->setRowHidden(rowIndex, !exists || enabled);
@@ -240,7 +239,7 @@ void MainWindow::hideAllRows()
 {
 	clearSearchField();
 
-	int rowCount = model_->databaseSize();
+	int rowCount = m_model->databaseSize();
 	for (int rowIndex = 0; rowIndex < rowCount; ++rowIndex) {
 		ui->enabledModsList->setRowHidden(rowIndex, true);
 		ui->disabledModsList->setRowHidden(rowIndex, true);
@@ -276,7 +275,7 @@ void MainWindow::loadDatabase()
 				}
 				else {
 					modInfo.enabled = enabled.toInt();
-					model_->appendDatabase(modInfo);
+					m_model->appendDatabase(modInfo);
 				}
 			}
 			while (file.canReadLine());
@@ -308,15 +307,15 @@ void MainWindow::loadDatabase()
 			modInfo.steamName = mod["Steam name"].toString();
 			modInfo.enabled = mod["Is enabled"].toBool();
 
-			model_->appendDatabase(modInfo);
+			m_model->appendDatabase(modInfo);
 		}
 	}
 }
 
 void MainWindow::requestSteamModNames()
 {
-	if (!steamRequester_->isRunning())
-		thread_->start();
+	if (!m_steamRequester->isRunning())
+		m_thread->start();
 }
 
 void MainWindow::saveDatabase() const
@@ -326,8 +325,8 @@ void MainWindow::saveDatabase() const
 	QJsonObject mod;
 	ModInfo modInfo;
 
-	for (int i = 0; i < model_->databaseSize(); ++i) {
-		modInfo = model_->modInfo(i);
+	for (int i = 0; i < m_model->databaseSize(); ++i) {
+		modInfo = m_model->modInfo(i);
 		mod["Name"] = modInfo.name;
 		mod["Folder name"] = modInfo.folderName;
 		mod["Steam name"] = modInfo.steamName;
@@ -356,52 +355,52 @@ void MainWindow::saveDatabase() const
 
 void MainWindow::scanMods()
 {
-	model_->setModsExistsState(false);
+	m_model->setModsExistsState(false);
 
-	scanMods(modsFolderPath_);
-	scanMods(tempModsFolderPath_);
+	scanMods(m_modsFolderPath);
+	scanMods(m_tempModsFolderPath);
 
-	model_->sortDatabase();
+	m_model->sortDatabase();
 }
 
 void MainWindow::setGameFolder(const QString &folderPath)
 {
-	gameFolderPath_ = folderPath;
-	ui->gameFolderLineEdit->setText(gameFolderPath_);
+	m_gameFolderPath = folderPath;
+	ui->gameFolderLineEdit->setText(m_gameFolderPath);
 
-	if (gameFolderPath_.contains("common\\Everlasting Summer\\")) {
+	if (m_gameFolderPath.contains("common\\Everlasting Summer\\")) {
 		//Steam version
-		modsFolderPath_ = gameFolderPath_.section("common\\Everlasting Summer\\", 0, 0);
-		modsFolderPath_.append("workshop\\content\\331470\\");
+		m_modsFolderPath = m_gameFolderPath.section("common\\Everlasting Summer\\", 0, 0);
+		m_modsFolderPath.append("workshop\\content\\331470\\");
 	}
 	else {
 		//Non-Steam version
-		modsFolderPath_ = gameFolderPath_;
-		modsFolderPath_.append("\\game\\mods\\");
+		m_modsFolderPath = m_gameFolderPath;
+		m_modsFolderPath.append("\\game\\mods\\");
 	}
-	ui->modsFolderLineEdit->setText(modsFolderPath_);
+	ui->modsFolderLineEdit->setText(m_modsFolderPath);
 
-	if (tempModsFolderPath_ != gameFolderPath_ + "mods (temp)\\") {
-		if (!tempModsFolderPath_.isEmpty() && QDir(tempModsFolderPath_).exists() &&
+	if (m_tempModsFolderPath != m_gameFolderPath + "mods (temp)\\") {
+		if (!m_tempModsFolderPath.isEmpty() && QDir(m_tempModsFolderPath).exists() &&
 				QMessageBox::information(this, tr("Delete folder"), tr("Would you like to delete old mods temp folder?") +
-								"\n" + tempModsFolderPath_, QMessageBox::StandardButton::Yes, QMessageBox::StandardButton::No) ==
+								"\n" + m_tempModsFolderPath, QMessageBox::StandardButton::Yes, QMessageBox::StandardButton::No) ==
 				QMessageBox::StandardButton::Yes)
-			QDir(tempModsFolderPath_).removeRecursively();
+			QDir(m_tempModsFolderPath).removeRecursively();
 
-		tempModsFolderPath_ = gameFolderPath_ + "mods (temp)\\";
+		m_tempModsFolderPath = m_gameFolderPath + "mods (temp)\\";
 	}
-	ui->tempModsFolderLineEdit->setText(tempModsFolderPath_);
+	ui->tempModsFolderLineEdit->setText(m_tempModsFolderPath);
 
 	refreshModlist();
 }
 
 bool MainWindow::setLanguage(const QString &lang)
 {
-	lang_ = lang;
-	bool isTranslationLoaded = translator_->load(QString(":/lang/lang_") + lang_, ":/lang/");
-	QApplication::installTranslator(translator_);
-	qtTranslator_->load(QString(":/lang/qtbase_") + lang_, ":/lang/");
-	QApplication::installTranslator(qtTranslator_);
+	m_lang = lang;
+	bool isTranslationLoaded = m_translator->load(QString(":/lang/lang_") + m_lang, ":/lang/");
+	QApplication::installTranslator(m_translator);
+	m_qtTranslator->load(QString(":/lang/qtbase_") + m_lang, ":/lang/");
+	QApplication::installTranslator(m_qtTranslator);
 
 	return isTranslationLoaded;
 }
@@ -410,34 +409,34 @@ bool MainWindow::setLanguage(const QString &lang)
 
 void MainWindow::disableAllMods()
 {
-	model_->blockSignals(true);
+	m_model->blockSignals(true);
 
-	for (int i = 0; i < model_->databaseSize(); ++i) {
-		if (model_->modInfo(i).existsAndEnabledCheck(true, true)) {
-			model_->modInfoRef(i).enabled = false;
+	for (int i = 0; i < m_model->databaseSize(); ++i) {
+		if (m_model->modInfo(i).existsAndEnabledCheck(true, true)) {
+			m_model->modInfoRef(i).enabled = false;
 			ui->enabledModsList->setRowHidden(i, true);
 			ui->disabledModsList->setRowHidden(i, false);
 		}
 	}
 
-	model_->blockSignals(false);
+	m_model->blockSignals(false);
 
 	ui->searchLineEdit->clear();
 }
 
 void MainWindow::enableAllMods()
 {
-	model_->blockSignals(true);
+	m_model->blockSignals(true);
 
-	for (int i = 0; i < model_->databaseSize(); ++i) {
-		if (model_->modInfo(i).existsAndEnabledCheck(true, false)) {
-			model_->modInfoRef(i).enabled = true;
+	for (int i = 0; i < m_model->databaseSize(); ++i) {
+		if (m_model->modInfo(i).existsAndEnabledCheck(true, false)) {
+			m_model->modInfoRef(i).enabled = true;
 			ui->enabledModsList->setRowHidden(i, false);
 			ui->disabledModsList->setRowHidden(i, true);
 		}
 	}
 
-	model_->blockSignals(false);
+	m_model->blockSignals(false);
 
 	ui->searchLineEdit->clear();
 }
@@ -445,21 +444,21 @@ void MainWindow::enableAllMods()
 void MainWindow::eraseDatabase()
 {
 	QFile::remove("mods_database.json");
-	model_->clearDatabase();
+	m_model->clearDatabase();
 	refreshModlist();
 }
 
 void MainWindow::filterModsDisplay(const QString &str)
 {
-	int rowCount = model_->databaseSize();
+	int rowCount = m_model->databaseSize();
 	bool enabled;
 	for (int rowIndex = 0; rowIndex < rowCount; ++rowIndex)
-		if (model_->modIsExists(rowIndex)) {
-			enabled = model_->modIsEnabled(rowIndex);
+		if (m_model->modIsExists(rowIndex)) {
+			enabled = m_model->modIsEnabled(rowIndex);
 			ui->enabledModsList->setRowHidden(rowIndex, !enabled);
 			ui->disabledModsList->setRowHidden(rowIndex, enabled);
 
-			if (!model_->data(model_->index(rowIndex)).toString().contains(str, Qt::CaseSensitivity::CaseInsensitive)) {
+			if (!m_model->data(m_model->index(rowIndex)).toString().contains(str, Qt::CaseSensitivity::CaseInsensitive)) {
 				if (enabled)
 					ui->enabledModsList->setRowHidden(rowIndex, true);
 				else
@@ -471,19 +470,19 @@ void MainWindow::filterModsDisplay(const QString &str)
 void MainWindow::refreshModlist()
 {
 	bool wasOpened = this->isVisible();
-	bool editorWasOpened = databaseEditor_->isVisible();
+	bool editorWasOpened = m_databaseEditor->isVisible();
 	if (editorWasOpened)
-		databaseEditor_->close();
+		m_databaseEditor->close();
 	if (wasOpened)
 		this->hide();
 
-	int modsCount = QDir(modsFolderPath_).entryList(QDir::Dirs|QDir::NoDotAndDotDot).count() +
-					QDir(tempModsFolderPath_).entryList(QDir::Dirs|QDir::NoDotAndDotDot).count();
+	int modsCount = QDir(m_modsFolderPath).entryList(QDir::Dirs|QDir::NoDotAndDotDot).count() +
+					QDir(m_tempModsFolderPath).entryList(QDir::Dirs|QDir::NoDotAndDotDot).count();
 	QProgressDialog progressDialog(tr("Mod Manager: scanning installed mods..."), "", 0, modsCount);
 	progressDialog.setCancelButton(nullptr);
 	connect(this, SIGNAL(countOfScannedMods(int)), &progressDialog, SLOT(setValue(int)));
 	progressDialog.show();
-	countOfScannedMods_ = 0;
+	m_countOfScannedMods = 0;
 
 	ui->progressBar->setMaximum(modsCount);
 	ui->progressBar->setValue(0);
@@ -498,20 +497,20 @@ void MainWindow::refreshModlist()
 	if (wasOpened)
 		this->show();
 	if (editorWasOpened)
-		databaseEditor_->show();
+		m_databaseEditor->show();
 }
 
 void MainWindow::runGame()
 {
-	if (!checkGameMd5(gameFolderPath_))
+	if (!checkGameMd5(m_gameFolderPath))
 		return;
 
-	if (databaseEditor_->isVisible())
-		databaseEditor_->close();
+	if (m_databaseEditor->isVisible())
+		m_databaseEditor->close();
 
-	QDir dir(tempModsFolderPath_);
+	QDir dir(m_tempModsFolderPath);
 	if (!dir.exists())
-		dir.mkdir(tempModsFolderPath_);
+		dir.mkdir(m_tempModsFolderPath);
 
 	QString unmovedMods;
 	moveModFolders(&unmovedMods);
@@ -519,8 +518,8 @@ void MainWindow::runGame()
 		QMessageBox warningMessage(QMessageBox::Warning, tr("Unmoved mods"),
 						tr("Disabled mods in these folders failed to move into temp folder:") + "\n\n" + unmovedMods + "\n" +
 						tr("If you press the 'OK' button, the game will load these mods.") + "\n\n" +
-						tr("You may move these folders manually from the mods folder:") + "\n\n" + modsFolderPath_ + "\n\n" +
-						tr("to the temp mods folder:") + "\n\n" + tempModsFolderPath_ + "\n\n" +
+						tr("You may move these folders manually from the mods folder:") + "\n\n" + m_modsFolderPath + "\n\n" +
+						tr("to the temp mods folder:") + "\n\n" + m_tempModsFolderPath + "\n\n" +
 						tr("before pressing the 'OK' button to fix this issue."),
 						QMessageBox::StandardButton::Ok | QMessageBox::StandardButton::Open | QMessageBox::StandardButton::Cancel,
 						this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
@@ -533,8 +532,8 @@ void MainWindow::runGame()
 			warningMessage.setStandardButtons(QMessageBox::StandardButton::Ok | QMessageBox::StandardButton::Cancel);
 			warningMessage.show();	//Must call show() before openUrl(), or exec() will not work properly
 
-			QDesktopServices::openUrl(QUrl("file:///" + tempModsFolderPath_));
-			QDesktopServices::openUrl(QUrl("file:///" + modsFolderPath_));
+			QDesktopServices::openUrl(QUrl("file:///" + m_tempModsFolderPath));
+			QDesktopServices::openUrl(QUrl("file:///" + m_modsFolderPath));
 
 			pressedButton = QMessageBox::StandardButton(warningMessage.exec());
 		}
@@ -552,7 +551,7 @@ void MainWindow::runGame()
 	gameLauncher.setProgram("launcher\\ESLauncher.exe");
 
 	QFile launcherSettingsFile("launcher\\LaunchedProgram.ini");
-	QByteArray launcherSettings = (gameFolderPath_).toUtf8() + "\nEverlasting Summer\ntrue";
+	QByteArray launcherSettings = (m_gameFolderPath).toUtf8() + "\nEverlasting Summer\ntrue";
 	launcherSettingsFile.open(QFile::ReadOnly);
 	QByteArray tmp = launcherSettingsFile.readAll();
 	if (tmp != launcherSettings) {
@@ -562,13 +561,13 @@ void MainWindow::runGame()
 	}
 	launcherSettingsFile.close();
 
-	if (fileChecksum(gameFolderPath_ + "Everlasting Summer.exe", QCryptographicHash::Md5) == launcherMd5_) {
+	if (fileChecksum(m_gameFolderPath + "Everlasting Summer.exe", QCryptographicHash::Md5) == m_launcherMd5) {
 		//Remove "extra" files
-		if (QFile(gameFolderPath_ + "Everlasting Summer (modified).exe").exists())
-			QFile(gameFolderPath_ + "Everlasting Summer (modified).exe").remove();
+		if (QFile(m_gameFolderPath + "Everlasting Summer (modified).exe").exists())
+			QFile(m_gameFolderPath + "Everlasting Summer (modified).exe").remove();
 
-		QFile::rename(gameFolderPath_ + "Everlasting Summer.exe", gameFolderPath_ + "Everlasting Summer (modified).exe");
-		QFile::rename(gameFolderPath_ + "Everlasting Summer (origin).exe", gameFolderPath_ + "Everlasting Summer.exe");
+		QFile::rename(m_gameFolderPath + "Everlasting Summer.exe", m_gameFolderPath + "Everlasting Summer (modified).exe");
+		QFile::rename(m_gameFolderPath + "Everlasting Summer (origin).exe", m_gameFolderPath + "Everlasting Summer.exe");
 	}
 
 	gameLauncher.start();
@@ -588,7 +587,7 @@ void MainWindow::runGame()
 void MainWindow::selectGameFolder()
 {
 	QUrl gameFolderUrl = QFileDialog::getExistingDirectory(this, tr("Select Everlasting Summer folder"),
-														   gameFolderPath_, QFileDialog::Option::DontUseNativeDialog);
+														   m_gameFolderPath, QFileDialog::Option::DontUseNativeDialog);
 	if (gameFolderUrl.isValid()) {
 		QString folderPath = gameFolderUrl.toString().replace('/', '\\');
 		if (QFileInfo::exists(folderPath + "\\Everlasting Summer.exe")) {
@@ -606,13 +605,13 @@ void MainWindow::selectGameFolder()
 void MainWindow::selectModsFolder()
 {
 	QUrl modsFolderUrl = QFileDialog::getExistingDirectory(this, tr("Select folder of Everlasting Summer mods"),
-															modsFolderPath_, QFileDialog::Option::DontUseNativeDialog);
+															m_modsFolderPath, QFileDialog::Option::DontUseNativeDialog);
 	if (modsFolderUrl.isValid()) {
 		QString modsFolderPath = modsFolderUrl.toString().replace('/', '\\');
 
-		modsFolderPath_ = modsFolderPath + '\\';
-		modsFolderPath_[0] = modsFolderPath_.at(0).toUpper();
-		ui->modsFolderLineEdit->setText(modsFolderPath_);
+		m_modsFolderPath = modsFolderPath + '\\';
+		m_modsFolderPath[0] = m_modsFolderPath.at(0).toUpper();
+		ui->modsFolderLineEdit->setText(m_modsFolderPath);
 
 		refreshModlist();
 	}
@@ -621,24 +620,24 @@ void MainWindow::selectModsFolder()
 void MainWindow::selectTempModsFolder()
 {
 	QUrl tempModsFolderUrl = QFileDialog::getExistingDirectory(this, tr("Select temp folder for unused Everlasting Summer mods"),
-																tempModsFolderPath_, QFileDialog::DontUseNativeDialog);
+																m_tempModsFolderPath, QFileDialog::DontUseNativeDialog);
 	if (tempModsFolderUrl.isValid()) {
 		QString tempModsFolderPath = tempModsFolderUrl.toString().replace('/', '\\');
-		if (tempModsFolderPath_ != tempModsFolderPath) {
-			if (!tempModsFolderPath_.isEmpty() && QDir(tempModsFolderPath_).exists() &&
+		if (m_tempModsFolderPath != tempModsFolderPath) {
+			if (!m_tempModsFolderPath.isEmpty() && QDir(m_tempModsFolderPath).exists() &&
 					QMessageBox::information(this, tr("Delete folder"), tr("Would you like to delete old mods temp folder?") +
-											 "\n" + tempModsFolderPath_, QMessageBox::StandardButton::Yes, QMessageBox::StandardButton::No) ==
+											 "\n" + m_tempModsFolderPath, QMessageBox::StandardButton::Yes, QMessageBox::StandardButton::No) ==
 					QMessageBox::StandardButton::Yes)
-				QDir(tempModsFolderPath_).removeRecursively();
+				QDir(m_tempModsFolderPath).removeRecursively();
 
-			tempModsFolderPath_ = tempModsFolderPath + "\\mods (temp)\\";
-			tempModsFolderPath_[0] = tempModsFolderPath_.at(0).toUpper();
+			m_tempModsFolderPath = tempModsFolderPath + "\\mods (temp)\\";
+			m_tempModsFolderPath[0] = m_tempModsFolderPath.at(0).toUpper();
 		}
-		ui->tempModsFolderLineEdit->setText(tempModsFolderPath_);
+		ui->tempModsFolderLineEdit->setText(m_tempModsFolderPath);
 	}
 }
 
-void MainWindow::setRowVisibility(const int &rowIndex, const bool &isVisibleInFirstList)
+void MainWindow::setRowVisibility(const int rowIndex, const bool isVisibleInFirstList)
 {
 	ui->enabledModsList->setRowHidden(rowIndex, !isVisibleInFirstList);
 	ui->disabledModsList->setRowHidden(rowIndex, isVisibleInFirstList);
@@ -650,7 +649,7 @@ void MainWindow::showAboutInfo()
 							 QMessageBox::StandardButton::Close, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
 	messageAbout.setTextFormat(Qt::TextFormat::RichText);
 	messageAbout.setText(
-		tr("Everlasting Summer mod manager v.1.1.") + "<br>" +
+		tr("Everlasting Summer mod manager v.") + ApplicationVersion + ".<br>" +
 		tr("Author:") + " <a href='https://steamcommunity.com/id/van_weyden/'>Slavyan</a><br>" +
 		tr("Help in testing:") + " <a href='https://steamcommunity.com/profiles/76561198058938676/'>Hatsune Miku</a>,"
 								 " 🔰 <a href='https://steamcommunity.com/id/lena_sova/'>" + tr("Lena") + "</a>🔰 ," +
@@ -658,26 +657,31 @@ void MainWindow::showAboutInfo()
 		tr("This program is used to 'fix' conflicts of mods and speed up the launch of the game. "
 		   "Before launching the game, all unselected mods are moved to another folder, so the game engine will not load them."));
 	messageAbout.setInformativeText(tr("You can leave your questions/suggestions") +
-									" <a href='https://steamcommunity.com/sharedfiles/filedetails/?id=1826799366'>" + tr("here") + "</a>.");
+									" <a href='https://steamcommunity.com/sharedfiles/filedetails/?id=1826799366'>" +
+									tr("here") + "</a>.");
 	messageAbout.exec();
 }
 
 //protected:
+
 void MainWindow::changeEvent(QEvent *event)
 {
-   if (event->type() == QEvent::LanguageChange)
+   if (event->type() == QEvent::LanguageChange) {
 		ui->retranslateUi(this);
-   else
+   } else {
 		QMainWindow::changeEvent(event);
+   }
 }
 
 //private slots:
-bool MainWindow::openModFolder(const int &modIndex)
+
+bool MainWindow::openModFolder(const int modIndex)
 {
-	if (QDir().exists(modsFolderPath_ + model_->modFolderName(modIndex)))
-		return QDesktopServices::openUrl(QUrl("file:///" + modsFolderPath_ + model_->modFolderName(modIndex)));
-	else if (QDir().exists(tempModsFolderPath_ + model_->modFolderName(modIndex)))
-		return QDesktopServices::openUrl(QUrl("file:///" + tempModsFolderPath_ + model_->modFolderName(modIndex)));
+	if (QDir().exists(m_modsFolderPath + m_model->modFolderName(modIndex))) {
+		return QDesktopServices::openUrl(QUrl("file:///" + m_modsFolderPath + m_model->modFolderName(modIndex)));
+	} else if (QDir().exists(m_tempModsFolderPath + m_model->modFolderName(modIndex))) {
+		return QDesktopServices::openUrl(QUrl("file:///" + m_tempModsFolderPath + m_model->modFolderName(modIndex)));
+	}
 
 	return false;
 }
@@ -697,11 +701,12 @@ bool MainWindow::checkGameMd5(const QString &folderPath)
 {
 	QByteArray gameMd5 = fileChecksum(folderPath + "Everlasting Summer.exe", QCryptographicHash::Md5);
 
-	if (gameMd5 == launcherMd5_ || gameMd5.isNull())
+	if (gameMd5 == m_launcherMd5 || gameMd5.isNull())
 		gameMd5 = fileChecksum(folderPath + "Everlasting Summer (origin).exe", QCryptographicHash::Md5);
 
 	if (gameMd5.isNull()) {
-		QMessageBox::critical(this, tr("Wrong game .exe"), tr("Game folder doesn't contains origin \n 'Everlasting Summer.exe' \n and there is no file \n 'Everlasting Summer (origin).exe'!"),
+		QMessageBox::critical(this, tr("Wrong game .exe"), tr("Game folder doesn't contains origin \n 'Everlasting Summer.exe' \n "
+															  "and there is no file \n 'Everlasting Summer (origin).exe'!"),
 							  QMessageBox::StandardButton::Ok, QMessageBox::StandardButton::NoButton);
 		return false;
 	}
@@ -711,21 +716,22 @@ bool MainWindow::checkGameMd5(const QString &folderPath)
 void MainWindow::checkOriginLauncherReplacement() const
 {
 	if (ui->replaceOriginLauncherCheckBox->isChecked()) {
-		if (fileChecksum(gameFolderPath_ + "Everlasting Summer.exe", QCryptographicHash::Md5) != launcherMd5_) {
+		if (fileChecksum(m_gameFolderPath + "Everlasting Summer.exe", QCryptographicHash::Md5) != m_launcherMd5) {
 			//Remove "extra" files
-			if (QFile(gameFolderPath_ + "Everlasting Summer (origin).exe").exists())
-				QFile(gameFolderPath_ + "Everlasting Summer (origin).exe").remove();
+			if (QFile(m_gameFolderPath + "Everlasting Summer (origin).exe").exists())
+				QFile(m_gameFolderPath + "Everlasting Summer (origin).exe").remove();
 
-			QFile::rename(gameFolderPath_ + "Everlasting Summer.exe", gameFolderPath_ + "Everlasting Summer (origin).exe");
+			QFile::rename(m_gameFolderPath + "Everlasting Summer.exe", m_gameFolderPath + "Everlasting Summer (origin).exe");
 
-			if (QFileInfo::exists(gameFolderPath_ + "Everlasting Summer (modified).exe"))
-				QFile::rename(gameFolderPath_ + "Everlasting Summer (modified).exe", gameFolderPath_ + "Everlasting Summer.exe");
-			else
-				QFile::copy("launcher\\ESLauncher.exe", gameFolderPath_ + "Everlasting Summer.exe");
+			if (QFileInfo::exists(m_gameFolderPath + "Everlasting Summer (modified).exe")) {
+				QFile::rename(m_gameFolderPath + "Everlasting Summer (modified).exe", m_gameFolderPath + "Everlasting Summer.exe");
+			} else {
+				QFile::copy("launcher\\ESLauncher.exe", m_gameFolderPath + "Everlasting Summer.exe");
+			}
 		}
 
 		QByteArray launcherSettings = QDir::currentPath().replace('/', '\\').toUtf8() + "\\\nESModManager\nfalse";
-		QFile launcherSettingsFile(gameFolderPath_ + "LaunchedProgram.ini");
+		QFile launcherSettingsFile(m_gameFolderPath + "LaunchedProgram.ini");
 		launcherSettingsFile.open(QFile::ReadOnly);
 		if (launcherSettingsFile.readAll() != launcherSettings) {
 			launcherSettingsFile.close();
@@ -733,39 +739,35 @@ void MainWindow::checkOriginLauncherReplacement() const
 			launcherSettingsFile.write(launcherSettings);
 		}
 		launcherSettingsFile.close();
-	}
-	else {
-		if (fileChecksum(gameFolderPath_ + "Everlasting Summer.exe", QCryptographicHash::Md5) == launcherMd5_) {
-			QFile::remove(gameFolderPath_ + "Everlasting Summer.exe");
-			QFile::rename(gameFolderPath_ + "Everlasting Summer (origin).exe", gameFolderPath_ + "Everlasting Summer.exe");
+	} else {
+		if (fileChecksum(m_gameFolderPath + "Everlasting Summer.exe", QCryptographicHash::Md5) == m_launcherMd5) {
+			QFile::remove(m_gameFolderPath + "Everlasting Summer.exe");
+			QFile::rename(m_gameFolderPath + "Everlasting Summer (origin).exe", m_gameFolderPath + "Everlasting Summer.exe");
+		} else {
+			QFile::remove(m_gameFolderPath + "Everlasting Summer (origin).exe");
 		}
-		else
-			QFile::remove(gameFolderPath_ + "Everlasting Summer (origin).exe");
 
-		QFile::remove(gameFolderPath_ + "Everlasting Summer (modified).exe");
-		QFile::remove(gameFolderPath_ + "LaunchedProgram.ini");
+		QFile::remove(m_gameFolderPath + "Everlasting Summer (modified).exe");
+		QFile::remove(m_gameFolderPath + "LaunchedProgram.ini");
 	}
 }
 
 void MainWindow::moveModFolders(QString *unmovedModsToTempFolder, QString *unmovedModsFromTempFolder) const
 {
 	QDir dir;
-	int databaseSize = model_->databaseSize();
+	int databaseSize = m_model->databaseSize();
 	for (int i = 0; i < databaseSize; ++i) {
-		if (model_->modInfo(i).exists) {
-			if (model_->modInfo(i).enabled) {
-				if (dir.exists(tempModsFolderPath_ + model_->modFolderName(i)) &&
-					!dir.rename(tempModsFolderPath_ + model_->modFolderName(i), modsFolderPath_ + model_->modFolderName(i)) &&
+		if (m_model->modInfo(i).exists) {
+			if (m_model->modInfo(i).enabled) {
+				if (dir.exists(m_tempModsFolderPath + m_model->modFolderName(i)) &&
+					!dir.rename(m_tempModsFolderPath + m_model->modFolderName(i), m_modsFolderPath + m_model->modFolderName(i)) &&
 					unmovedModsFromTempFolder != nullptr) {
-					unmovedModsFromTempFolder->append(model_->modFolderName(i) + '\n');
+					unmovedModsFromTempFolder->append(m_model->modFolderName(i) + '\n');
 				}
-			}
-			else {
-				if (dir.exists(modsFolderPath_ + model_->modFolderName(i)) &&
-					!dir.rename(modsFolderPath_ + model_->modFolderName(i), tempModsFolderPath_ + model_->modFolderName(i)) &&
-					unmovedModsToTempFolder != nullptr) {
-					unmovedModsToTempFolder->append(model_->modFolderName(i) + '\n');
-				}
+			} else if (dir.exists(m_modsFolderPath + m_model->modFolderName(i)) &&
+				!dir.rename(m_modsFolderPath + m_model->modFolderName(i), m_tempModsFolderPath + m_model->modFolderName(i)) &&
+				unmovedModsToTempFolder != nullptr) {
+				unmovedModsToTempFolder->append(m_model->modFolderName(i) + '\n');
 			}
 		}
 	}
@@ -777,10 +779,10 @@ void MainWindow::moveModFoldersBack() const
 		return;
 
 	QDir dir;
-	int databaseSize = model_->databaseSize();
+	int databaseSize = m_model->databaseSize();
 	for (int i = 0; i < databaseSize; ++i) {
-		if (model_->modInfo(i).exists && dir.exists(tempModsFolderPath_ + model_->modFolderName(i)))
-			dir.rename(tempModsFolderPath_ + model_->modFolderName(i), modsFolderPath_ + model_->modFolderName(i));
+		if (m_model->modInfo(i).exists && dir.exists(m_tempModsFolderPath + m_model->modFolderName(i)))
+			dir.rename(m_tempModsFolderPath + m_model->modFolderName(i), m_modsFolderPath + m_model->modFolderName(i));
 	}
 }
 
@@ -789,120 +791,119 @@ void MainWindow::readSettings()
 	QVariant value;
 	QVariant invalidValue;
 
-	if (settings_->contains("General/sLang")) {
-		value = settings_->value("General/sLang");
+	if (m_settings->contains("General/sLang")) {
+		value = m_settings->value("General/sLang");
 		if (value != invalidValue)
-			lang_ = value.toString();
+			m_lang = value.toString();
 	}
 
-	if (settings_->contains("General/bMaximized")) {
-		value = settings_->value("General/bMaximized");
+	if (m_settings->contains("General/bMaximized")) {
+		value = m_settings->value("General/bMaximized");
 		if (value != invalidValue && value.toBool() == true) {
 			this->setWindowState(Qt::WindowMaximized);
-		}
-		else if (settings_->contains("General/qsSize")) {
-			value = settings_->value("General/qsSize");
+		} else if (m_settings->contains("General/qsSize")) {
+			value = m_settings->value("General/qsSize");
 			if (value != invalidValue)
 				this->resize(value.toSize());
 		}
 	}
 
-	if (settings_->contains("General/sGameFolder")) {
-		value = settings_->value("General/sGameFolder");
+	if (m_settings->contains("General/sGameFolder")) {
+		value = m_settings->value("General/sGameFolder");
 		if (value != invalidValue)
-			gameFolderPath_ = value.toString();
+			m_gameFolderPath = value.toString();
 	}
 
-	if (settings_->contains("General/sModsFolder")) {
-		value = settings_->value("General/sModsFolder");
+	if (m_settings->contains("General/sModsFolder")) {
+		value = m_settings->value("General/sModsFolder");
 		if (value != invalidValue)
-			modsFolderPath_ = value.toString();
+			m_modsFolderPath = value.toString();
 	}
 
-	if (settings_->contains("General/sTempModsFolder")) {
-		value = settings_->value("General/sTempModsFolder");
+	if (m_settings->contains("General/sTempModsFolder")) {
+		value = m_settings->value("General/sTempModsFolder");
 		if (value != invalidValue)
-			tempModsFolderPath_ = value.toString();
+			m_tempModsFolderPath = value.toString();
 	}
 
-	if (settings_->contains("General/bAutoexit")) {
-		value = settings_->value("General/bAutoexit");
+	if (m_settings->contains("General/bAutoexit")) {
+		value = m_settings->value("General/bAutoexit");
 		if (value != invalidValue)
 			ui->autoexitCheckBox->setChecked(value.toBool());
 	}
 
-	if (settings_->contains("General/bMoveModsBack")) {
-		value = settings_->value("General/bMoveModsBack");
+	if (m_settings->contains("General/bMoveModsBack")) {
+		value = m_settings->value("General/bMoveModsBack");
 		if (value != invalidValue)
 			ui->moveModsBackCheckBox->setChecked(value.toBool());
 	}
 
 	///Condition for backward compatibility
 	///Reset the checkbox for replacing game files for older versions, as defaults changed
-	if (settings_->contains("General/bMaximized"))
-		if (settings_->contains("General/bReplaceOriginLauncher")) {
-			value = settings_->value("General/bReplaceOriginLauncher");
+	if (m_settings->contains("General/bMaximized")) {
+		if (m_settings->contains("General/bReplaceOriginLauncher")) {
+			value = m_settings->value("General/bReplaceOriginLauncher");
 			if (value != invalidValue)
 				ui->replaceOriginLauncherCheckBox->setChecked(value.toBool());
 		}
+	}
 
 
-	if (settings_->contains("General/bCompleteModNames")) {
-		value = settings_->value("General/bCompleteModNames");
+	if (m_settings->contains("General/bCompleteModNames")) {
+		value = m_settings->value("General/bCompleteModNames");
 		if (value != invalidValue)
 			ui->completeNamesCheckBox->setChecked(value.toBool());
 	}
 
-	if (settings_->contains("General/bUseSteamModNames")) {
-		value = settings_->value("General/bUseSteamModNames");
+	if (m_settings->contains("General/bUseSteamModNames")) {
+		value = m_settings->value("General/bUseSteamModNames");
 		if (value != invalidValue)
 			ui->useSteamModNamesCheckBox->setChecked(value.toBool());
 	}
 
-	if (settings_->contains("Editor/bMaximized")) {
-		value = settings_->value("Editor/bMaximized");
+	if (m_settings->contains("Editor/bMaximized")) {
+		value = m_settings->value("Editor/bMaximized");
 		if (value != invalidValue && value.toBool() == true) {
-			databaseEditor_->setWindowState(Qt::WindowMaximized);
-		}
-		else if (settings_->contains("Editor/qsSize")) {
-			value = settings_->value("Editor/qsSize");
+			m_databaseEditor->setWindowState(Qt::WindowMaximized);
+		} else if (m_settings->contains("Editor/qsSize")) {
+			value = m_settings->value("Editor/qsSize");
 			if (value != invalidValue)
-				databaseEditor_->resize(value.toSize());
+				m_databaseEditor->resize(value.toSize());
 		}
 	}
 }
 
 void MainWindow::saveSettings() const
 {
-	settings_->clear();
+	m_settings->clear();
 
-	settings_->setValue("General/sLang", lang_);
+	m_settings->setValue("General/sLang", m_lang);
 
-	settings_->setValue("General/bMaximized", this->isMaximized());
+	m_settings->setValue("General/bMaximized", this->isMaximized());
 
-	settings_->setValue("General/qsSize", this->size());
+	m_settings->setValue("General/qsSize", this->size());
 
-	settings_->setValue("General/sGameFolder", gameFolderPath_);
+	m_settings->setValue("General/sGameFolder", m_gameFolderPath);
 
-	settings_->setValue("General/sModsFolder", modsFolderPath_);
+	m_settings->setValue("General/sModsFolder", m_modsFolderPath);
 
-	settings_->setValue("General/sTempModsFolder", tempModsFolderPath_);
+	m_settings->setValue("General/sTempModsFolder", m_tempModsFolderPath);
 
-	settings_->setValue("General/bAutoexit", ui->autoexitCheckBox->isChecked());
+	m_settings->setValue("General/bAutoexit", ui->autoexitCheckBox->isChecked());
 
-	settings_->setValue("General/bMoveModsBack", ui->moveModsBackCheckBox->isChecked());
+	m_settings->setValue("General/bMoveModsBack", ui->moveModsBackCheckBox->isChecked());
 	moveModFoldersBack();
 
-	settings_->setValue("General/bReplaceOriginLauncher", ui->replaceOriginLauncherCheckBox->isChecked());
+	m_settings->setValue("General/bReplaceOriginLauncher", ui->replaceOriginLauncherCheckBox->isChecked());
 	checkOriginLauncherReplacement();
 
-	settings_->setValue("General/bCompleteModNames", ui->completeNamesCheckBox->isChecked());
+	m_settings->setValue("General/bCompleteModNames", ui->completeNamesCheckBox->isChecked());
 
-	settings_->setValue("General/bUseSteamModNames", ui->useSteamModNamesCheckBox->isChecked());
+	m_settings->setValue("General/bUseSteamModNames", ui->useSteamModNamesCheckBox->isChecked());
 
-	settings_->setValue("Editor/bMaximized", databaseEditor_->isMaximized());
+	m_settings->setValue("Editor/bMaximized", m_databaseEditor->isMaximized());
 
-	settings_->setValue("Editor/qsSize", databaseEditor_->size());
+	m_settings->setValue("Editor/qsSize", m_databaseEditor->size());
 
 	saveDatabase();
 }
@@ -929,13 +930,13 @@ void MainWindow::scanMods(const QString &modsFolderPath)
 	bool isModTagsFounded;
 	QFile file;
 
-	int oldDatabaseSize = model_->databaseSize();
+	int oldDatabaseSize = m_model->databaseSize();
 	int indexInDatabase, i;
 
 	while (!modsFolders.isEmpty()) {
 		modInfo.folderName = modsFolders.takeFirst();
 		if (currentPath.contains(modsFolderPath + modInfo.folderName)) {
-			emit countOfScannedMods(++countOfScannedMods_);
+			emit countOfScannedMods(++m_countOfScannedMods);
 			steamModNameProcessed();
 			QApplication::processEvents();
 			continue;
@@ -943,19 +944,20 @@ void MainWindow::scanMods(const QString &modsFolderPath)
 
 		indexInDatabase = -1;
 		for (i = 0; i < oldDatabaseSize; ++i)
-			if (modInfo.folderName == model_->modFolderName(i)) {
-				model_->modInfoRef(i).exists = true;
+			if (modInfo.folderName == m_model->modFolderName(i)) {
+				m_model->modInfoRef(i).exists = true;
 
-				if (!model_->isValidName(model_->modName(i)))
+				if (!m_model->isNameValid(m_model->modName(i))) {
 					indexInDatabase = i;
-				else
+				} else {
 					modInfo.folderName.clear();
+				}
 
 				break;
 			}
 
 		if (modInfo.folderName.isEmpty()) {
-			emit countOfScannedMods(++countOfScannedMods_);
+			emit countOfScannedMods(++m_countOfScannedMods);
 			QApplication::processEvents();
 			continue;
 		}
@@ -1010,28 +1012,26 @@ void MainWindow::scanMods(const QString &modsFolderPath)
 		out = '/' + QString::number(initMap.count()) + "]: ";
 		if (initMap.isEmpty()) {
 			modInfo.name = tr("WARNING: couldn't get the name of the mod. Set the name manually.");
-		}
-		else {
+		} else {
 			if (initMap.count() == 1) {
 				modInfo.name = initMap[initKey];
-			}
-			else foreach (QString initKey, initMap.keys()) {
+			} else foreach (QString initKey, initMap.keys()) {
 				if (modInfo.name.isEmpty()) {
 					modInfo.name = "[1" + out + initMap[initKey];
-				}
-				else {
+				} else {
 					modInfo.name.append("\n[" + QString::number(i) + out + initMap[initKey]);
 				}
 				++i;
 			}
 		}
 
-		if (indexInDatabase == -1)
-			model_->appendDatabase(modInfo);
-		else
-			model_->modInfoRef(indexInDatabase).name = modInfo.name;
+		if (indexInDatabase == -1) {
+			m_model->appendDatabase(modInfo);
+		} else {
+			m_model->modInfoRef(indexInDatabase).name = modInfo.name;
+		}
 
-		emit countOfScannedMods(++countOfScannedMods_);
+		emit countOfScannedMods(++m_countOfScannedMods);
 		QApplication::processEvents();
 	}
 }

@@ -8,10 +8,11 @@ int main(int argc, char *argv[])
 
 	MainWindow mw;
 
-	if (mw.isEnabled())
+	if (mw.isEnabled()) {
 		mw.show();
-	else
+	} else {
 		return 0;
+	}
 
 
 	return app.exec();
