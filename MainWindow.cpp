@@ -163,24 +163,27 @@ MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
 	}
 	///End of check block
 
+	loadDatabase();
+
 	if (m_gameFolderPath.isEmpty()) {
 		QString gamePath = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Everlasting Summer\\";
 		if (QFileInfo::exists(gamePath + "Everlasting Summer.exe")) {
 			setGameFolder(gamePath);
-		}
-		else {
+		} else {
 			gamePath = QDir::currentPath().section('/', 0, -6);
 			gamePath.replace('/', '\\');
 			gamePath.append("\\common\\Everlasting Summer\\");
-			if (QFileInfo::exists(gamePath + "Everlasting Summer.exe"))
+			if (QFileInfo::exists(gamePath + "Everlasting Summer.exe")) {
 				setGameFolder(gamePath);
+			} else {
+				m_model->setModsExistsState(false);
+				checkRowsVisibility();
+			}
 		}
-	}
-	else {
+	} else {
 		ui->gameFolderLineEdit->setText(m_gameFolderPath);
 		ui->modsFolderLineEdit->setText(m_modsFolderPath);
 		ui->tempModsFolderLineEdit->setText(m_tempModsFolderPath);
-		loadDatabase();
 		refreshModlist();
 	}
 
@@ -269,8 +272,9 @@ void MainWindow::loadDatabase()
 
 void MainWindow::requestSteamModNames()
 {
-	if (!m_steamRequester->isRunning())
+	if (!m_steamRequester->isRunning()) {
 		m_thread->start();
+	}
 }
 
 void MainWindow::saveDatabase() const
@@ -320,6 +324,10 @@ void MainWindow::scanMods()
 
 void MainWindow::setGameFolder(const QString &folderPath)
 {
+	if (folderPath.isEmpty()) {
+		return;
+	}
+
 	m_gameFolderPath = folderPath;
 	ui->gameFolderLineEdit->setText(m_gameFolderPath);
 
@@ -424,12 +432,20 @@ void MainWindow::filterModsDisplay(const QString &str)
 
 void MainWindow::refreshModlist()
 {
+	if (m_modsFolderPath.isEmpty()) {
+		return;
+	}
+
 	bool wasOpened = this->isVisible();
 	bool editorWasOpened = m_databaseEditor->isVisible();
-	if (editorWasOpened)
+
+	if (editorWasOpened) {
 		m_databaseEditor->close();
-	if (wasOpened)
+	}
+
+	if (wasOpened) {
 		this->hide();
+	}
 
 	int modsCount = QDir(m_modsFolderPath).entryList(QDir::Dirs|QDir::NoDotAndDotDot).count() +
 					QDir(m_tempModsFolderPath).entryList(QDir::Dirs|QDir::NoDotAndDotDot).count();
@@ -448,15 +464,18 @@ void MainWindow::refreshModlist()
 	requestSteamModNames();
 	checkRowsVisibility();
 
-	if (wasOpened)
+	if (wasOpened) {
 		this->show();
-	if (editorWasOpened)
+	}
+
+	if (editorWasOpened) {
 		m_databaseEditor->show();
+	}
 }
 
 void MainWindow::runGame()
 {
-	if (!checkGameMd5(m_gameFolderPath))
+	if (m_gameFolderPath.isEmpty() || !checkGameMd5(m_gameFolderPath))
 		return;
 
 	if (m_databaseEditor->isVisible())
@@ -674,6 +693,8 @@ void MainWindow::checkAnnouncementPopup(const int loadedApplicationVersion)
 
 	switch (CurrentApplicationVersion) {
 		case applicationVersion(1, 1, 9):
+		Q_FALLTHROUGH();
+		case applicationVersion(1, 1, 10):
 			showAnnouncementMessage();
 		break;
 
@@ -700,6 +721,10 @@ bool MainWindow::checkGameMd5(const QString &folderPath)
 
 void MainWindow::checkOriginLauncherReplacement() const
 {
+	if (m_gameFolderPath.isEmpty()) {
+		return;
+	}
+
 	if (ui->replaceOriginLauncherCheckBox->isChecked()) {
 		if (fileChecksum(m_gameFolderPath + "Everlasting Summer.exe", QCryptographicHash::Md5) != m_launcherMd5) {
 			//Remove "extra" files
