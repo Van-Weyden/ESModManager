@@ -117,8 +117,6 @@ ModScanner::ModScanner(QObject *parent) :
 			RegExpPatterns::lineEnd
 		})
 	);
-
-	RegExpPatterns::debugOutput("comment pattern:", m_pythonCommentRegExp);
 }
 
 void ModScanner::scanMods(const QString &modsFolderPath, DatabaseModel &database)
