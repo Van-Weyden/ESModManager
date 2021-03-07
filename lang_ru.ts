@@ -47,32 +47,32 @@ If unchecked, only installed mods are displayed.</source>
         <translation>Название мода в Steam:</translation>
     </message>
     <message>
-        <location filename="databaseeditor.ui" line="141"/>
+        <location filename="databaseeditor.ui" line="116"/>
         <source>Mod page in Steam Workshop</source>
         <translation>Страница мода в Мастерской Steam</translation>
     </message>
     <message>
-        <location filename="databaseeditor.ui" line="148"/>
+        <location filename="databaseeditor.ui" line="133"/>
         <source>If unchecked, the mod page will be opened in the browser instead of the Steam client.</source>
         <translation>Если флажок снят, страница мода будет открыта через браузер, а не через клиент Steam.</translation>
     </message>
     <message>
-        <location filename="databaseeditor.ui" line="151"/>
+        <location filename="databaseeditor.ui" line="136"/>
         <source>open with Steam client</source>
         <translation>открыть через клиент Steam</translation>
     </message>
     <message>
-        <location filename="databaseeditor.ui" line="194"/>
+        <location filename="databaseeditor.ui" line="149"/>
         <source>Save</source>
         <translation>Сохранить</translation>
     </message>
     <message>
-        <location filename="databaseeditor.ui" line="134"/>
+        <location filename="databaseeditor.ui" line="159"/>
         <source>Open mod folder in explorer</source>
         <translation>Открыть папку мода в проводнике</translation>
     </message>
     <message>
-        <location filename="databaseeditor.ui" line="124"/>
+        <location filename="databaseeditor.ui" line="126"/>
         <source>Remove mod from database</source>
         <translation>Удалить мод из базы данных</translation>
     </message>
@@ -80,7 +80,7 @@ If unchecked, only installed mods are displayed.</source>
 <context>
     <name>DatabaseModel</name>
     <message>
-        <location filename="databasemodel.cpp" line="94"/>
+        <location filename="databasemodel.cpp" line="105"/>
         <source>Mod name</source>
         <translation>Название мода</translation>
     </message>
@@ -258,176 +258,200 @@ If unchecked, display mod names from their source files.</source>
         <translation>Справка</translation>
     </message>
     <message>
-        <location filename="mainwindow.ui" line="471"/>
+        <location filename="mainwindow.ui" line="472"/>
         <source>Game folder</source>
         <translation>Папку игры</translation>
     </message>
     <message>
-        <location filename="mainwindow.ui" line="476"/>
+        <location filename="mainwindow.ui" line="477"/>
         <source>Mods folder</source>
         <translation>Папку модов</translation>
     </message>
     <message>
-        <location filename="mainwindow.ui" line="481"/>
+        <location filename="mainwindow.ui" line="482"/>
         <source>Temp mods folder</source>
         <translation>Временную папку модов</translation>
     </message>
     <message>
-        <location filename="mainwindow.ui" line="486"/>
+        <location filename="mainwindow.ui" line="487"/>
         <source>About...</source>
         <translation>О программе...</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="481"/>
+        <location filename="mainwindow.ui" line="492"/>
+        <source>Announcements</source>
+        <translation>Объявления</translation>
+    </message>
+    <message>
+        <location filename="mainwindow.cpp" line="451"/>
         <source>Mod Manager: scanning installed mods...</source>
         <translation>Менеджер модов: сканирование установленных модов...</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="385"/>
-        <location filename="mainwindow.cpp" line="628"/>
+        <location filename="mainwindow.cpp" line="355"/>
+        <location filename="mainwindow.cpp" line="597"/>
         <source>Delete folder</source>
         <translation>Удаление папки</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="141"/>
+        <location filename="mainwindow.cpp" line="161"/>
         <source>Game is running</source>
         <translation>Игра запущена</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="142"/>
+        <location filename="mainwindow.cpp" line="162"/>
         <source>Everlasting Summer is running!
 Close the game before starting the manager!</source>
         <translation>Бесконечное Лето запущено!
 Закройте игру перед запуском менеджера!</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="151"/>
+        <location filename="mainwindow.cpp" line="171"/>
         <source>Mod manager is running</source>
         <translation>Менеджер модов запущен</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="152"/>
+        <location filename="mainwindow.cpp" line="172"/>
         <source>Mod manager is already running!</source>
         <translation>Менеджер модов уже запущен!</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="385"/>
-        <location filename="mainwindow.cpp" line="628"/>
+        <location filename="mainwindow.cpp" line="355"/>
+        <location filename="mainwindow.cpp" line="597"/>
         <source>Would you like to delete old mods temp folder?</source>
         <translation>Вы хотите удалить старую временную папку?</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="518"/>
+        <location filename="mainwindow.cpp" line="487"/>
         <source>Unmoved mods</source>
         <translation>Неперемещённые моды</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="519"/>
+        <location filename="mainwindow.cpp" line="488"/>
         <source>Disabled mods in these folders failed to move into temp folder:</source>
         <translation>Отключенные моды в этих папках не удалось переместить во временную папку модов:</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="520"/>
+        <location filename="mainwindow.cpp" line="489"/>
         <source>If you press the &apos;OK&apos; button, the game will load these mods.</source>
         <translation>Если вы нажмёте кнопку &apos;ОК&apos;, игра загрузит эти моды.</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="521"/>
+        <location filename="mainwindow.cpp" line="490"/>
         <source>You may move these folders manually from the mods folder:</source>
         <oldsource>Please move these folders manually from the mods folder:</oldsource>
         <translation>Вы можете переместить эти папки вручную из папки модов:</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="522"/>
+        <location filename="mainwindow.cpp" line="491"/>
         <source>to the temp mods folder:</source>
         <translation>во временную папку модов:</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="652"/>
+        <location filename="mainwindow.cpp" line="621"/>
         <source>Everlasting Summer mod manager v.</source>
         <translation>Менеджер модов для игры &quot;Бесконечное Лето&quot;. Версия </translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="523"/>
+        <location filename="mainwindow.cpp" line="492"/>
         <source>before pressing the &apos;OK&apos; button to fix this issue.</source>
         <translation>перед нажатием на кнопку &apos;ОК&apos;, чтобы исправить эту проблему.</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="526"/>
+        <location filename="mainwindow.cpp" line="495"/>
         <source>Open mods folder and temp folder in explorer</source>
         <translation>Открыть папку модов и временную папку в проводнике</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="589"/>
+        <location filename="mainwindow.cpp" line="558"/>
         <source>Select Everlasting Summer folder</source>
         <translation>Выберите папку с игрой &quot;Бесконечное Лето&quot;</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="598"/>
+        <location filename="mainwindow.cpp" line="567"/>
         <source>Wrong game folder</source>
         <translation>Неверная папка с игрой</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="598"/>
+        <location filename="mainwindow.cpp" line="567"/>
         <source>Game folder doesn&apos;t contains 
  &apos;Everlasting Summer.exe&apos;!</source>
         <translation>Папка с игрой не содержит файл 
  &apos;Everlasting Summer.exe&apos;!</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="607"/>
+        <location filename="mainwindow.cpp" line="576"/>
         <source>Select folder of Everlasting Summer mods</source>
         <translation>Выберите папку с модами игры &quot;Бесконечное Лето&quot;</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="622"/>
+        <location filename="mainwindow.cpp" line="591"/>
         <source>Select temp folder for unused Everlasting Summer mods</source>
         <translation>Выберите временную папку для неиспользуемых модов игры &quot;Бесконечное Лето&quot;</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="648"/>
+        <location filename="mainwindow.cpp" line="617"/>
         <source>About </source>
         <translation>О программе </translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="653"/>
+        <location filename="mainwindow.cpp" line="622"/>
         <source>Author:</source>
         <translation>Автор:</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="654"/>
+        <location filename="mainwindow.cpp" line="623"/>
         <source>Help in testing:</source>
         <translation>Помощь в тестировании:</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="655"/>
+        <location filename="mainwindow.cpp" line="624"/>
         <source>Lena</source>
         <translation>Лена</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="656"/>
+        <location filename="mainwindow.cpp" line="625"/>
         <source>Alexey Golikov</source>
         <translation>Алексей Голиков</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="657"/>
+        <location filename="mainwindow.cpp" line="626"/>
         <source>This program is used to &apos;fix&apos; conflicts of mods and speed up the launch of the game. Before launching the game, all unselected mods are moved to another folder, so the game engine will not load them.</source>
         <translation>Эта программа предназначена для &quot;исправления&quot; конфликтов модов и ускорения загрузки игры. Перед запуском игры она перемещает все моды, не выбранные пользователем, в другую папку, поэтому игра не будет их загружать.</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="1039"/>
         <source> [filter]</source>
-        <translation> [фильтр]</translation>
+        <translation type="vanished"> [фильтр]</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="659"/>
+        <location filename="mainwindow.cpp" line="628"/>
         <source>You can leave your questions/suggestions</source>
         <translation>Вы можете оставить свои вопросы/предложения</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="661"/>
+        <location filename="mainwindow.cpp" line="630"/>
         <source>here</source>
         <translation>здесь</translation>
+    </message>
+    <message>
+        <location filename="mainwindow.cpp" line="636"/>
+        <source>Announcement</source>
+        <translation>Объявление</translation>
+    </message>
+    <message>
+        <location filename="mainwindow.cpp" line="640"/>
+        <source>Currently, a survey is being conducted in which you can leave your comments / wishes / suggestions, as well as help with choosing a priority direction for future updates!</source>
+        <translation>В настоящее время проводится опрос, в котором вы можете оставить свои замечания/пожелания/предложения, а также помочь с выбором приоритетного направления будущих обновлений!</translation>
+    </message>
+    <message>
+        <location filename="mainwindow.cpp" line="643"/>
+        <source>The survey is anonymous, does not require registration and only takes a few minutes.</source>
+        <translation>Опрос анонимный, не требует регистрации и займёт всего несколько минут.</translation>
+    </message>
+    <message>
+        <location filename="mainwindow.cpp" line="645"/>
+        <source>Click here to take the survey</source>
+        <translation>Нажмите здесь, чтобы принять участие в опросе</translation>
     </message>
     <message>
         <location filename="mainwindow.cpp" line="708"/>
@@ -444,6 +468,14 @@ Close the game before starting the manager!</source>
  &apos;Everlasting Summer.exe&apos; 
  и при этом в ней нет файла 
  &apos;Everlasting Summer (origin).exe&apos;!</translation>
+    </message>
+</context>
+<context>
+    <name>ModScanner</name>
+    <message>
+        <location filename="modscanner.cpp" line="201"/>
+        <source> [filter]</source>
+        <translation> [фильтр]</translation>
     </message>
 </context>
 <context>
