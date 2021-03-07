@@ -137,21 +137,6 @@ MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
 
 	readSettings();
 
-	if (m_lang.isEmpty()) {
-		if (m_translator->load(QString(":/lang/lang_") + QLocale::system().name(), ":/lang/")) {
-			QApplication::installTranslator(m_translator);
-			m_qtTranslator->load(QString(":/lang/qtbase_") + QLocale::system().name(), ":/lang/");
-			QApplication::installTranslator(m_qtTranslator);
-			m_lang = QLocale::system().name();
-		}
-		else {
-			m_lang = "en_US";
-		}
-	}
-	else {
-		setLanguage(m_lang);
-	}
-
 	///Process check block (whether the game / manager is already running)
 	if (runCheck)
 	{
@@ -634,7 +619,7 @@ void MainWindow::showAboutInfo()
 void MainWindow::showAnnouncementMessage()
 {
 	QMessageBox messageAbout(QMessageBox::Icon::Information, tr("Announcement"), "",
-							 QMessageBox::StandardButton::Close, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
+							 QMessageBox::StandardButton::Close, nullptr, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
 	messageAbout.setTextFormat(Qt::TextFormat::RichText);
 	messageAbout.setText(
 		tr("Currently, a survey is being conducted in which you can leave your "
@@ -806,6 +791,19 @@ void MainWindow::readSettings()
 		if (value != invalidValue) {
 			m_lang = value.toString();
 		}
+	}
+
+	if (m_lang.isEmpty()) {
+		if (m_translator->load(QString(":/lang/lang_") + QLocale::system().name(), ":/lang/")) {
+			QApplication::installTranslator(m_translator);
+			m_qtTranslator->load(QString(":/lang/qtbase_") + QLocale::system().name(), ":/lang/");
+			QApplication::installTranslator(m_qtTranslator);
+			m_lang = QLocale::system().name();
+		} else {
+			m_lang = "en_US";
+		}
+	} else {
+		setLanguage(m_lang);
 	}
 
 	if (m_settings->contains("General/bMaximized")) {
