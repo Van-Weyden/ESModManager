@@ -3,7 +3,7 @@
 
 #include <QAbstractListModel>
 
-#include "modinfo.h"
+#include "ModInfo.h"
 
 class QThread;
 class SteamRequester;

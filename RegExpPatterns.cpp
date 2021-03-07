@@ -1,7 +1,7 @@
 #include <QDebug>
 #include <QStringList>
 
-#include "regexppatterns.h"
+#include "RegExpPatterns.h"
 
 namespace RegExpPatterns
 {

@@ -2,10 +2,10 @@
 #include <QDebug>
 #include <QDirIterator>
 
-#include "databasemodel.h"
-#include "regexppatterns.h"
+#include "DatabaseModel.h"
+#include "RegExpPatterns.h"
 
-#include "modscanner.h"
+#include "ModScanner.h"
 
 QString renPyInitRegExp(const char *tag, const QString &dictionaryKeyInBracketsPattern);
 

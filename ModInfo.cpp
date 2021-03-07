@@ -1,7 +1,7 @@
 #include <QCoreApplication>
 #include <QRegExpValidator>
 
-#include "modinfo.h"
+#include "ModInfo.h"
 
 QString ModInfo::generateUnknownNameStub()
 {

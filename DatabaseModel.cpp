@@ -2,10 +2,10 @@
 #include <QColor>
 #include <QThread>
 
-#include "regexppatterns.h"
-#include "steamrequester.h"
+#include "RegExpPatterns.h"
+#include "SteamRequester.h"
 
-#include "databasemodel.h"
+#include "DatabaseModel.h"
 
 //public:
 

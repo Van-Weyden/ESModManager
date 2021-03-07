@@ -13,13 +13,13 @@
 #include <QThread>
 #include <QTranslator>
 
-#include "databaseeditor.h"
-#include "databasemodel.h"
-#include "modscanner.h"
-#include "steamrequester.h"
+#include "DatabaseEditor.h"
+#include "DatabaseModel.h"
+#include "ModScanner.h"
+#include "SteamRequester.h"
 
-#include "mainwindow.h"
-#include "ui_mainwindow.h"
+#include "MainWindow.h"
+#include "ui_MainWindow.h"
 
 #include <QCryptographicHash>
 QByteArray fileChecksum(const QString &fileName, QCryptographicHash::Algorithm hashAlgorithm)

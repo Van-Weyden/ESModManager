@@ -1,10 +1,10 @@
 #include <QDesktopServices>
 #include <QUrl>
 
-#include "databasemodel.h"
+#include "DatabaseModel.h"
 
-#include "databaseeditor.h"
-#include "ui_databaseeditor.h"
+#include "DatabaseEditor.h"
+#include "ui_DatabaseEditor.h"
 
 //public:
 

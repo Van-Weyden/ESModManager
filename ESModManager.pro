@@ -27,27 +27,27 @@ DEFINES += QT_DEPRECATED_WARNINGS
 CONFIG += c++11
 
 SOURCES += \
-        databaseeditor.cpp \
-        databasemodel.cpp \
-        main.cpp \
-        mainwindow.cpp \
-        modinfo.cpp \
-        modscanner.cpp \
-        regexppatterns.cpp \
-        steamrequester.cpp
+        DatabaseEditor.cpp \
+        DatabaseModel.cpp \
+        MainWindow.cpp \
+        ModInfo.cpp \
+        ModScanner.cpp \
+        RegExpPatterns.cpp \
+        SteamRequester.cpp \
+        main.cpp
 
 HEADERS += \
-        databaseeditor.h \
-        databasemodel.h \
-        mainwindow.h \
-        modinfo.h \
-        modscanner.h \
-        regexppatterns.h \
-        steamrequester.h
+        DatabaseEditor.h \
+        DatabaseModel.h \
+        MainWindow.h \
+        ModInfo.h \
+        ModScanner.h \
+        RegExpPatterns.h \
+        SteamRequester.h
 
 FORMS += \
-        databaseeditor.ui \
-        mainwindow.ui
+        DatabaseEditor.ui \
+        MainWindow.ui
 
 RC_FILE = icon.rc
 
