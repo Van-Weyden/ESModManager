@@ -19,8 +19,8 @@ public:
 
 	void checkModsDisplay();
 	void hideAllRows();
-	void setModel(DatabaseModel *&model, const int &columnIndex = 0);
-	void setModsDisplay(const bool &modlistOnly = true);
+	void setModel(DatabaseModel *model, const int columnIndex = 0);
+	void setModsDisplay(const bool modlistOnly = true);
 
 public slots:
 	void filterModsDisplay(const QString &str);
@@ -36,15 +36,15 @@ private slots:
 	void adjustRow(const QModelIndex &index);
 	void openCurrentModFolder();
 	void openWorkshopPage();
-	void setModsDisplayMode(const int &mode);
+	void setModsDisplayMode(const int mode);
 
 signals:
-	void openModFolder(const int &modIndex);
+	void openModFolder(const int modIndex);
 
 private:
 	Ui::DatabaseEditor *ui;
 
-	DatabaseModel *model_ = nullptr;
+	DatabaseModel *m_model = nullptr;
 };
 
 #endif // DATABASEEDITOR_H
