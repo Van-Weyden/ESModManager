@@ -80,6 +80,8 @@ public slots:
 
 	void showAboutInfo();
 
+	void showAnnouncementMessage();
+
 protected:
 	void changeEvent(QEvent *event);
 
@@ -88,6 +90,7 @@ private slots:
 	void steamModNameProcessed();
 
 private:
+	void checkAnnouncementPopup(const int loadedApplicationVersion);
 	bool checkGameMd5(const QString &folderPath);
 	void checkOriginLauncherReplacement() const;
 	void moveModFolders(QString *unmovedModsToTempFolder = nullptr, QString *unmovedModsFromTempFolder = nullptr) const;

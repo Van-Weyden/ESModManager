@@ -102,6 +102,7 @@ MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
 	connect(ui->actionMods_folder, SIGNAL(triggered()), this, SLOT(selectModsFolder()));
 	connect(ui->actionTemp_mods_folder, SIGNAL(triggered()), this, SLOT(selectTempModsFolder()));
 	connect(ui->actionAbout, SIGNAL(triggered()), this, SLOT(showAboutInfo()));
+	connect(ui->actionAnnouncements, SIGNAL(triggered()), this, SLOT(showAnnouncementMessage()));
 
 	connect(ui->completeNamesCheckBox, SIGNAL(stateChanged(int)),
 			m_model, SLOT(setCompleteModNames(int)));
@@ -630,6 +631,21 @@ void MainWindow::showAboutInfo()
 	messageAbout.exec();
 }
 
+void MainWindow::showAnnouncementMessage()
+{
+	QMessageBox messageAbout(QMessageBox::Icon::Information, tr("Announcement"), "",
+							 QMessageBox::StandardButton::Close, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
+	messageAbout.setTextFormat(Qt::TextFormat::RichText);
+	messageAbout.setText(
+		tr("Currently, a survey is being conducted in which you can leave your "
+		   "comments / wishes / suggestions, as well as help with choosing "
+		   "a priority direction for future updates!") + "<br>" +
+		tr("The survey is anonymous, does not require registration and only takes a few minutes."));
+	messageAbout.setInformativeText("<a href='https://docs.google.com/forms/d/e/1FAIpQLSej0DemqLm1NRJv1eI4vCMz0DAr2d2Nynzwd1VIrwtLYX8r4g/viewform'>" +
+									tr("Click here to take the survey") + "</a>");
+	messageAbout.exec();
+}
+
 //protected:
 
 void MainWindow::changeEvent(QEvent *event)
@@ -664,6 +680,22 @@ void MainWindow::steamModNameProcessed()
 }
 
 //private:
+
+void MainWindow::checkAnnouncementPopup(const int loadedApplicationVersion)
+{
+	if (loadedApplicationVersion == CurrentApplicationVersion) {
+		return;
+	}
+
+	switch (CurrentApplicationVersion) {
+		case applicationVersion(1, 1, 9):
+			showAnnouncementMessage();
+		break;
+
+		default:
+		break;
+	}
+}
 
 bool MainWindow::checkGameMd5(const QString &folderPath)
 {
@@ -855,6 +887,8 @@ void MainWindow::readSettings()
 			}
 		}
 	}
+
+	checkAnnouncementPopup(loadedApplicationVersion);
 }
 
 void MainWindow::saveSettings() const

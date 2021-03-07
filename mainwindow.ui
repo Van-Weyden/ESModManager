@@ -462,6 +462,7 @@ If unchecked, display mod names from their source files.</string>
      <string>Help</string>
     </property>
     <addaction name="actionAbout"/>
+    <addaction name="actionAnnouncements"/>
    </widget>
    <addaction name="menuSelect"/>
    <addaction name="menuHelp"/>
@@ -484,6 +485,11 @@ If unchecked, display mod names from their source files.</string>
   <action name="actionAbout">
    <property name="text">
     <string>About...</string>
+   </property>
+  </action>
+  <action name="actionAnnouncements">
+   <property name="text">
+    <string>Announcements</string>
    </property>
   </action>
  </widget>
