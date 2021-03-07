@@ -16,7 +16,7 @@ public:
 	DatabaseModel();
 	~DatabaseModel() = default;
 
-	inline bool isNameValid(const QString &name) const;
+	bool isNameValid(const QString &name) const;
 
 	void appendDatabase(const ModInfo &modInfo);
 	inline void clearDatabase();
@@ -65,15 +65,6 @@ private:
 
 
 //public:
-
-inline bool DatabaseModel::isNameValid(const QString &name) const
-{
-	return !(name.isEmpty() ||
-			 name.contains(ModInfo::generateUnknownNameStub()) ||
-			 name.contains(ModInfo::generateFailedToGetNameStub()) ||
-			 //name == ModInfo::generateWaitingForSteamResponseStub() ||
-	);
-}
 
 inline void DatabaseModel::clearDatabase()
 {

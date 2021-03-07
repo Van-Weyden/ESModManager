@@ -2,6 +2,7 @@
 #include <QColor>
 #include <QThread>
 
+#include "regexppatterns.h"
 #include "steamrequester.h"
 
 #include "databasemodel.h"
@@ -11,6 +12,16 @@
 DatabaseModel::DatabaseModel()
 {
 	qRegisterMetaType<QVector<int> >("QVector<int>");
+}
+
+bool DatabaseModel::isNameValid(const QString &name) const
+{
+	return !(name.isEmpty() ||
+			 name.contains(ModInfo::generateUnknownNameStub()) ||
+			 name.contains(ModInfo::generateFailedToGetNameStub()) ||
+			 name.contains(ModInfo::generateWaitingForSteamResponseStub()) ||
+			 QRegExp(RegExpPatterns::whitespace).exactMatch(name)
+	);
 }
 
 void DatabaseModel::appendDatabase(const ModInfo &modInfo)

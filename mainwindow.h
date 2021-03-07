@@ -9,6 +9,7 @@ class QTranslator;
 
 class DatabaseEditor;
 class DatabaseModel;
+class ModScanner;
 class SteamRequester;
 
 namespace Ui {
@@ -26,7 +27,7 @@ public:
 	~MainWindow();
 
 	void checkRowsVisibility();
-	void clearSearchField();	//does not emit filterModsDisplay slot
+	void clearSearchField();	//does not call filterModsDisplay slot
 	void hideAllRows();
 	void loadDatabase();
 	void requestSteamModNames();
@@ -59,9 +60,6 @@ public slots:
 protected:
 	void changeEvent(QEvent *event);
 
-signals:
-	void countOfScannedMods(int count);
-
 private slots:
 	bool openModFolder(const int modIndex);
 	void steamModNameProcessed();
@@ -73,7 +71,7 @@ private:
 	void moveModFoldersBack() const;
 	void readSettings();
 	void saveSettings() const;
-	void scanMods(const QString &modsFolderPath);
+
 
 	Ui::MainWindow *ui = nullptr;
 	DatabaseEditor *m_databaseEditor = nullptr;
@@ -90,9 +88,9 @@ private:
 	QString m_tempModsFolderPath = "";
 
 	DatabaseModel *m_model = nullptr;
+	ModScanner *m_scanner = nullptr;
 
 	QByteArray m_launcherMd5;
-	int m_countOfScannedMods;
 };
 
 

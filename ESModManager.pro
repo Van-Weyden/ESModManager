@@ -32,6 +32,8 @@ SOURCES += \
         main.cpp \
         mainwindow.cpp \
         modinfo.cpp \
+        modscanner.cpp \
+        regexppatterns.cpp \
         steamrequester.cpp
 
 HEADERS += \
@@ -39,6 +41,8 @@ HEADERS += \
         databasemodel.h \
         mainwindow.h \
         modinfo.h \
+        modscanner.h \
+        regexppatterns.h \
         steamrequester.h
 
 FORMS += \

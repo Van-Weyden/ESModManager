@@ -15,6 +15,7 @@
 
 #include "databaseeditor.h"
 #include "databasemodel.h"
+#include "modscanner.h"
 #include "steamrequester.h"
 
 #include "mainwindow.h"
@@ -47,6 +48,8 @@ MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
 	connect(m_steamRequester, SIGNAL(modProcessed()), this, SLOT(steamModNameProcessed()), Qt::BlockingQueuedConnection);
 	connect(m_steamRequester, SIGNAL(finished()), m_thread, SLOT(quit()));
 	m_steamRequester->moveToThread(m_thread);
+
+	m_scanner = new ModScanner(this);
 
 	ui->setupUi(this);
 
@@ -209,6 +212,7 @@ MainWindow::~MainWindow()
 	delete m_settings;
 	delete m_model;
 	delete m_databaseEditor;
+	delete m_scanner;
 
 	delete ui;
 }
@@ -357,8 +361,8 @@ void MainWindow::scanMods()
 {
 	m_model->setModsExistsState(false);
 
-	scanMods(m_modsFolderPath);
-	scanMods(m_tempModsFolderPath);
+	m_scanner->scanMods(m_modsFolderPath, *m_model);
+	m_scanner->scanMods(m_tempModsFolderPath, *m_model);
 
 	m_model->sortDatabase();
 }
@@ -480,9 +484,8 @@ void MainWindow::refreshModlist()
 					QDir(m_tempModsFolderPath).entryList(QDir::Dirs|QDir::NoDotAndDotDot).count();
 	QProgressDialog progressDialog(tr("Mod Manager: scanning installed mods..."), "", 0, modsCount);
 	progressDialog.setCancelButton(nullptr);
-	connect(this, SIGNAL(countOfScannedMods(int)), &progressDialog, SLOT(setValue(int)));
+	connect(m_scanner, SIGNAL(modScanned(int)), &progressDialog, SLOT(setValue(int)));
 	progressDialog.show();
-	m_countOfScannedMods = 0;
 
 	ui->progressBar->setMaximum(modsCount);
 	ui->progressBar->setValue(0);
@@ -908,130 +911,3 @@ void MainWindow::saveSettings() const
 	saveDatabase();
 }
 
-void MainWindow::scanMods(const QString &modsFolderPath)
-{
-	QString currentPath = QDir::currentPath().replace('/', '\\');
-	QDir dir(modsFolderPath);
-	QStringList extensionFilter("*.rpy");
-	QDir::Filters fileFilters = QDir::Files;
-	QDir::Filters dirFilters = QDir::Dirs|QDir::NoDotAndDotDot;
-							   //  \$?[ \n\r]*((mods)|(filters))[ \n\r]*\[((\"[^\"]*\")|(\'[^\"]*\'))\][ \n\r]*=[^\"]*
-	QRegExp initRegExp = QRegExp("\\$?[ \\n\\r]*((mods)|(filters))[ \\n\\r]*\\[((\"[^\"]*\")|(\'[^\"]*\'))\\][ \\n\\r]*=[^\"]*");
-	QRegExp initKeyRegExp = QRegExp("\\[((\"[^\"]*\")|(\'[^\"]*\'))\\]");
-	QRegExp modInitRegExp = QRegExp("\\$?[ \\n\\r]*(mods)[ \\n\\r]*\\[((\"[^\"]*\")|(\'[^\"]*\'))\\][ \\n\\r]*=[^\"]*");
-	QRegExp filterInitRegExp = QRegExp("\\$?[ \\n\\r]*(filters)[ \\n\\r]*\\[((\"[^\"]*\")|(\'[^\"]*\'))\\][ \\n\\r]*=[^\"]*");
-	QRegExp modTagsRegExp = QRegExp("\\$?[ \\n\\r]*(mod_tags)[ \\n\\r]*\\[\"[^\"]*\"\\][ \\n\\r]*=[^\"]*");
-	QRegExp bracesRegExp = QRegExp("\\{[^\\{\\}]*\\}");
-	QStringList modsFolders = dir.entryList(dirFilters);
-
-	QMap<QString, QString> initMap;
-	QString prioryModName, prioryModNameKey, tmp, initKey, initValue, out;
-	ModInfo modInfo;
-	bool isModTagsFounded;
-	QFile file;
-
-	int oldDatabaseSize = m_model->databaseSize();
-	int indexInDatabase, i;
-
-	while (!modsFolders.isEmpty()) {
-		modInfo.folderName = modsFolders.takeFirst();
-		if (currentPath.contains(modsFolderPath + modInfo.folderName)) {
-			emit countOfScannedMods(++m_countOfScannedMods);
-			steamModNameProcessed();
-			QApplication::processEvents();
-			continue;
-		}
-
-		indexInDatabase = -1;
-		for (i = 0; i < oldDatabaseSize; ++i)
-			if (modInfo.folderName == m_model->modFolderName(i)) {
-				m_model->modInfoRef(i).exists = true;
-
-				if (!m_model->isNameValid(m_model->modName(i))) {
-					indexInDatabase = i;
-				} else {
-					modInfo.folderName.clear();
-				}
-
-				break;
-			}
-
-		if (modInfo.folderName.isEmpty()) {
-			emit countOfScannedMods(++m_countOfScannedMods);
-			QApplication::processEvents();
-			continue;
-		}
-
-		initMap.clear();
-		prioryModName.clear();
-		prioryModNameKey.clear();
-		isModTagsFounded = false;
-		dir.setPath(modsFolderPath + modInfo.folderName);
-
-		QDirIterator it(dir.path(), extensionFilter, fileFilters, QDirIterator::Subdirectories);
-		while (it.hasNext()) {
-			file.setFileName(it.next());
-			file.open(QFile::ReadOnly);
-			//'QFile::canReadLine()' may return false in some cases, so check the end of the file with 'QFile::atEnd()'
-			while (!file.atEnd()) {
-				tmp = file.readLine();
-				if (!tmp.contains(QRegExp("(\\[|\\{)[^\\]\\}]*#[^\\]\\}]*(\\]|\\})")))
-					tmp.remove(QRegExp("#.*$"));	//Removing Python comments
-				isModTagsFounded = tmp.contains(modTagsRegExp);
-				if (tmp.contains(initRegExp)) {
-					initKeyRegExp.indexIn(tmp);
-					initKey = initKeyRegExp.cap();
-					initKey.remove(QRegExp("(^[^\"']*(\"|'))|((\"|')[^\"']*$)"));
-
-					initValue = tmp;
-					initValue.remove(initRegExp);
-					initValue.remove(QRegExp("(^[^\"']*(\"|'))|((\"|')[^\"']*$)"));
-					while (initValue.contains(bracesRegExp))
-						initValue.replace(bracesRegExp, "");
-					if (!initValue.isEmpty()) {
-						if (tmp.contains(filterInitRegExp))
-							initValue.append(tr(" [filter]"));
-						initMap[initKey] = initValue;
-
-						if (isModTagsFounded && tmp.contains(modInitRegExp)) {
-							prioryModName = initValue;
-							prioryModNameKey = initKey;
-						}
-					}
-				}
-			}
-			isModTagsFounded = false;
-			file.close();
-		}
-
-		if (!prioryModName.isEmpty())
-			initMap[prioryModNameKey] = prioryModName;
-
-		i = 1;
-		modInfo.name.clear();
-		out = '/' + QString::number(initMap.count()) + "]: ";
-		if (initMap.isEmpty()) {
-			modInfo.name = ModInfo::generateFailedToGetNameStub();
-		} else {
-			if (initMap.count() == 1) {
-				modInfo.name = initMap[initKey];
-			} else foreach (QString initKey, initMap.keys()) {
-				if (modInfo.name.isEmpty()) {
-					modInfo.name = "[1" + out + initMap[initKey];
-				} else {
-					modInfo.name.append("\n[" + QString::number(i) + out + initMap[initKey]);
-				}
-				++i;
-			}
-		}
-
-		if (indexInDatabase == -1) {
-			m_model->appendDatabase(modInfo);
-		} else {
-			m_model->modInfoRef(indexInDatabase).name = modInfo.name;
-		}
-
-		emit countOfScannedMods(++m_countOfScannedMods);
-		QApplication::processEvents();
-	}
-}
