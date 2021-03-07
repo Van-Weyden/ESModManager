@@ -35,6 +35,22 @@ QByteArray fileChecksum(const QString &fileName, QCryptographicHash::Algorithm h
 	return QByteArray();
 }
 
+QString applicationVersionToString(const int version)
+{
+	return QString::number(majorApplicationVersion(version)) + '.' +
+		   QString::number(minorApplicationVersion(version)) + '.' +
+		   QString::number(microApplicationVersion(version));
+}
+
+int applicationVersionFromString(const QString &version)
+{
+	QStringList subVersions = version.split('.');
+	int subVersionsCount = subVersions.count();
+	return applicationVersion(subVersionsCount > 0 ? subVersions[0].toInt() : 1,
+							  subVersionsCount > 1 ? subVersions[1].toInt() : 0,
+							  subVersionsCount > 2 ? subVersions[2].toInt() : 0);
+}
+
 //public:
 
 MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
@@ -175,18 +191,6 @@ MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
 		}
 	}
 	else {
-		///Begin of backward compatibility block
-		///Fix bug from old versions when game folder path contained "Everlasting Summer.exe"
-		{
-			if (m_gameFolderPath.contains("Everlasting Summer.exe"))
-				m_gameFolderPath.remove("Everlasting Summer.exe");
-			if (m_modsFolderPath.contains("Everlasting Summer.exe"))
-				m_modsFolderPath.remove("Everlasting Summer.exe");
-			if (m_tempModsFolderPath.contains("Everlasting Summer.exe"))
-				m_tempModsFolderPath.remove("Everlasting Summer.exe");
-		}
-		///End of backward compatibility block
-
 		ui->gameFolderLineEdit->setText(m_gameFolderPath);
 		ui->modsFolderLineEdit->setText(m_modsFolderPath);
 		ui->tempModsFolderLineEdit->setText(m_tempModsFolderPath);
@@ -252,46 +256,7 @@ void MainWindow::hideAllRows()
 
 void MainWindow::loadDatabase()
 {
-	QFile file;
-
-	///Begin of backward compatibility block
-	///Conversion from old version of DB
-	{
-		file.setFileName("mods_database.dat");
-		if (file.exists()) {
-			QString name, folderName, enabled;
-			ModInfo modInfo;
-
-			file.open(QFile::ReadOnly);
-			do {
-				modInfo.name = file.readLine();
-				if (!file.canReadLine())
-					break;
-				modInfo.folderName = file.readLine();
-				if (!file.canReadLine())
-					break;
-				enabled = file.readLine();
-				modInfo.name.remove(QRegExp("[\\n\\r]"));
-				modInfo.folderName.remove(QRegExp("[\\n\\r]"));
-				enabled.remove(QRegExp("[\\n\\r]"));
-				if (enabled.isEmpty()) {
-					continue;
-				}
-				else {
-					modInfo.enabled = enabled.toInt();
-					m_model->appendDatabase(modInfo);
-				}
-			}
-			while (file.canReadLine());
-			file.close();
-
-			file.remove();
-			return;
-		}
-	}
-	///End of backward compatibility block
-
-	file.setFileName("mods_database.json");
+	QFile file("mods_database.json");
 	if (file.exists()) {
 		QJsonDocument database;
 		//QJsonParseError err;
@@ -652,7 +617,7 @@ void MainWindow::showAboutInfo()
 							 QMessageBox::StandardButton::Close, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
 	messageAbout.setTextFormat(Qt::TextFormat::RichText);
 	messageAbout.setText(
-		tr("Everlasting Summer mod manager v.") + ApplicationVersion + ".<br>" +
+		tr("Everlasting Summer mod manager v.") + applicationVersionToString(CurrentApplicationVersion) + ".<br>" +
 		tr("Author:") + " <a href='https://steamcommunity.com/id/van_weyden/'>Slavyan</a><br>" +
 		tr("Help in testing:") + " <a href='https://steamcommunity.com/profiles/76561198058938676/'>Hatsune Miku</a>,"
 								 " 🔰 <a href='https://steamcommunity.com/id/lena_sova/'>" + tr("Lena") + "</a>🔰 ," +
@@ -793,11 +758,22 @@ void MainWindow::readSettings()
 {
 	QVariant value;
 	QVariant invalidValue;
+	int loadedApplicationVersion = applicationVersion(1, 0, 0);
+
+	if (m_settings->contains("General/sAppVersion")) {
+		value = m_settings->value("General/sAppVersion");
+		if (value != invalidValue) {
+			loadedApplicationVersion = applicationVersionFromString(value.toString());
+		}
+	}
+
+	applyBackwardCompatibilityFixes(loadedApplicationVersion);
 
 	if (m_settings->contains("General/sLang")) {
 		value = m_settings->value("General/sLang");
-		if (value != invalidValue)
+		if (value != invalidValue) {
 			m_lang = value.toString();
+		}
 	}
 
 	if (m_settings->contains("General/bMaximized")) {
@@ -806,62 +782,66 @@ void MainWindow::readSettings()
 			this->setWindowState(Qt::WindowMaximized);
 		} else if (m_settings->contains("General/qsSize")) {
 			value = m_settings->value("General/qsSize");
-			if (value != invalidValue)
+			if (value != invalidValue) {
 				this->resize(value.toSize());
+			}
 		}
 	}
 
 	if (m_settings->contains("General/sGameFolder")) {
 		value = m_settings->value("General/sGameFolder");
-		if (value != invalidValue)
+		if (value != invalidValue) {
 			m_gameFolderPath = value.toString();
+		}
 	}
 
 	if (m_settings->contains("General/sModsFolder")) {
 		value = m_settings->value("General/sModsFolder");
-		if (value != invalidValue)
+		if (value != invalidValue) {
 			m_modsFolderPath = value.toString();
+		}
 	}
 
 	if (m_settings->contains("General/sTempModsFolder")) {
 		value = m_settings->value("General/sTempModsFolder");
-		if (value != invalidValue)
+		if (value != invalidValue) {
 			m_tempModsFolderPath = value.toString();
+		}
 	}
 
 	if (m_settings->contains("General/bAutoexit")) {
 		value = m_settings->value("General/bAutoexit");
-		if (value != invalidValue)
+		if (value != invalidValue) {
 			ui->autoexitCheckBox->setChecked(value.toBool());
+		}
 	}
 
 	if (m_settings->contains("General/bMoveModsBack")) {
 		value = m_settings->value("General/bMoveModsBack");
-		if (value != invalidValue)
+		if (value != invalidValue) {
 			ui->moveModsBackCheckBox->setChecked(value.toBool());
-	}
-
-	///Condition for backward compatibility
-	///Reset the checkbox for replacing game files for older versions, as defaults changed
-	if (m_settings->contains("General/bMaximized")) {
-		if (m_settings->contains("General/bReplaceOriginLauncher")) {
-			value = m_settings->value("General/bReplaceOriginLauncher");
-			if (value != invalidValue)
-				ui->replaceOriginLauncherCheckBox->setChecked(value.toBool());
 		}
 	}
 
+	if (m_settings->contains("General/bReplaceOriginLauncher")) {
+		value = m_settings->value("General/bReplaceOriginLauncher");
+		if (value != invalidValue) {
+			ui->replaceOriginLauncherCheckBox->setChecked(value.toBool());
+		}
+	}
 
 	if (m_settings->contains("General/bCompleteModNames")) {
 		value = m_settings->value("General/bCompleteModNames");
-		if (value != invalidValue)
+		if (value != invalidValue) {
 			ui->completeNamesCheckBox->setChecked(value.toBool());
+		}
 	}
 
 	if (m_settings->contains("General/bUseSteamModNames")) {
 		value = m_settings->value("General/bUseSteamModNames");
-		if (value != invalidValue)
+		if (value != invalidValue) {
 			ui->useSteamModNamesCheckBox->setChecked(value.toBool());
+		}
 	}
 
 	if (m_settings->contains("Editor/bMaximized")) {
@@ -870,8 +850,9 @@ void MainWindow::readSettings()
 			m_databaseEditor->setWindowState(Qt::WindowMaximized);
 		} else if (m_settings->contains("Editor/qsSize")) {
 			value = m_settings->value("Editor/qsSize");
-			if (value != invalidValue)
+			if (value != invalidValue) {
 				m_databaseEditor->resize(value.toSize());
+			}
 		}
 	}
 }
@@ -879,6 +860,8 @@ void MainWindow::readSettings()
 void MainWindow::saveSettings() const
 {
 	m_settings->clear();
+
+	m_settings->setValue("General/sAppVersion", applicationVersionToString(CurrentApplicationVersion));
 
 	m_settings->setValue("General/sLang", m_lang);
 
@@ -911,3 +894,69 @@ void MainWindow::saveSettings() const
 	saveDatabase();
 }
 
+void MainWindow::applyBackwardCompatibilityFixes(const int loadedApplicationVersion)
+{
+	if (loadedApplicationVersion < applicationVersion(1, 1, 9)) {
+		///Fix bug from old versions when game folder path contained "Everlasting Summer.exe"
+		m_gameFolderPath.remove("Everlasting Summer.exe");
+		m_modsFolderPath.remove("Everlasting Summer.exe");
+		m_tempModsFolderPath.remove("Everlasting Summer.exe");
+
+		///Condition for backward compatibility
+		///Reset the checkbox for replacing game files for older versions, as defaults changed
+		if (m_settings->contains("General/bMaximized")) {
+			m_settings->setValue("General/bReplaceOriginLauncher", true);
+		}
+
+		///Conversion from old version of DB
+		{
+			QFile file("mods_database.dat");
+			QJsonDocument database;
+			QJsonArray mods;
+			QJsonObject mod;
+
+			if (file.exists()) {
+				QString name, folderName, enabled;
+				ModInfo modInfo;
+
+				file.open(QFile::ReadOnly);
+				do {
+					mod["Name"] = QString(file.readLine()).remove(QRegExp("[\\n\\r]"));
+					if (!file.canReadLine()) {
+						break;
+					}
+
+					mod["Folder name"] = QString(file.readLine()).remove(QRegExp("[\\n\\r]"));
+					if (!file.canReadLine()) {
+						break;
+					}
+
+					mod["Is enabled"] = bool(QString(file.readLine()).remove(QRegExp("[\\n\\r]")).toInt());
+					mods.append(mod);
+				}
+				while (file.canReadLine());
+				file.close();
+				file.remove();
+
+				database.setArray(mods);
+				QByteArray rawData = database.toJson();
+				file.setFileName("mods_database.json");
+
+				if (file.exists("mods_database.json")) {
+					file.open(QFile::ReadOnly);
+					if (file.readAll() != rawData) {
+						file.close();
+						file.open(QFile::WriteOnly);
+						file.write(rawData);
+					}
+					file.close();
+				}
+				else {
+					file.open(QFile::WriteOnly);
+					file.write(rawData);
+					file.close();
+				}
+			}
+		}
+	}
+}
