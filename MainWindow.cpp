@@ -558,10 +558,11 @@ void MainWindow::runGame()
 
 	moveModFoldersBack();
 
-	if (ui->autoexitCheckBox->isChecked())
+	if (ui->autoexitCheckBox->isChecked()) {
 		QApplication::exit();
-	else
+	} else {
 		this->show();
+	}
 }
 
 void MainWindow::selectGameFolder()
@@ -752,7 +753,7 @@ void MainWindow::checkOriginLauncherReplacement() const
 	} else {
 		if (gameLauncherMd5 == fileChecksum(m_gameFolderPath + "Everlasting Summer (origin).exe")) {
 			QFile::remove(m_gameFolderPath + "Everlasting Summer (origin).exe");
-		} else {
+		} else if (QFile::exists(m_gameFolderPath + "Everlasting Summer (origin).exe")) {
 			QFile::remove(m_gameFolderPath + "Everlasting Summer.exe");
 			QFile::rename(m_gameFolderPath + "Everlasting Summer (origin).exe",
 						  m_gameFolderPath + "Everlasting Summer.exe");
