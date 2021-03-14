@@ -22,13 +22,13 @@
 #include "ui_MainWindow.h"
 
 #include <QCryptographicHash>
-QByteArray fileChecksum(const QString &fileName, QCryptographicHash::Algorithm hashAlgorithm)
+QByteArray fileChecksum(const QString &fileName, QCryptographicHash::Algorithm hashAlgorithm = QCryptographicHash::Md5)
 {
-	QFile f(fileName);
-	if (f.open(QFile::ReadOnly)) {
+	QFile file(fileName);
+	if (file.exists() && file.open(QFile::ReadOnly)) {
 		QCryptographicHash hash(hashAlgorithm);
-		if (hash.addData(&f)) {
-			f.close();
+		if (hash.addData(&file)) {
+			file.close();
 			return hash.result();
 		}
 	}
@@ -49,6 +49,29 @@ int applicationVersionFromString(const QString &version)
 	return applicationVersion(subVersionsCount > 0 ? subVersions[0].toInt() : 1,
 							  subVersionsCount > 1 ? subVersions[1].toInt() : 0,
 							  subVersionsCount > 2 ? subVersions[2].toInt() : 0);
+}
+
+void rewriteFileIfDataIsDifferent(const QString &fileName, const QByteArray &newData)
+{
+	QFile file(fileName);
+
+	if (QFile::exists(fileName)) {
+		if (file.open(QFile::ReadOnly)) {
+			QByteArray currentData = file.readAll();
+			file.close();
+
+			if (currentData == newData) {
+				return;
+			}
+		} else {
+			return;
+		}
+	}
+
+	if (file.open(QFile::WriteOnly)) {
+		file.write(newData);
+		file.close();
+	}
 }
 
 //public:
@@ -93,7 +116,7 @@ MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
 	m_settings = new QSettings(QString("settings.ini"), QSettings::IniFormat, this);
 	m_qtTranslator = new QTranslator();
 	m_translator = new QTranslator();
-	m_launcherMd5 = fileChecksum(QDir::currentPath() + "/launcher/ESLauncher.exe", QCryptographicHash::Md5);
+	m_launcherMd5 = fileChecksum(QDir::currentPath() + "/launcher/ESLauncher.exe");
 
 	//connections:
 
@@ -192,9 +215,9 @@ MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
 
 MainWindow::~MainWindow()
 {
-	m_model->sortDatabase();
-
 	saveSettings();
+	m_model->sortDatabase();
+	saveDatabase();
 
 	QApplication::removeTranslator(m_translator);
 	QApplication::removeTranslator(m_qtTranslator);
@@ -293,23 +316,7 @@ void MainWindow::saveDatabase() const
 		mods.append(mod);
 	}
 	database.setArray(mods);
-
-	QByteArray rawData = database.toJson();
-	QFile file("mods_database.json");
-	if (file.exists("mods_database.json")) {
-		file.open(QFile::ReadOnly);
-		if (file.readAll() != rawData) {
-			file.close();
-			file.open(QFile::WriteOnly);
-			file.write(rawData);
-		}
-		file.close();
-	}
-	else {
-		file.open(QFile::WriteOnly);
-		file.write(rawData);
-		file.close();
-	}
+	rewriteFileIfDataIsDifferent("mods_database.json", database.toJson());
 }
 
 void MainWindow::scanMods()
@@ -475,15 +482,29 @@ void MainWindow::refreshModlist()
 
 void MainWindow::runGame()
 {
-	if (m_gameFolderPath.isEmpty() || !checkGameMd5(m_gameFolderPath))
+	if (m_gameFolderPath.isEmpty()) {
 		return;
+	}
+
+	if (!checkGameMd5(m_gameFolderPath)) {
+		QMessageBox::critical(
+			this,
+			tr("Wrong game .exe"),
+			tr("Game folder doesn't contains origin \n 'Everlasting Summer.exe' \n "
+			   "and there is no file \n 'Everlasting Summer (origin).exe'!"),
+			QMessageBox::StandardButton::Ok, QMessageBox::StandardButton::NoButton
+		);
+
+		return;
+	}
 
 	if (m_databaseEditor->isVisible())
 		m_databaseEditor->close();
 
 	QDir dir(m_tempModsFolderPath);
-	if (!dir.exists())
+	if (!dir.exists()) {
 		dir.mkdir(m_tempModsFolderPath);
+	}
 
 	QString unmovedMods;
 	moveModFolders(&unmovedMods);
@@ -523,25 +544,12 @@ void MainWindow::runGame()
 	gameLauncher.setWorkingDirectory("launcher\\");
 	gameLauncher.setProgram("launcher\\ESLauncher.exe");
 
-	QFile launcherSettingsFile("launcher\\LaunchedProgram.ini");
-	QByteArray launcherSettings = (m_gameFolderPath).toUtf8() + "\nEverlasting Summer\ntrue";
-	launcherSettingsFile.open(QFile::ReadOnly);
-	QByteArray tmp = launcherSettingsFile.readAll();
-	if (tmp != launcherSettings) {
-		launcherSettingsFile.close();
-		launcherSettingsFile.open(QFile::WriteOnly);
-		launcherSettingsFile.write(launcherSettings);
-	}
-	launcherSettingsFile.close();
+	QByteArray launcherSettings = m_gameFolderPath.toUtf8() + "\nEverlasting Summer\ntrue";
+	rewriteFileIfDataIsDifferent("launcher\\LaunchedProgram.ini", launcherSettings);
 
-	if (fileChecksum(m_gameFolderPath + "Everlasting Summer.exe", QCryptographicHash::Md5) == m_launcherMd5) {
-		//Remove "extra" files
-		if (QFile(m_gameFolderPath + "Everlasting Summer (modified).exe").exists())
-			QFile(m_gameFolderPath + "Everlasting Summer (modified).exe").remove();
+	saveSettings();
 
-		QFile::rename(m_gameFolderPath + "Everlasting Summer.exe", m_gameFolderPath + "Everlasting Summer (modified).exe");
-		QFile::rename(m_gameFolderPath + "Everlasting Summer (origin).exe", m_gameFolderPath + "Everlasting Summer.exe");
-	}
+	restoreOriginLauncher();
 
 	gameLauncher.start();
 	gameLauncher.waitForStarted(-1);
@@ -597,10 +605,11 @@ void MainWindow::selectTempModsFolder()
 	if (tempModsFolderUrl.isValid()) {
 		QString tempModsFolderPath = tempModsFolderUrl.toString().replace('/', '\\');
 		if (m_tempModsFolderPath != tempModsFolderPath) {
-			if (!m_tempModsFolderPath.isEmpty() && QDir(m_tempModsFolderPath).exists() &&
-					QMessageBox::information(this, tr("Delete folder"), tr("Would you like to delete old mods temp folder?") +
-											 "\n" + m_tempModsFolderPath, QMessageBox::StandardButton::Yes, QMessageBox::StandardButton::No) ==
-					QMessageBox::StandardButton::Yes)
+			if (!m_tempModsFolderPath.isEmpty() && QDir(m_tempModsFolderPath).exists()
+				&& QMessageBox::information(this, tr("Delete folder"), tr("Would you like to delete old mods temp folder?") +
+											 "\n" + m_tempModsFolderPath,
+											 QMessageBox::StandardButton::Yes, QMessageBox::StandardButton::No)
+				== QMessageBox::StandardButton::Yes)
 				QDir(m_tempModsFolderPath).removeRecursively();
 
 			m_tempModsFolderPath = tempModsFolderPath + "\\mods (temp)\\";
@@ -645,7 +654,8 @@ void MainWindow::showAnnouncementMessage()
 		   "comments / wishes / suggestions, as well as help with choosing "
 		   "a priority direction for future updates!") + "<br>" +
 		tr("The survey is anonymous, does not require registration and only takes a few minutes."));
-	messageAbout.setInformativeText("<a href='https://docs.google.com/forms/d/e/1FAIpQLSej0DemqLm1NRJv1eI4vCMz0DAr2d2Nynzwd1VIrwtLYX8r4g/viewform'>" +
+	messageAbout.setInformativeText("<a href='https://docs.google.com/forms/d/e/"
+									"1FAIpQLSej0DemqLm1NRJv1eI4vCMz0DAr2d2Nynzwd1VIrwtLYX8r4g/viewform'>" +
 									tr("Click here to take the survey") + "</a>");
 	messageAbout.exec();
 }
@@ -691,32 +701,22 @@ void MainWindow::checkAnnouncementPopup(const int loadedApplicationVersion)
 		return;
 	}
 
-	switch (CurrentApplicationVersion) {
-		case applicationVersion(1, 1, 9):
-		Q_FALLTHROUGH();
-		case applicationVersion(1, 1, 10):
-			showAnnouncementMessage();
-		break;
-
-		default:
-		break;
+	if (loadedApplicationVersion < applicationVersion(1, 1, 9)) {
+		showAnnouncementMessage();
 	}
 }
 
 bool MainWindow::checkGameMd5(const QString &folderPath)
 {
-	QByteArray gameMd5 = fileChecksum(folderPath + "Everlasting Summer.exe", QCryptographicHash::Md5);
+	QByteArray gameMd5 = fileChecksum(folderPath + "Everlasting Summer (origin).exe");
+	bool isGameMd5Valid = (!gameMd5.isNull() && gameMd5 != m_launcherMd5);
 
-	if (gameMd5 == m_launcherMd5 || gameMd5.isNull())
-		gameMd5 = fileChecksum(folderPath + "Everlasting Summer (origin).exe", QCryptographicHash::Md5);
-
-	if (gameMd5.isNull()) {
-		QMessageBox::critical(this, tr("Wrong game .exe"), tr("Game folder doesn't contains origin \n 'Everlasting Summer.exe' \n "
-															  "and there is no file \n 'Everlasting Summer (origin).exe'!"),
-							  QMessageBox::StandardButton::Ok, QMessageBox::StandardButton::NoButton);
-		return false;
+	if (!isGameMd5Valid) {
+		gameMd5 = fileChecksum(folderPath + "Everlasting Summer.exe");
+		isGameMd5Valid = (!gameMd5.isNull() && gameMd5 != m_launcherMd5);
 	}
-	return true;
+
+	return isGameMd5Valid;
 }
 
 void MainWindow::checkOriginLauncherReplacement() const
@@ -725,40 +725,69 @@ void MainWindow::checkOriginLauncherReplacement() const
 		return;
 	}
 
+	QByteArray gameLauncherMd5 = fileChecksum(m_gameFolderPath + "Everlasting Summer.exe");
+
 	if (ui->replaceOriginLauncherCheckBox->isChecked()) {
-		if (fileChecksum(m_gameFolderPath + "Everlasting Summer.exe", QCryptographicHash::Md5) != m_launcherMd5) {
-			//Remove "extra" files
-			if (QFile(m_gameFolderPath + "Everlasting Summer (origin).exe").exists())
-				QFile(m_gameFolderPath + "Everlasting Summer (origin).exe").remove();
-
-			QFile::rename(m_gameFolderPath + "Everlasting Summer.exe", m_gameFolderPath + "Everlasting Summer (origin).exe");
-
-			if (QFileInfo::exists(m_gameFolderPath + "Everlasting Summer (modified).exe")) {
-				QFile::rename(m_gameFolderPath + "Everlasting Summer (modified).exe", m_gameFolderPath + "Everlasting Summer.exe");
+		if (gameLauncherMd5 != m_launcherMd5) {
+			if (QFile(m_gameFolderPath + "Everlasting Summer (origin).exe").exists()) {
+				QFile(m_gameFolderPath + "Everlasting Summer.exe").remove();
 			} else {
+				QFile::rename(m_gameFolderPath + "Everlasting Summer.exe",
+							  m_gameFolderPath + "Everlasting Summer (origin).exe");
+			}
+
+			if (m_launcherMd5 == fileChecksum(m_gameFolderPath + "Everlasting Summer (modified).exe")) {
+				QFile::rename(m_gameFolderPath + "Everlasting Summer (modified).exe",
+							  m_gameFolderPath + "Everlasting Summer.exe");
+			} else {
+				if (QFile(m_gameFolderPath + "Everlasting Summer (modified).exe").exists()) {
+					QFile(m_gameFolderPath + "Everlasting Summer (modified).exe").remove();
+				}
+
 				QFile::copy("launcher\\ESLauncher.exe", m_gameFolderPath + "Everlasting Summer.exe");
 			}
 		}
 
 		QByteArray launcherSettings = QDir::currentPath().replace('/', '\\').toUtf8() + "\\\nESModManager\nfalse";
-		QFile launcherSettingsFile(m_gameFolderPath + "LaunchedProgram.ini");
-		launcherSettingsFile.open(QFile::ReadOnly);
-		if (launcherSettingsFile.readAll() != launcherSettings) {
-			launcherSettingsFile.close();
-			launcherSettingsFile.open(QFile::WriteOnly);
-			launcherSettingsFile.write(launcherSettings);
-		}
-		launcherSettingsFile.close();
+		rewriteFileIfDataIsDifferent(m_gameFolderPath + "LaunchedProgram.ini", launcherSettings);
 	} else {
-		if (fileChecksum(m_gameFolderPath + "Everlasting Summer.exe", QCryptographicHash::Md5) == m_launcherMd5) {
-			QFile::remove(m_gameFolderPath + "Everlasting Summer.exe");
-			QFile::rename(m_gameFolderPath + "Everlasting Summer (origin).exe", m_gameFolderPath + "Everlasting Summer.exe");
-		} else {
+		if (gameLauncherMd5 == fileChecksum(m_gameFolderPath + "Everlasting Summer (origin).exe")) {
 			QFile::remove(m_gameFolderPath + "Everlasting Summer (origin).exe");
+		} else {
+			QFile::remove(m_gameFolderPath + "Everlasting Summer.exe");
+			QFile::rename(m_gameFolderPath + "Everlasting Summer (origin).exe",
+						  m_gameFolderPath + "Everlasting Summer.exe");
 		}
 
 		QFile::remove(m_gameFolderPath + "Everlasting Summer (modified).exe");
 		QFile::remove(m_gameFolderPath + "LaunchedProgram.ini");
+	}
+}
+
+void MainWindow::restoreOriginLauncher() const
+{
+	QByteArray gameLauncherMd5 = fileChecksum(m_gameFolderPath + "Everlasting Summer.exe");
+
+	if (QFile(m_gameFolderPath + "Everlasting Summer (origin).exe").exists()) {
+		// The game launcher may have been changed
+
+		if (gameLauncherMd5 != fileChecksum(m_gameFolderPath + "Everlasting Summer (origin).exe")) {
+			if (fileChecksum(m_gameFolderPath + "Everlasting Summer (modified).exe") != m_launcherMd5) {
+				QFile(m_gameFolderPath + "Everlasting Summer (modified).exe").remove();
+
+				if (gameLauncherMd5 == m_launcherMd5) {
+					QFile::rename(m_gameFolderPath + "Everlasting Summer.exe",
+								  m_gameFolderPath + "Everlasting Summer (modified).exe");
+				}
+			}
+
+			if (QFile(m_gameFolderPath + "Everlasting Summer.exe").exists()) {
+				QFile(m_gameFolderPath + "Everlasting Summer.exe").remove();
+			}
+
+			QFile::rename(m_gameFolderPath + "Everlasting Summer (origin).exe",
+						  m_gameFolderPath + "Everlasting Summer.exe");
+		}
 	}
 }
 
@@ -947,8 +976,6 @@ void MainWindow::saveSettings() const
 	m_settings->setValue("Editor/bMaximized", m_databaseEditor->isMaximized());
 
 	m_settings->setValue("Editor/qsSize", m_databaseEditor->size());
-
-	saveDatabase();
 }
 
 void MainWindow::applyBackwardCompatibilityFixes(const int loadedApplicationVersion)
@@ -996,23 +1023,7 @@ void MainWindow::applyBackwardCompatibilityFixes(const int loadedApplicationVers
 				file.remove();
 
 				database.setArray(mods);
-				QByteArray rawData = database.toJson();
-				file.setFileName("mods_database.json");
-
-				if (file.exists("mods_database.json")) {
-					file.open(QFile::ReadOnly);
-					if (file.readAll() != rawData) {
-						file.close();
-						file.open(QFile::WriteOnly);
-						file.write(rawData);
-					}
-					file.close();
-				}
-				else {
-					file.open(QFile::WriteOnly);
-					file.write(rawData);
-					file.close();
-				}
+				rewriteFileIfDataIsDifferent("mods_database.json", database.toJson());
 			}
 		}
 	}
