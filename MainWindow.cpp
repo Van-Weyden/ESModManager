@@ -216,8 +216,6 @@ MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
 MainWindow::~MainWindow()
 {
 	saveSettings();
-	m_model->sortDatabase();
-	saveDatabase();
 
 	QApplication::removeTranslator(m_translator);
 	QApplication::removeTranslator(m_qtTranslator);
@@ -547,7 +545,8 @@ void MainWindow::runGame()
 	QByteArray launcherSettings = m_gameFolderPath.toUtf8() + "\nEverlasting Summer\ntrue";
 	rewriteFileIfDataIsDifferent("launcher\\LaunchedProgram.ini", launcherSettings);
 
-	saveSettings();
+	//We must ensure that autoexit flag is up to date because it will be read by our .rpy script
+	m_settings->setValue("General/bAutoexit", ui->autoexitCheckBox->isChecked());
 
 	restoreOriginLauncher();
 
@@ -946,36 +945,25 @@ void MainWindow::readSettings()
 void MainWindow::saveSettings() const
 {
 	m_settings->clear();
-
 	m_settings->setValue("General/sAppVersion", applicationVersionToString(CurrentApplicationVersion));
-
 	m_settings->setValue("General/sLang", m_lang);
-
 	m_settings->setValue("General/bMaximized", this->isMaximized());
-
 	m_settings->setValue("General/qsSize", this->size());
-
 	m_settings->setValue("General/sGameFolder", m_gameFolderPath);
-
 	m_settings->setValue("General/sModsFolder", m_modsFolderPath);
-
 	m_settings->setValue("General/sTempModsFolder", m_tempModsFolderPath);
-
 	m_settings->setValue("General/bAutoexit", ui->autoexitCheckBox->isChecked());
-
 	m_settings->setValue("General/bMoveModsBack", ui->moveModsBackCheckBox->isChecked());
-	moveModFoldersBack();
-
 	m_settings->setValue("General/bReplaceOriginLauncher", ui->replaceOriginLauncherCheckBox->isChecked());
-	checkOriginLauncherReplacement();
-
 	m_settings->setValue("General/bCompleteModNames", ui->completeNamesCheckBox->isChecked());
-
 	m_settings->setValue("General/bUseSteamModNames", ui->useSteamModNamesCheckBox->isChecked());
-
 	m_settings->setValue("Editor/bMaximized", m_databaseEditor->isMaximized());
-
 	m_settings->setValue("Editor/qsSize", m_databaseEditor->size());
+
+	moveModFoldersBack();
+	checkOriginLauncherReplacement();
+	m_model->sortDatabase();
+	saveDatabase();
 }
 
 void MainWindow::applyBackwardCompatibilityFixes(const int loadedApplicationVersion)
