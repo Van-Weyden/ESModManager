@@ -10,9 +10,9 @@
 #include <QTimer>
 #include <QUrlQuery>
 
-#include "databasemodel.h"
+#include "DatabaseModel.h"
 
-#include "steamrequester.h"
+#include "SteamRequester.h"
 
 //public:
 
