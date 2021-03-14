@@ -44,7 +44,7 @@ class MainWindow : public QMainWindow
 	Q_OBJECT
 
 public:
-	static constexpr const int CurrentApplicationVersion = applicationVersion(1, 1, 10);
+	static constexpr const int CurrentApplicationVersion = applicationVersion(1, 1, 11);
 
 	explicit MainWindow(QWidget *parent = nullptr, const bool runCheck = true);
 	~MainWindow();
@@ -83,7 +83,7 @@ public slots:
 	void showAnnouncementMessage();
 
 protected:
-	void changeEvent(QEvent *event);
+	void changeEvent(QEvent *event) override;
 
 private slots:
 	bool openModFolder(const int modIndex);
@@ -93,6 +93,7 @@ private:
 	void checkAnnouncementPopup(const int loadedApplicationVersion);
 	bool checkGameMd5(const QString &folderPath);
 	void checkOriginLauncherReplacement() const;
+	void restoreOriginLauncher() const;
 	void moveModFolders(QString *unmovedModsToTempFolder = nullptr, QString *unmovedModsFromTempFolder = nullptr) const;
 	void moveModFoldersBack() const;
 	void readSettings();

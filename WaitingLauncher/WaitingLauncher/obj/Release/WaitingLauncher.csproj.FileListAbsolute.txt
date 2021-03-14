@@ -1,7 +1,0 @@
-d:\Documents\Visual Studio 2017\source\repos\WaitingLauncher\WaitingLauncher\obj\Release\WaitingLauncher.csprojAssemblyReference.cache
-d:\Documents\Visual Studio 2017\source\repos\WaitingLauncher\WaitingLauncher\obj\Release\WaitingLauncher.csproj.CoreCompileInputs.cache
-d:\Documents\Visual Studio 2017\source\repos\WaitingLauncher\WaitingLauncher\bin\Release\ESModSelectorLauncher.exe.config
-d:\Documents\Visual Studio 2017\source\repos\WaitingLauncher\WaitingLauncher\bin\Release\ESModSelectorLauncher.exe
-d:\Documents\Visual Studio 2017\source\repos\WaitingLauncher\WaitingLauncher\bin\Release\ESModSelectorLauncher.pdb
-d:\Documents\Visual Studio 2017\source\repos\WaitingLauncher\WaitingLauncher\obj\Release\ESModSelectorLauncher.exe
-d:\Documents\Visual Studio 2017\source\repos\WaitingLauncher\WaitingLauncher\obj\Release\ESModSelectorLauncher.pdb
