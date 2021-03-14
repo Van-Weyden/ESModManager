@@ -26,13 +26,13 @@ bool DatabaseModel::isNameValid(const QString &name) const
 
 void DatabaseModel::appendDatabase(const ModInfo &modInfo)
 {
-	emit beginInsertRows(QModelIndex(), m_database.size(), m_database.size());
+	beginInsertRows(QModelIndex(), m_database.size(), m_database.size());
 	m_database.append(modInfo);
 	if (m_database.last().steamName.isEmpty())
 		m_database.last().steamName = ModInfo::generateFailedToGetNameStub();
 		//m_database.last().steamName = ModInfo::generateWaitingForSteamResponseStub();
 
-	emit endInsertRows();
+	endInsertRows();
 }
 
 QVariant DatabaseModel::data(const QModelIndex &index, int role) const
@@ -114,9 +114,7 @@ QVariant DatabaseModel::headerData(int section, Qt::Orientation orientation, int
 void DatabaseModel::removeFromDatabase(const int index)
 {
 	beginRemoveRows(QModelIndex(), index, index);
-
 	m_database.removeAt(index);
-
 	endRemoveRows();
 }
 
