@@ -1,6 +1,6 @@
 init python:
-    import os
-    import subprocess
+    import os as esmm_os
+    import subprocess as esmm_subprocess
     
     esmm_executableExtension = ".exe"
     
@@ -21,8 +21,8 @@ init python:
         if (esmm_managerFullFileName in esmm_renpyFileName):
             esmm_isManagerInstalled = True
             esmm_managerFileFullPath = renpy.file(esmm_renpyFileName).name
-            esmm_managerBinDirPath = os.path.abspath(os.path.dirname(esmm_managerFileFullPath))
-            esmm_managerDirPath = os.path.abspath(os.path.dirname(esmm_managerBinDirPath))
+            esmm_managerBinDirPath = esmm_os.path.abspath(esmm_os.path.dirname(esmm_managerFileFullPath))
+            esmm_managerDirPath = esmm_os.path.abspath(esmm_os.path.dirname(esmm_managerBinDirPath))
             esmm_managerBinDirPath += '\\'
             esmm_managerDirPath += '\\'
             break;
@@ -38,7 +38,7 @@ label ESModManager:
     python:
         if (esmm_isManagerInstalled):
             esmm_processCheckerFullPath = esmm_managerBinDirPath + esmm_processCheckerFullFileName
-            esmm_processChecker = subprocess.Popen([esmm_processCheckerFullPath, esmm_managerFileName])
+            esmm_processChecker = esmm_subprocess.Popen([esmm_processCheckerFullPath, esmm_managerFileName])
             esmm_needLaunchManager = True
             
             if (esmm_processChecker.wait()):
@@ -53,7 +53,7 @@ label ESModManager:
                 esmm_programName = esmm_gameFileName
             
             if (esmm_needLaunchManager):
-                subprocess.Popen([esmm_managerDirPath + esmm_waitingLauncherFullFileName, 
+                esmm_subprocess.Popen([esmm_managerDirPath + esmm_waitingLauncherFullFileName, 
                                   "",                       #Path to the folder with the monitored program (not necessary in our case)
                                   esmm_programName,         #Pame of the monitored program
                                   "true",                   #Flag indicating the need to monitor the program until it is closed
