@@ -2,6 +2,8 @@ init python:
     import os as esmm_os
     import subprocess as esmm_subprocess
     
+    esmm_label = "ESModManager"
+    
     esmm_executableExtension = ".exe"
     
     esmm_gameFileName = "Everlasting Summer"
@@ -26,13 +28,18 @@ init python:
             esmm_managerBinDirPath += '\\'
             esmm_managerDirPath += '\\'
             break;
-
-init:
+    
     if (esmm_isManagerInstalled):
         if (_preferences.language == None):
-            $ mods["ESModManager"] = u"Менеджер модов"
+            mods[esmm_label] = u"Менеджер модов"
         else:
-            $ mods["ESModManager"] = "Mod Manager"
+            mods[esmm_label] = "Mod Manager"
+        
+        try:
+            modsImages[esmm_label] = ("bin/ESModManager.png", False, '')
+            imgsModsMenu_polyMods.append(esmm_label)
+        except:
+            pass
 
 label ESModManager:
     python:
