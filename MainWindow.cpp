@@ -635,12 +635,23 @@ void MainWindow::showAboutInfo()
 		tr("Author:") + " <a href='https://steamcommunity.com/id/van_weyden/'>Slavyan</a><br>" +
 		tr("Help in testing:") + " <a href='https://steamcommunity.com/profiles/76561198058938676/'>Hatsune Miku</a>,"
 								 " 🔰 <a href='https://steamcommunity.com/id/lena_sova/'>" + tr("Lena") + "</a>🔰 ," +
-								 " <a href='https://vk.com/svet_mag'>" + tr("Alexey Golikov") + "</a><br><br>" +
+								 " <a href='https://vk.com/svet_mag'>" + tr("Alexey Golikov") + "</a>"
+		"<br><br>" +
 		tr("This program is used to 'fix' conflicts of mods and speed up the launch of the game. "
-		   "Before launching the game, all unselected mods are moved to another folder, so the game engine will not load them."));
+		   "Before launching the game, all unselected mods are moved to another folder, so the game engine will not load them.") +
+		"<br><br>" +
+		tr("If you need similar functionality on your Android device, "
+		   "you can use the RKK Orion client from A&A Creative Team:") + "<br>"
+		   "<a href='https://play.google.com/store/apps/details?id=com.alativity.esorion.installer'>" +
+		   tr("RKK Orion in Google Play Market") + "</a>" + "<br>"
+		   "<a href='" + tr("https://rkk.alativity.design/threads/client-rkk-orion.143/") + "'>" +
+		   tr("RKK Orion Project Forum") + "</a>");
 	messageAbout.setInformativeText(tr("You can leave your questions/suggestions") +
 									" <a href='https://steamcommunity.com/sharedfiles/filedetails/?id=1826799366'>" +
-									tr("here") + "</a>.");
+									tr("in the Steam Workshop") + "</a> " +
+									tr("or") +
+									" <a href='https://discord.gg/d2qYfsc'>" +
+									tr("on the Discord server") + "</a>.");
 	messageAbout.exec();
 }
 
@@ -650,13 +661,13 @@ void MainWindow::showAnnouncementMessage()
 							 QMessageBox::StandardButton::Close, nullptr, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
 	messageAbout.setTextFormat(Qt::TextFormat::RichText);
 	messageAbout.setText(
-		tr("Currently, a survey is being conducted in which you can leave your "
-		   "comments / wishes / suggestions, as well as help with choosing "
-		   "a priority direction for future updates!") + "<br>" +
-		tr("The survey is anonymous, does not require registration and only takes a few minutes."));
-	messageAbout.setInformativeText("<a href='https://docs.google.com/forms/d/e/"
-									"1FAIpQLSej0DemqLm1NRJv1eI4vCMz0DAr2d2Nynzwd1VIrwtLYX8r4g/viewform'>" +
-									tr("Click here to take the survey") + "</a>");
+		tr("If you need similar functionality on your Android device, "
+		   "you can use the RKK Orion client from A&A Creative Team:") + "<br>"
+		   "<a href='https://play.google.com/store/apps/details?id=com.alativity.esorion.installer'>" +
+		   tr("RKK Orion in Google Play Market") + "</a>" + "<br>"
+		   "<a href='" + tr("https://rkk.alativity.design/threads/client-rkk-orion.143/") + "'>" +
+		   tr("RKK Orion Project Forum") + "</a>"
+	);
 	messageAbout.exec();
 }
 
@@ -701,7 +712,7 @@ void MainWindow::checkAnnouncementPopup(const int loadedApplicationVersion)
 		return;
 	}
 
-	if (loadedApplicationVersion < applicationVersion(1, 1, 9)) {
+	if (loadedApplicationVersion < applicationVersion(1, 1, 12)) {
 		showAnnouncementMessage();
 	}
 }
