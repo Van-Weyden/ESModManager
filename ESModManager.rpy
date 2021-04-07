@@ -1,4 +1,4 @@
-init python:
+init -999 python:
     import os as esmm_os
     import subprocess as esmm_subprocess
     
@@ -27,8 +27,33 @@ init python:
             esmm_managerDirPath = esmm_os.path.abspath(esmm_os.path.dirname(esmm_managerBinDirPath))
             esmm_managerBinDirPath += '\\'
             esmm_managerDirPath += '\\'
+            esmm_processCheckerFullPath = esmm_managerBinDirPath + esmm_processCheckerFullFileName
             break;
-    
+
+    if (esmm_isManagerInstalled):
+        esmm_needLaunchManager = False
+        esmm_processChecker = esmm_subprocess.Popen([esmm_processCheckerFullPath, esmm_managerFileName])
+        
+        if (not esmm_processChecker.wait()):
+            esmm_managerSettings = open(esmm_managerBinDirPath + esmm_managerSettingsFullFileName, "r")
+            for esmm_line in esmm_managerSettings:
+                if (esmm_line.startswith("bReplaceOriginLauncher=")):
+                    esmm_needLaunchManager = esmm_line.startswith("bReplaceOriginLauncher=true")
+                    break;
+
+        if (esmm_needLaunchManager):
+            esmm_subprocess.Popen([esmm_managerDirPath + esmm_waitingLauncherFullFileName, 
+                                  "",                       #Path to the folder with the monitored program (not necessary in our case)
+                                  esmm_gameFileName,        #Name of the monitored program
+                                  "true",                   #Flag indicating the need to monitor the program until it is closed
+                                  "true",                   #Flag indicating whether to run the program if it is already running
+                                  "true",                   #Flag indicating whether to run the program after closing the monitored program
+                                  esmm_managerBinDirPath,   #Path to the program folder, which will be launched after the monitored program is closed
+                                  esmm_managerFileName      #Name of the program which will be launched after the monitored program is closed
+                                ])
+            renpy.quit()
+
+init python:
     if (esmm_isManagerInstalled):
         if (_preferences.language == None):
             mods[esmm_label] = u"Менеджер модов"
@@ -44,10 +69,9 @@ init python:
 label ESModManager:
     python:
         if (esmm_isManagerInstalled):
-            esmm_processCheckerFullPath = esmm_managerBinDirPath + esmm_processCheckerFullFileName
-            esmm_processChecker = esmm_subprocess.Popen([esmm_processCheckerFullPath, esmm_managerFileName])
             esmm_needLaunchManager = True
-            
+            esmm_processChecker = esmm_subprocess.Popen([esmm_processCheckerFullPath, esmm_managerFileName])
+
             if (esmm_processChecker.wait()):
                 esmm_managerSettings = open(esmm_managerBinDirPath + esmm_managerSettingsFullFileName, "r")
                 for esmm_line in esmm_managerSettings:
@@ -62,7 +86,7 @@ label ESModManager:
             if (esmm_needLaunchManager):
                 esmm_subprocess.Popen([esmm_managerDirPath + esmm_waitingLauncherFullFileName, 
                                   "",                       #Path to the folder with the monitored program (not necessary in our case)
-                                  esmm_programName,         #Pame of the monitored program
+                                  esmm_programName,         #Name of the monitored program
                                   "true",                   #Flag indicating the need to monitor the program until it is closed
                                   "true",                   #Flag indicating whether to run the program if it is already running
                                   "true",                   #Flag indicating whether to run the program after closing the monitored program
