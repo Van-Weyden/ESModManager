@@ -261,7 +261,7 @@ QString renPyInitRegExp(const char *tag, const QString &dictionaryKeyInBracketsP
 int indexOfModWithUnknownNameInDatabase(const QString &modFolderName, const QString &modFolderPath,
 										DatabaseModel &database, const int oldDatabaseSize, bool *isModNameValid)
 {
-	QString managerPath = QDir::currentPath().replace('/', '\\');
+	QString managerPath = QCoreApplication::applicationDirPath().replace('/', '\\');
 
 	// Self check
 	if (managerPath.contains(modFolderPath)) {
