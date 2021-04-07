@@ -1,6 +1,8 @@
-init python:
-    import os
-    import subprocess
+init -999 python:
+    import os as esmm_os
+    import subprocess as esmm_subprocess
+    
+    esmm_label = "ESModManager"
     
     esmm_executableExtension = ".exe"
     
@@ -21,26 +23,55 @@ init python:
         if (esmm_managerFullFileName in esmm_renpyFileName):
             esmm_isManagerInstalled = True
             esmm_managerFileFullPath = renpy.file(esmm_renpyFileName).name
-            esmm_managerBinDirPath = os.path.abspath(os.path.dirname(esmm_managerFileFullPath))
-            esmm_managerDirPath = os.path.abspath(os.path.dirname(esmm_managerBinDirPath))
+            esmm_managerBinDirPath = esmm_os.path.abspath(esmm_os.path.dirname(esmm_managerFileFullPath))
+            esmm_managerDirPath = esmm_os.path.abspath(esmm_os.path.dirname(esmm_managerBinDirPath))
             esmm_managerBinDirPath += '\\'
             esmm_managerDirPath += '\\'
+            esmm_processCheckerFullPath = esmm_managerBinDirPath + esmm_processCheckerFullFileName
             break;
 
-init:
+    if (esmm_isManagerInstalled):
+        esmm_needLaunchManager = False
+        esmm_processChecker = esmm_subprocess.Popen([esmm_processCheckerFullPath, esmm_managerFileName])
+        
+        if (not esmm_processChecker.wait()):
+            esmm_managerSettings = open(esmm_managerBinDirPath + esmm_managerSettingsFullFileName, "r")
+            for esmm_line in esmm_managerSettings:
+                if (esmm_line.startswith("bReplaceOriginLauncher=")):
+                    esmm_needLaunchManager = esmm_line.startswith("bReplaceOriginLauncher=true")
+                    break;
+
+        if (esmm_needLaunchManager):
+            esmm_subprocess.Popen([esmm_managerDirPath + esmm_waitingLauncherFullFileName, 
+                                  "",                       #Path to the folder with the monitored program (not necessary in our case)
+                                  esmm_gameFileName,        #Name of the monitored program
+                                  "true",                   #Flag indicating the need to monitor the program until it is closed
+                                  "true",                   #Flag indicating whether to run the program if it is already running
+                                  "true",                   #Flag indicating whether to run the program after closing the monitored program
+                                  esmm_managerBinDirPath,   #Path to the program folder, which will be launched after the monitored program is closed
+                                  esmm_managerFileName      #Name of the program which will be launched after the monitored program is closed
+                                ])
+            renpy.quit()
+
+init python:
     if (esmm_isManagerInstalled):
         if (_preferences.language == None):
-            $ mods["ESModManager"] = u"Менеджер модов"
+            mods[esmm_label] = u"Менеджер модов"
         else:
-            $ mods["ESModManager"] = "Mod Manager"
+            mods[esmm_label] = "Mod Manager"
+        
+        try:
+            modsImages[esmm_label] = ("bin/ESModManager.png", False, '')
+            imgsModsMenu_polyMods.append(esmm_label)
+        except:
+            pass
 
 label ESModManager:
     python:
         if (esmm_isManagerInstalled):
-            esmm_processCheckerFullPath = esmm_managerBinDirPath + esmm_processCheckerFullFileName
-            esmm_processChecker = subprocess.Popen([esmm_processCheckerFullPath, esmm_managerFileName])
             esmm_needLaunchManager = True
-            
+            esmm_processChecker = esmm_subprocess.Popen([esmm_processCheckerFullPath, esmm_managerFileName])
+
             if (esmm_processChecker.wait()):
                 esmm_managerSettings = open(esmm_managerBinDirPath + esmm_managerSettingsFullFileName, "r")
                 for esmm_line in esmm_managerSettings:
@@ -53,9 +84,9 @@ label ESModManager:
                 esmm_programName = esmm_gameFileName
             
             if (esmm_needLaunchManager):
-                subprocess.Popen([esmm_managerDirPath + esmm_waitingLauncherFullFileName, 
+                esmm_subprocess.Popen([esmm_managerDirPath + esmm_waitingLauncherFullFileName, 
                                   "",                       #Path to the folder with the monitored program (not necessary in our case)
-                                  esmm_programName,         #Pame of the monitored program
+                                  esmm_programName,         #Name of the monitored program
                                   "true",                   #Flag indicating the need to monitor the program until it is closed
                                   "true",                   #Flag indicating whether to run the program if it is already running
                                   "true",                   #Flag indicating whether to run the program after closing the monitored program

@@ -44,7 +44,7 @@ class MainWindow : public QMainWindow
 	Q_OBJECT
 
 public:
-	static constexpr const int CurrentApplicationVersion = applicationVersion(1, 1, 11);
+	static constexpr const int CurrentApplicationVersion = applicationVersion(1, 1, 12);
 
 	explicit MainWindow(QWidget *parent = nullptr, const bool runCheck = true);
 	~MainWindow();
@@ -61,6 +61,7 @@ public:
 	bool setLanguage(const QString &lang);
 
 public slots:
+	void addShortcutToDesktop() const;
 	void disableAllMods();
 	void enableAllMods();
 	void eraseDatabase();
@@ -80,12 +81,14 @@ public slots:
 
 	void showAboutInfo();
 
-	void showAnnouncementMessage();
+	void showAnnouncementMessageBox();
+	void showShortcutAddMessageBox();
 
 protected:
 	void changeEvent(QEvent *event) override;
 
 private slots:
+	void openManagerFolder();
 	bool openModFolder(const int modIndex);
 	void steamModNameProcessed();
 

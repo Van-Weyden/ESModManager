@@ -449,13 +449,15 @@ If unchecked, display mod names from their source files.</string>
      <height>26</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menuSelect">
+   <widget class="QMenu" name="menuOptions">
     <property name="title">
-     <string>Select</string>
+     <string>Options</string>
     </property>
     <addaction name="actionGame_folder"/>
     <addaction name="actionMods_folder"/>
     <addaction name="actionTemp_mods_folder"/>
+    <addaction name="actionAdd_shortcut_to_desktop"/>
+    <addaction name="actionOpen_the_manager_folder"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -464,22 +466,22 @@ If unchecked, display mod names from their source files.</string>
     <addaction name="actionAbout"/>
     <addaction name="actionAnnouncements"/>
    </widget>
-   <addaction name="menuSelect"/>
+   <addaction name="menuOptions"/>
    <addaction name="menuHelp"/>
   </widget>
   <action name="actionGame_folder">
    <property name="text">
-    <string>Game folder</string>
+    <string>Select game folder</string>
    </property>
   </action>
   <action name="actionMods_folder">
    <property name="text">
-    <string>Mods folder</string>
+    <string>Select mods folder</string>
    </property>
   </action>
   <action name="actionTemp_mods_folder">
    <property name="text">
-    <string>Temp mods folder</string>
+    <string>Select temp mods folder</string>
    </property>
   </action>
   <action name="actionAbout">
@@ -490,6 +492,16 @@ If unchecked, display mod names from their source files.</string>
   <action name="actionAnnouncements">
    <property name="text">
     <string>Announcements</string>
+   </property>
+  </action>
+  <action name="actionAdd_shortcut_to_desktop">
+   <property name="text">
+    <string>Add shortcut to desktop</string>
+   </property>
+  </action>
+  <action name="actionOpen_the_manager_folder">
+   <property name="text">
+    <string>Open the manager folder</string>
    </property>
   </action>
  </widget>

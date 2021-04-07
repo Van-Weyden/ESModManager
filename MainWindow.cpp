@@ -116,7 +116,7 @@ MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
 	m_settings = new QSettings(QString("settings.ini"), QSettings::IniFormat, this);
 	m_qtTranslator = new QTranslator();
 	m_translator = new QTranslator();
-	m_launcherMd5 = fileChecksum(QDir::currentPath() + "/launcher/ESLauncher.exe");
+	m_launcherMd5 = fileChecksum(QCoreApplication::applicationDirPath() + "/launcher/ESLauncher.exe");
 
 	//connections:
 
@@ -124,8 +124,10 @@ MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
 	connect(ui->actionGame_folder, SIGNAL(triggered()), this, SLOT(selectGameFolder()));
 	connect(ui->actionMods_folder, SIGNAL(triggered()), this, SLOT(selectModsFolder()));
 	connect(ui->actionTemp_mods_folder, SIGNAL(triggered()), this, SLOT(selectTempModsFolder()));
+	connect(ui->actionAdd_shortcut_to_desktop, SIGNAL(triggered()), this, SLOT(addShortcutToDesktop()));
+	connect(ui->actionOpen_the_manager_folder, SIGNAL(triggered()), this, SLOT(openManagerFolder()));
 	connect(ui->actionAbout, SIGNAL(triggered()), this, SLOT(showAboutInfo()));
-	connect(ui->actionAnnouncements, SIGNAL(triggered()), this, SLOT(showAnnouncementMessage()));
+	connect(ui->actionAnnouncements, SIGNAL(triggered()), this, SLOT(showAnnouncementMessageBox()));
 
 	connect(ui->completeNamesCheckBox, SIGNAL(stateChanged(int)),
 			m_model, SLOT(setCompleteModNames(int)));
@@ -193,7 +195,7 @@ MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
 		if (QFileInfo::exists(gamePath + "Everlasting Summer.exe")) {
 			setGameFolder(gamePath);
 		} else {
-			gamePath = QDir::currentPath().section('/', 0, -6);
+			gamePath = QCoreApplication::applicationDirPath().section('/', 0, -6);
 			gamePath.replace('/', '\\');
 			gamePath.append("\\common\\Everlasting Summer\\");
 			if (QFileInfo::exists(gamePath + "Everlasting Summer.exe")) {
@@ -374,6 +376,12 @@ bool MainWindow::setLanguage(const QString &lang)
 }
 
 //public slots:
+
+void MainWindow::addShortcutToDesktop() const
+{
+	QFile::link(QCoreApplication::applicationDirPath() + "/ESModManager.exe",
+				QStandardPaths::writableLocation(QStandardPaths::DesktopLocation) + "/" + windowTitle() +".lnk");
+}
 
 void MainWindow::disableAllMods()
 {
@@ -635,29 +643,64 @@ void MainWindow::showAboutInfo()
 		tr("Author:") + " <a href='https://steamcommunity.com/id/van_weyden/'>Slavyan</a><br>" +
 		tr("Help in testing:") + " <a href='https://steamcommunity.com/profiles/76561198058938676/'>Hatsune Miku</a>,"
 								 " 🔰 <a href='https://steamcommunity.com/id/lena_sova/'>" + tr("Lena") + "</a>🔰 ," +
-								 " <a href='https://vk.com/svet_mag'>" + tr("Alexey Golikov") + "</a><br><br>" +
+								 " <a href='https://vk.com/svet_mag'>" + tr("Alexey Golikov") + "</a>"
+		"<br><br>" +
 		tr("This program is used to 'fix' conflicts of mods and speed up the launch of the game. "
-		   "Before launching the game, all unselected mods are moved to another folder, so the game engine will not load them."));
+		   "Before launching the game, all unselected mods are moved to another folder, so the game engine will not load them.") +
+		"<br><br>" +
+		tr("If you need similar functionality on your Android device, "
+		   "you can use the RKK Orion client from A&A Creative Team:") + "<br>"
+		   "<a href='https://play.google.com/store/apps/details?id=com.alativity.esorion.installer'>" +
+		   tr("RKK Orion in Google Play Market") + "</a>" + "<br>"
+		   "<a href='" + tr("https://rkk.alativity.design/threads/client-rkk-orion.143/") + "'>" +
+		   tr("RKK Orion Project Forum") + "</a>");
 	messageAbout.setInformativeText(tr("You can leave your questions/suggestions") +
 									" <a href='https://steamcommunity.com/sharedfiles/filedetails/?id=1826799366'>" +
-									tr("here") + "</a>.");
+									tr("in the Steam Workshop") + "</a> " +
+									tr("or") +
+									" <a href='https://discord.gg/d2qYfsc'>" +
+									tr("on the Discord server") + "</a>.");
 	messageAbout.exec();
 }
 
-void MainWindow::showAnnouncementMessage()
+void MainWindow::showAnnouncementMessageBox()
 {
 	QMessageBox messageAbout(QMessageBox::Icon::Information, tr("Announcement"), "",
-							 QMessageBox::StandardButton::Close, nullptr, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
+							 QMessageBox::StandardButton::Close,
+							 nullptr, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
 	messageAbout.setTextFormat(Qt::TextFormat::RichText);
 	messageAbout.setText(
-		tr("Currently, a survey is being conducted in which you can leave your "
-		   "comments / wishes / suggestions, as well as help with choosing "
-		   "a priority direction for future updates!") + "<br>" +
-		tr("The survey is anonymous, does not require registration and only takes a few minutes."));
-	messageAbout.setInformativeText("<a href='https://docs.google.com/forms/d/e/"
-									"1FAIpQLSej0DemqLm1NRJv1eI4vCMz0DAr2d2Nynzwd1VIrwtLYX8r4g/viewform'>" +
-									tr("Click here to take the survey") + "</a>");
+		tr("If you need similar functionality on your Android device, "
+		   "you can use the RKK Orion client from A&A Creative Team:") + "<br>"
+		   "<a href='https://play.google.com/store/apps/details?id=com.alativity.esorion.installer'>" +
+		   tr("RKK Orion in Google Play Market") + "</a>" + "<br>"
+		   "<a href='" + tr("https://rkk.alativity.design/threads/client-rkk-orion.143/") + "'>" +
+		   tr("RKK Orion Project Forum") + "</a>"
+	);
+
 	messageAbout.exec();
+}
+
+void MainWindow::showShortcutAddMessageBox()
+{
+	QMessageBox messageAbout(QMessageBox::Icon::Warning, tr("Warning"), "",
+							 QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No,
+							 nullptr, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
+	messageAbout.setText(
+		tr("This manager modifies the game files in such a way that when the game is started via Steam, "
+		   "the manager will be launched first.\n\nHowever, due to periodic checks of the game files integrity by Steam, "
+		   "the original files can be restored. In this case, the manager will also start before the game, "
+		   "but only if the game can load all installed mods.\n\n In other words, "
+		   "if there are too many mods, and Steam will restore the original game launcher, "
+		   "the manager will need to be launched manually from its folder.\n\n"
+		   "You can now add a shortcut to the desktop to make it easier to launch the manager in such situations.")
+	);
+	messageAbout.setInformativeText(tr("Do you want to add a manager shortcut to your desktop?"));
+	messageAbout.setAcceptDrops(true);
+
+	if (messageAbout.exec() == QMessageBox::StandardButton::Yes) {
+		addShortcutToDesktop();
+	}
 }
 
 //protected:
@@ -672,6 +715,11 @@ void MainWindow::changeEvent(QEvent *event)
 }
 
 //private slots:
+
+void MainWindow::openManagerFolder()
+{
+	QDesktopServices::openUrl(QUrl("file:///" + QCoreApplication::applicationDirPath()));
+}
 
 bool MainWindow::openModFolder(const int modIndex)
 {
@@ -701,8 +749,9 @@ void MainWindow::checkAnnouncementPopup(const int loadedApplicationVersion)
 		return;
 	}
 
-	if (loadedApplicationVersion < applicationVersion(1, 1, 9)) {
-		showAnnouncementMessage();
+	if (loadedApplicationVersion < applicationVersion(1, 1, 12)) {
+		showShortcutAddMessageBox();
+		showAnnouncementMessageBox();
 	}
 }
 
@@ -748,7 +797,7 @@ void MainWindow::checkOriginLauncherReplacement() const
 			}
 		}
 
-		QByteArray launcherSettings = QDir::currentPath().replace('/', '\\').toUtf8() + "\\\nESModManager\nfalse";
+		QByteArray launcherSettings = QCoreApplication::applicationDirPath().replace('/', '\\').toUtf8() + "\\\nESModManager\nfalse";
 		rewriteFileIfDataIsDifferent(m_gameFolderPath + "LaunchedProgram.ini", launcherSettings);
 	} else {
 		if (gameLauncherMd5 == fileChecksum(m_gameFolderPath + "Everlasting Summer (origin).exe")) {
