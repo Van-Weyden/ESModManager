@@ -74,6 +74,35 @@ void rewriteFileIfDataIsDifferent(const QString &fileName, const QByteArray &new
 	}
 }
 
+QString generateWaitingLauncherArgs(const QString &programFolderPath,
+									const QString &programName,
+									const bool isMonitoringNeeded = false,
+									const bool dontLaunchIfAlreadyLaunched = false,
+									const bool launchProgramAfterClose = false,
+									const QString &programOnErrorFolderPath = QString(),
+									const QString &programOnErrorName = QString(),
+									const QString &programAfterCloseFolderPath = QString(),
+									const QString &programAfterCloseName = QString())
+{
+	QString args =	"\"" + programFolderPath + "\" " +
+					"\"" + programName + "\" " +
+					"-imn " + (isMonitoringNeeded ? "true" : "false") + " " +
+					"-dll " + (dontLaunchIfAlreadyLaunched ? "true" : "false") + " " +
+					"-lac " + (launchProgramAfterClose ? "true" : "false");
+
+	if (!programOnErrorFolderPath.isEmpty() && !programOnErrorName.isEmpty()) {
+		args += " -poe \"" + programOnErrorFolderPath + "\" " +
+					  "\"" + programOnErrorName + "\"";
+	}
+
+	if (!programAfterCloseFolderPath.isEmpty() && !programAfterCloseName.isEmpty()) {
+		args += " -pac \"" + programAfterCloseFolderPath + "\" " +
+					  "\"" + programAfterCloseName + "\"";
+	}
+
+	return args;
+}
+
 //public:
 
 MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
@@ -550,8 +579,14 @@ void MainWindow::runGame()
 	gameLauncher.setWorkingDirectory("launcher\\");
 	gameLauncher.setProgram("launcher\\ESLauncher.exe");
 
-	QByteArray launcherSettings = m_gameFolderPath.toUtf8() + "\nEverlasting Summer\ntrue";
-	rewriteFileIfDataIsDifferent("launcher\\LaunchedProgram.ini", launcherSettings);
+	rewriteFileIfDataIsDifferent(
+		"launcher\\LaunchedProgram.ini",
+		generateWaitingLauncherArgs(
+			QDir(m_gameFolderPath).path(),
+			"Everlasting Summer",
+			true
+		).toUtf8()
+	);
 
 	//We must ensure that autoexit flag is up to date because it will be read by our .rpy script
 	m_settings->setValue("General/bAutoexit", ui->autoexitCheckBox->isChecked());
@@ -797,8 +832,14 @@ void MainWindow::checkOriginLauncherReplacement() const
 			}
 		}
 
-		QByteArray launcherSettings = QCoreApplication::applicationDirPath().replace('/', '\\').toUtf8() + "\\\nESModManager\nfalse";
-		rewriteFileIfDataIsDifferent(m_gameFolderPath + "LaunchedProgram.ini", launcherSettings);
+		rewriteFileIfDataIsDifferent(
+			m_gameFolderPath + "LaunchedProgram.ini",
+			generateWaitingLauncherArgs(
+				QCoreApplication::applicationDirPath(),
+				"ESModManager"
+			).toUtf8()
+		);
+
 	} else {
 		if (gameLauncherMd5 == fileChecksum(m_gameFolderPath + "Everlasting Summer (origin).exe")) {
 			QFile::remove(m_gameFolderPath + "Everlasting Summer (origin).exe");
