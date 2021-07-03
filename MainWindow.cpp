@@ -813,6 +813,10 @@ void MainWindow::checkOriginLauncherReplacement() const
 
 	if (ui->replaceOriginLauncherCheckBox->isChecked()) {
 		if (gameLauncherMd5 != m_launcherMd5) {
+			if (!m_previousLauncherMd5.isEmpty() && m_previousLauncherMd5 != gameLauncherMd5) {
+				QFile(m_gameFolderPath + "Everlasting Summer (origin).exe").remove();
+			}
+
 			if (QFile(m_gameFolderPath + "Everlasting Summer (origin).exe").exists()) {
 				QFile(m_gameFolderPath + "Everlasting Summer.exe").remove();
 			} else {
@@ -824,10 +828,7 @@ void MainWindow::checkOriginLauncherReplacement() const
 				QFile::rename(m_gameFolderPath + "Everlasting Summer (modified).exe",
 							  m_gameFolderPath + "Everlasting Summer.exe");
 			} else {
-				if (QFile(m_gameFolderPath + "Everlasting Summer (modified).exe").exists()) {
-					QFile(m_gameFolderPath + "Everlasting Summer (modified).exe").remove();
-				}
-
+				QFile(m_gameFolderPath + "Everlasting Summer (modified).exe").remove();
 				QFile::copy("launcher\\ESLauncher.exe", m_gameFolderPath + "Everlasting Summer.exe");
 			}
 		}
@@ -841,14 +842,7 @@ void MainWindow::checkOriginLauncherReplacement() const
 		);
 
 	} else {
-		if (gameLauncherMd5 == fileChecksum(m_gameFolderPath + "Everlasting Summer (origin).exe")) {
-			QFile::remove(m_gameFolderPath + "Everlasting Summer (origin).exe");
-		} else if (QFile::exists(m_gameFolderPath + "Everlasting Summer (origin).exe")) {
-			QFile::remove(m_gameFolderPath + "Everlasting Summer.exe");
-			QFile::rename(m_gameFolderPath + "Everlasting Summer (origin).exe",
-						  m_gameFolderPath + "Everlasting Summer.exe");
-		}
-
+		restoreOriginLauncher();
 		QFile::remove(m_gameFolderPath + "Everlasting Summer (modified).exe");
 		QFile::remove(m_gameFolderPath + "LaunchedProgram.ini");
 	}
@@ -871,12 +865,11 @@ void MainWindow::restoreOriginLauncher() const
 				}
 			}
 
-			if (QFile(m_gameFolderPath + "Everlasting Summer.exe").exists()) {
+			if (m_previousLauncherMd5.isEmpty() || gameLauncherMd5 == m_launcherMd5 || gameLauncherMd5 == m_previousLauncherMd5) {
 				QFile(m_gameFolderPath + "Everlasting Summer.exe").remove();
+				QFile::rename(m_gameFolderPath + "Everlasting Summer (origin).exe",
+							  m_gameFolderPath + "Everlasting Summer.exe");
 			}
-
-			QFile::rename(m_gameFolderPath + "Everlasting Summer (origin).exe",
-						  m_gameFolderPath + "Everlasting Summer.exe");
 		}
 	}
 }
@@ -1030,6 +1023,13 @@ void MainWindow::readSettings()
 		}
 	}
 
+	if (m_settings->contains("General/baLastLauncherHash")) {
+		value = m_settings->value("General/baLastLauncherHash");
+		if (value != invalidValue) {
+			m_previousLauncherMd5 = value.toByteArray();
+		}
+	}
+
 	checkAnnouncementPopup(loadedApplicationVersion);
 }
 
@@ -1050,6 +1050,7 @@ void MainWindow::saveSettings() const
 	m_settings->setValue("General/bUseSteamModNames", ui->useSteamModNamesCheckBox->isChecked());
 	m_settings->setValue("Editor/bMaximized", m_databaseEditor->isMaximized());
 	m_settings->setValue("Editor/qsSize", m_databaseEditor->size());
+	m_settings->setValue("General/baLastLauncherHash", m_launcherMd5);
 
 	moveModFoldersBack();
 	checkOriginLauncherReplacement();

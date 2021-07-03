@@ -122,6 +122,7 @@ private:
 	ModScanner *m_scanner = nullptr;
 
 	QByteArray m_launcherMd5;
+	QByteArray m_previousLauncherMd5;
 };
 
 
