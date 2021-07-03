@@ -44,7 +44,7 @@ class MainWindow : public QMainWindow
 	Q_OBJECT
 
 public:
-	static constexpr const int CurrentApplicationVersion = applicationVersion(1, 1, 12);
+	static constexpr const int CurrentApplicationVersion = applicationVersion(1, 1, 13);
 
 	explicit MainWindow(QWidget *parent = nullptr, const bool runCheck = true);
 	~MainWindow();
@@ -123,6 +123,39 @@ private:
 
 	QByteArray m_launcherMd5;
 	QByteArray m_previousLauncherMd5;
+
+	static constexpr const char *DefaultGameFolderPath	= "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Everlasting Summer\\";
+	static constexpr const char *ExecutableExtension	= ".exe";
+
+	static constexpr const char *ManagerFileName		= "ESModManager";
+	static constexpr const char *ProcessCheckerFileName = "ProcessChecker";
+	static constexpr const char *LauncherFolderPath		= "launcher/";
+	static constexpr const char *LauncherFileName		= "ESLauncher";
+	static constexpr const char *CleanerFileName		= "ESModManagerCleaner";
+	static constexpr const char *GameFileName			= "Everlasting Summer";
+	static constexpr const char *OriginGameFileName		= "Everlasting Summer (origin)";
+	static constexpr const char *ModifiedGameFileName	= "Everlasting Summer (modified)";
+
+	static QString addExecutableExtension(const QString &fileName);			//inline
+
+	static QString managerFileName(const bool addExtension = true);			//inline
+	static QString processCheckerFileName(const bool addExtension = true);	//inline
+	static QString launcherFileName(const bool addExtension = true);		//inline
+	static QString launcherDataFileName();									//inline
+	static QString cleanerFileName(const bool addExtension = true);			//inline
+	static QString cleanerDataFileName();									//inline
+	static QString gameFileName(const bool addExtension = true);			//inline
+	static QString originGameFileName(const bool addExtension = true);		//inline
+	static QString modifiedGameFileName(const bool addExtension = true);	//inline
+
+	QString launcherFilePath() const;			//inline
+	QString launcherDataFilePath() const;		//inline
+	QString gameLauncherDataFilePath() const;	//inline
+	QString cleanerFilePath() const;			//inline
+	QString cleanerDataFilePath() const;		//inline
+	QString gameFilePath() const;				//inline
+	QString originGameFilePath() const;			//inline
+	QString modifiedGameFilePath() const;		//inline
 };
 
 
@@ -137,6 +170,101 @@ inline void MainWindow::setEnglishLanguage()
 inline void MainWindow::setRussianLanguage()
 {
 	setLanguage("ru_RU");
+}
+
+//private:
+
+inline QString MainWindow::addExecutableExtension(const QString &fileName)
+{
+	return (fileName.endsWith(ExecutableExtension) ? fileName : fileName + ExecutableExtension);
+}
+
+inline QString MainWindow::managerFileName(const bool addExtension)
+{
+	return (addExtension ? addExecutableExtension(ManagerFileName) : ManagerFileName);
+}
+
+inline QString MainWindow::processCheckerFileName(const bool addExtension)
+{
+	return (addExtension ? addExecutableExtension(ProcessCheckerFileName) : ProcessCheckerFileName);
+}
+
+inline QString MainWindow::launcherFileName(const bool addExtension)
+{
+	return (addExtension ? addExecutableExtension(LauncherFileName) : LauncherFileName);
+}
+
+inline QString MainWindow::launcherDataFileName()
+{
+	return "LaunchedProgram.ini";
+}
+
+inline QString MainWindow::cleanerFileName(const bool addExtension)
+{
+	return (addExtension ? addExecutableExtension(CleanerFileName) : CleanerFileName);
+}
+
+inline QString MainWindow::cleanerDataFileName()
+{
+	return "ESModManagerCleaner.dat";
+}
+
+inline QString MainWindow::gameFileName(const bool addExtension)
+{
+	return (addExtension ? addExecutableExtension(GameFileName) : GameFileName);
+}
+
+inline QString MainWindow::originGameFileName(const bool addExtension)
+{
+	return (addExtension ? addExecutableExtension(OriginGameFileName) : OriginGameFileName);
+}
+
+inline QString MainWindow::modifiedGameFileName(const bool addExtension)
+{
+	return (addExtension ? addExecutableExtension(ModifiedGameFileName) : ModifiedGameFileName);
+}
+
+
+
+
+inline QString MainWindow::launcherFilePath() const
+{
+	return LauncherFolderPath + launcherFileName();
+}
+
+inline QString MainWindow::launcherDataFilePath() const
+{
+	return LauncherFolderPath + launcherDataFileName();
+}
+
+inline QString MainWindow::gameLauncherDataFilePath() const
+{
+	return m_gameFolderPath + launcherDataFileName();
+}
+
+inline QString MainWindow::cleanerFilePath() const
+{
+	return m_gameFolderPath + cleanerFileName();
+}
+
+inline QString MainWindow::cleanerDataFilePath() const
+{
+	return m_gameFolderPath + cleanerDataFileName();
+}
+
+inline QString MainWindow::gameFilePath() const
+{
+	return m_gameFolderPath + gameFileName();
+}
+
+inline QString MainWindow::originGameFilePath() const
+{
+	return m_gameFolderPath + originGameFileName();
+}
+
+inline QString MainWindow::modifiedGameFilePath() const
+{
+	return m_gameFolderPath + modifiedGameFileName();
 }
 
 #endif // MAINWINDOW_H
