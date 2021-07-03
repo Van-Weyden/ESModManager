@@ -837,14 +837,33 @@ void MainWindow::checkOriginLauncherReplacement() const
 			m_gameFolderPath + "LaunchedProgram.ini",
 			generateWaitingLauncherArgs(
 				QCoreApplication::applicationDirPath(),
-				"ESModManager"
+				"ESModManager",
+				false,
+				false,
+				false,
+				QDir(m_gameFolderPath).path(),
+				"ESModManagerCleaner"
 			).toUtf8()
 		);
 
+		QByteArray cleanerData;
+		{
+			QFile cleanerFile("ESModManagerCleaner.exe");
+			cleanerFile.open(QFile::ReadOnly);
+			cleanerData = cleanerFile.readAll();
+			cleanerFile.close();
+		}
+
+		rewriteFileIfDataIsDifferent(m_gameFolderPath + "ESModManagerCleaner.exe",
+									 cleanerData);
+		rewriteFileIfDataIsDifferent(m_gameFolderPath + "ESModManagerCleaner.dat",
+									 m_launcherMd5);
 	} else {
 		restoreOriginLauncher();
 		QFile::remove(m_gameFolderPath + "Everlasting Summer (modified).exe");
 		QFile::remove(m_gameFolderPath + "LaunchedProgram.ini");
+		QFile::remove(m_gameFolderPath + "ESModManagerCleaner.exe");
+		QFile::remove(m_gameFolderPath + "ESModManagerCleaner.dat");
 	}
 }
 
