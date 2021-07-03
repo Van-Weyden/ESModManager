@@ -36,20 +36,20 @@ ModScanner::ModScanner(QObject *parent) :
 	);
 
 	QString singleQuotationMark = RegExpPatterns::escapedSymbol("\'");
-	QString whileExceptSingleQuotationMark = RegExpPatterns::whileExcept({
+	QString whileExceptSingleQuotationMark = RegExpPatterns::symbolsUntilNotFromSet({
 		singleQuotationMark,
 		RegExpPatterns::escapedSymbol("n"),
 		RegExpPatterns::escapedSymbol("r")
 	});
 
 	QString doubleQuotationMark = RegExpPatterns::escapedSymbol("\"");
-	QString whileExceptDoubleQuotationMark = RegExpPatterns::whileExcept({
+	QString whileExceptDoubleQuotationMark = RegExpPatterns::symbolsUntilNotFromSet({
 		doubleQuotationMark,
 		RegExpPatterns::escapedSymbol("n"),
 		RegExpPatterns::escapedSymbol("r")
 	});
 
-	QString whileExceptQuotationMarkAndHashSymbol = RegExpPatterns::whileExcept({
+	QString whileExceptQuotationMarkAndHashSymbol = RegExpPatterns::symbolsUntilNotFromSet({
 		singleQuotationMark,
 		doubleQuotationMark,
 		RegExpPatterns::escapedSymbol("#"),
@@ -93,7 +93,7 @@ ModScanner::ModScanner(QObject *parent) :
 	m_allFromBeginToQuoteRegExp = QRegExp(
 		RegExpPatterns::allOf({
 			RegExpPatterns::lineBegin,
-			RegExpPatterns::whileExcept({
+			RegExpPatterns::symbolsUntilNotFromSet({
 				singleQuotationMark,
 				doubleQuotationMark
 			}),
@@ -110,7 +110,7 @@ ModScanner::ModScanner(QObject *parent) :
 				singleQuotationMark,
 				doubleQuotationMark
 			}),
-			RegExpPatterns::whileExcept({
+			RegExpPatterns::symbolsUntilNotFromSet({
 				singleQuotationMark,
 				doubleQuotationMark
 			}),

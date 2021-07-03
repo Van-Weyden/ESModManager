@@ -27,7 +27,7 @@ namespace RegExpPatterns
 		return (result + ')');
 	}
 
-	QString symbolFrom(const QStringList &symbols)
+	QString symbolFromSet(const QStringList &symbols)
 	{
 		QString result('[');
 
@@ -38,7 +38,7 @@ namespace RegExpPatterns
 		return (result + ']');
 	}
 
-	QString symbolExcept(const QStringList &symbols)
+	QString symbolNotFromSet(const QStringList &symbols)
 	{
 		QString result("[^");
 
@@ -49,36 +49,30 @@ namespace RegExpPatterns
 		return (result + ']');
 	}
 
-	QString whileExcept(const QStringList &symbols, const bool skipEscaped)
+	QString symbolsUntilNotFromSet(const QStringList &symbols,
+								   const bool skipEscaped,
+								   const RepeatCount count)
 	{
-		QString result("[^");
-
-		for (const QString &symbol : symbols) {
-			result += symbol;
-		}
+		QString result = symbolNotFromSet(symbols);
 
 		if (skipEscaped) {
-			result += backslash;
-			result += "]*";
-
-			return zeroOrMoreOccurences(oneOf({
+			result = oneOf({
+				anyEscapedSymbolInExpression,
 				result,
-				anyEscapedSymbolInExpression
-			}));
-		} else {
-			return (result + "]*");
+			});
 		}
+
+		return applyRepeatCount(result, count);
 	}
 
 	QString quotedExpression(const QString &quotationMark)
 	{
 		return allOf({
 			quotationMark,
-			zeroOrMoreOccurences(
-				oneOf({
-					anyEscapedSymbolInExpression,
-					symbolExcept({backslash, quotationMark})
-				})
+			symbolsUntilNotFromSet(
+				{
+					quotationMark
+				}, true, ZeroOrMore
 			),
 			quotationMark
 		});
@@ -89,11 +83,11 @@ namespace RegExpPatterns
 	{
 		return allOf({
 			openingQuotationMark,
-			zeroOrMoreOccurences(
-				oneOf({
-					anyEscapedSymbolInExpression,
-					symbolExcept({backslash, openingQuotationMark, closingQuotationMark})
-				})
+			symbolsUntilNotFromSet(
+				{
+					openingQuotationMark,
+					closingQuotationMark
+				}, true, ZeroOrMore
 			),
 			closingQuotationMark
 		});
