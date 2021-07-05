@@ -590,6 +590,7 @@ void MainWindow::runGame()
 
 	//We must ensure that autoexit flag is up to date because it will be read by our .rpy script
 	m_settings->setValue("General/bAutoexit", ui->autoexitCheckBox->isChecked());
+	m_settings->sync();
 
 	restoreOriginLauncher();
 
