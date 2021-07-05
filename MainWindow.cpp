@@ -246,7 +246,9 @@ MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
 
 MainWindow::~MainWindow()
 {
-	saveSettings();
+	if (isEnabled()) {
+		saveSettings();
+	}
 
 	QApplication::removeTranslator(m_translator);
 	QApplication::removeTranslator(m_qtTranslator);
