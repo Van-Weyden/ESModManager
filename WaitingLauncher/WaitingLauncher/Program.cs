@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -12,27 +12,42 @@ namespace WaitingLauncher
     {
         static int Main(string[] args)
         {
+            int returnCode = 0;
             Launcher launcher = new Launcher();
 
-            if (!launcher.InitFromArgs(args) && ((args != null && args.Length > 0) || !launcher.InitFromFile("LaunchedProgram.ini")))
-            {
+            if (launcher.InitFromArgs(args) || ((args == null || args.Length == 0) && launcher.InitFromFile("LaunchedProgram.ini")))
+                returnCode = launcher.LaunchProgram();
+            else
                 Launcher.WriteUsageInfo();
-                return 0;
-            }
 
-            return launcher.LaunchProgram();
+            return returnCode;
         }
     };
 
     class Launcher
     {
+        internal static class KeyWord
+        {
+            public const string ProgramFolderPath               = "ProgramPath";
+            public const string ProgramName                     = "ProgramName";
+            public const string IsMonitoringNeeded              = "IsMonitoringNeeded";
+            public const string DontLaunchIfAlreadyLaunched     = "DontLaunchIfAlreadyLaunched";
+            public const string LaunchProgramAfterClose         = "LaunchProgramAfterClose";
+            public const string ProgramOnError                  = "ProgramOnError";
+            public const string ProgramOnErrorFolderPath        = "ProgramOnErrorPath";
+            public const string ProgramOnErrorName              = "ProgramOnErrorName";
+            public const string ProgramAfterClose               = "ProgramAfterClose";
+            public const string ProgramAfterCloseName           = "ProgramAfterCloseName";
+            public const string ProgramAfterCloseFolderPath     = "ProgramAfterClosePath";
+        };
+
         internal static class ArgCode
         {
-            public const string IsMonitoringNeeded              = "-imn";
-            public const string DontLaunchIfAlreadyLaunched     = "-dll";
-            public const string LaunchProgramAfterClose         = "-lac";
-            public const string ProgramOnError                  = "-poe";
-            public const string ProgramAfterClose               = "-pac";
+            public const string IsMonitoringNeeded              = "-" + KeyWord.IsMonitoringNeeded;
+            public const string DontLaunchIfAlreadyLaunched     = "-" + KeyWord.DontLaunchIfAlreadyLaunched;
+            public const string LaunchProgramAfterClose         = "-" + KeyWord.LaunchProgramAfterClose;
+            public const string ProgramOnError                  = "-" + KeyWord.ProgramOnError;
+            public const string ProgramAfterClose               = "-" + KeyWord.ProgramAfterClose;
         };
 
         public Launcher()
@@ -134,22 +149,22 @@ namespace WaitingLauncher
                 m_programFolderPath = args[0].Trim('"');
                 m_programName = args[1].Trim('"');
 
-                for (int i = 2; i < args.Length - 1;)
+                for (int i = 2; i < args.Length;)
                 {
                     string arg = args[i++];
 
                     switch (arg)
                     {
                         case ArgCode.IsMonitoringNeeded:
-                            m_isMonitoringNeeded = Convert.ToBoolean(args[i++]);
+                            m_isMonitoringNeeded = true;
                         break;
 
                         case ArgCode.DontLaunchIfAlreadyLaunched:
-                            m_dontLaunchIfAlreadyLaunched = Convert.ToBoolean(args[i++]);
+                            m_dontLaunchIfAlreadyLaunched = true;
                         break;
 
                         case ArgCode.LaunchProgramAfterClose:
-                            m_launchProgramAfterClose = Convert.ToBoolean(args[i++]);
+                            m_launchProgramAfterClose = true;
                         break;
 
                         case ArgCode.ProgramOnError:

@@ -85,19 +85,19 @@ QString generateWaitingLauncherArgs(const QString &programFolderPath,
 									const QString &programAfterCloseName = QString())
 {
 	QString args =	"\"" + programFolderPath + "\" " +
-					"\"" + programName + "\" " +
-					"-imn " + (isMonitoringNeeded ? "true" : "false") + " " +
-					"-dll " + (dontLaunchIfAlreadyLaunched ? "true" : "false") + " " +
-					"-lac " + (launchProgramAfterClose ? "true" : "false");
+					"\"" + programName + "\"" +
+					(isMonitoringNeeded				? " -IsMonitoringNeeded"			: "") +
+					(dontLaunchIfAlreadyLaunched	? " -DontLaunchIfAlreadyLaunched"	: "") +
+					(launchProgramAfterClose		? " -LaunchProgramAfterClose"		: "");
 
 	if (!programOnErrorFolderPath.isEmpty() && !programOnErrorName.isEmpty()) {
-		args += " -poe \"" + programOnErrorFolderPath + "\" " +
-					  "\"" + programOnErrorName + "\"";
+		args += " -ProgramOnError \"" + programOnErrorFolderPath + "\" " +
+								 "\"" + programOnErrorName + "\"";
 	}
 
 	if (!programAfterCloseFolderPath.isEmpty() && !programAfterCloseName.isEmpty()) {
-		args += " -pac \"" + programAfterCloseFolderPath + "\" " +
-					  "\"" + programAfterCloseName + "\"";
+		args += " -ProgramAfterClose \"" + programAfterCloseFolderPath + "\" " +
+									"\"" + programAfterCloseName + "\"";
 	}
 
 	return args;
