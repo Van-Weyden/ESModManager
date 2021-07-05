@@ -119,7 +119,8 @@ ModScanner::ModScanner(QObject *parent) :
 	);
 }
 
-void ModScanner::scanMods(const QString &modsFolderPath, DatabaseModel &database)
+void ModScanner::scanMods(const QString &modsFolderPath, DatabaseModel &database,
+						  const EnabledFlagValue enabledFlagValue)
 {
 	int countOfScannedMods = 0;
 	int oldDatabaseSize = database.databaseSize();
@@ -127,7 +128,7 @@ void ModScanner::scanMods(const QString &modsFolderPath, DatabaseModel &database
 
 	while (!modsFolders.isEmpty()) {
 		QString modFolderName = modsFolders.takeFirst();
-		scanMod(modFolderName, modsFolderPath + modFolderName, database, oldDatabaseSize);
+		scanMod(modFolderName, modsFolderPath + modFolderName, database, oldDatabaseSize, enabledFlagValue);
 		emit modScanned(++countOfScannedMods);
 		QApplication::processEvents();
 	}
@@ -141,18 +142,27 @@ int indexOfModWithUnknownNameInDatabase(const QString &modFolderName, const QStr
 										DatabaseModel &database, const int oldDatabaseSize, bool *isModNameValid);
 
 void ModScanner::scanMod(const QString &modFolderName, const QString &modFolderPath,
-						 DatabaseModel &database, const int oldDatabaseSize)
+						 DatabaseModel &database, const int oldDatabaseSize,
+						 EnabledFlagValue enabledFlagValue)
 {
-	ModInfo modInfo;
-	modInfo.folderName = modFolderName;
-
 	bool isModNameValid;
 	int indexInDatabase = indexOfModWithUnknownNameInDatabase(
 								modFolderName, modFolderPath,
 								database, oldDatabaseSize, &isModNameValid);
 
 	if (isModNameValid) {
+		if (indexInDatabase != -1 && enabledFlagValue != EnabledFlagValue::NotOverride) {
+			database.modInfoRef(indexInDatabase).enabled = (enabledFlagValue == EnabledFlagValue::ForceTrue ? true : false);
+		}
+
 		return;
+	}
+
+	ModInfo modInfo;
+	modInfo.folderName = modFolderName;
+
+	if (enabledFlagValue != EnabledFlagValue::NotOverride) {
+		modInfo.enabled = (enabledFlagValue == EnabledFlagValue::ForceTrue ? true : false);
 	}
 
 	QMap<QString, QString> initMap;

@@ -355,7 +355,7 @@ void MainWindow::scanMods()
 	m_model->setModsExistsState(false);
 
 	m_scanner->scanMods(m_modsFolderPath, *m_model);
-	m_scanner->scanMods(m_tempModsFolderPath, *m_model);
+	m_scanner->scanMods(m_tempModsFolderPath, *m_model, ModScanner::ForceFalse);
 
 	m_model->sortDatabase();
 }
