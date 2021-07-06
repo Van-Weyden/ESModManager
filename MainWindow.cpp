@@ -584,7 +584,7 @@ void MainWindow::runGame()
 	rewriteFileIfDataIsDifferent(
 		launcherDataFilePath(),
 		generateWaitingLauncherArgs(
-			QDir(m_gameFolderPath).path(),
+			m_gameFolderPath,
 			gameFileName(false),
 			true
 		).toUtf8()
@@ -842,7 +842,7 @@ void MainWindow::checkOriginLauncherReplacement() const
 				false,
 				false,
 				false,
-				QDir(m_gameFolderPath).path(),
+				m_gameFolderPath,
 				cleanerFileName(false)
 			).toUtf8()
 		);

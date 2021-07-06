@@ -15,7 +15,21 @@ namespace WaitingLauncher
             int returnCode = 0;
             Launcher launcher = new Launcher();
 
-            if (launcher.InitFromArgs(args) || ((args == null || args.Length == 0) && launcher.InitFromFile("LaunchedProgram.ini")))
+            string[] parsedArgs = new string[] { };
+
+            if (args != null)
+            {
+                for (int i = 0; i < args.Length; ++i)
+                {
+                    
+                    parsedArgs = parsedArgs.Concat(Regex.Matches(args[i], "((\\\"([^\\\"])*\\\")|([^ \\\"]+))")
+                                       .Cast<Match>()
+                                       .Select(m => m.Value)
+                                       .ToArray()).ToArray();
+                }
+            }
+
+            if (launcher.InitFromArgs(parsedArgs) || (parsedArgs.Length == 0 && launcher.InitFromFile("LaunchedProgram.ini")))
                 returnCode = launcher.LaunchProgram();
             else
                 Launcher.WriteUsageInfo();
@@ -218,7 +232,7 @@ namespace WaitingLauncher
 //		            )
 //              })
 
-                string[] args = Regex.Matches(reader.ReadToEnd(), "((\\\"((\\\\.)|[^\\\"])*\\\")|((\\\\.)|[^ \\\"])+)")
+                string[] args = Regex.Matches(reader.ReadToEnd(), "((\\\"([^\\\"])*\\\")|([^ \\\"])+)")
                                      .Cast<Match>()
                                      .Select(m => m.Value)
                                      .ToArray();
@@ -310,7 +324,8 @@ namespace WaitingLauncher
         public ProcessLauncher()
         {
             m_startInfo = new ProcessStartInfo();
-            m_backslashesRegex = new Regex("(\\\\)+");
+            m_slashesRegex = new Regex("(/){1,}");
+            m_backslashesRegex = new Regex("(\\\\){2,}");
         }
 
         public bool StartProcess()
@@ -345,14 +360,16 @@ namespace WaitingLauncher
                 return false;
             }
 
-            m_startInfo.WorkingDirectory = m_backslashesRegex.Replace(workingDirectory, "/");
-            m_startInfo.WorkingDirectory += (m_startInfo.WorkingDirectory.EndsWith("/") ? "" : "/");
+            m_startInfo.WorkingDirectory = m_slashesRegex.Replace(workingDirectory, "\\");
+            m_startInfo.WorkingDirectory = m_backslashesRegex.Replace(m_startInfo.WorkingDirectory, "\\");
+            m_startInfo.WorkingDirectory += (m_startInfo.WorkingDirectory.EndsWith("\\") ? "" : "\\");
             m_startInfo.FileName = fileName + (fileName.EndsWith(".exe") ? "" : ".exe");
 
             return File.Exists(m_startInfo.WorkingDirectory + m_startInfo.FileName);
         }
 
         private ProcessStartInfo m_startInfo;
+        private Regex m_slashesRegex;
         private Regex m_backslashesRegex;
     }
 }
