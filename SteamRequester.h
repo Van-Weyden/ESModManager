@@ -6,7 +6,7 @@
 class QNetworkReply;
 class QNetworkAccessManager;
 
-class DatabaseModel;
+class ModDatabaseModel;
 
 class SteamRequester : public QObject
 {
@@ -17,7 +17,7 @@ public:
 	 * @brief SteamRequester - Creates an object of SteamRequester with model "model".
 	 * SteamRequester does not take ownership of model.
 	 */
-	SteamRequester(DatabaseModel *model);
+	SteamRequester(ModDatabaseModel *modDatabaseModel);
 	~SteamRequester() = default;
 	inline bool isRunning() const;
 
@@ -32,8 +32,8 @@ signals:
 private:
 	void modNameProcessed();
 
-	QNetworkAccessManager *m_manager = nullptr;
-	DatabaseModel *m_model = nullptr;
+	QNetworkAccessManager *m_networkAccessManager = nullptr;
+	ModDatabaseModel *m_modDatabaseModel = nullptr;
 	bool m_isRunning = false;
 
 	int m_countOfRemainingMods = 0;

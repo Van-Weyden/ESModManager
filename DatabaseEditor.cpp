@@ -1,7 +1,7 @@
 #include <QDesktopServices>
 #include <QUrl>
 
-#include "DatabaseModel.h"
+#include "ModDatabaseModel.h"
 
 #include "DatabaseEditor.h"
 #include "ui_DatabaseEditor.h"
@@ -47,33 +47,33 @@ void DatabaseEditor::checkModsDisplay()
 
 void DatabaseEditor::hideAllRows()
 {
-	if (m_model == nullptr)
+	if (m_modDatabaseModel == nullptr)
 		return;
 
 	ui->searchLineEdit->blockSignals(true);
 	ui->searchLineEdit->clear();
 	ui->searchLineEdit->blockSignals(false);
 
-	int rowCount = m_model->databaseSize();
+	int rowCount = m_modDatabaseModel->databaseSize();
 	for (int rowIndex = 0; rowIndex < rowCount; ++rowIndex)
 		ui->databaseView->setRowHidden(rowIndex, true);
 }
 
-void DatabaseEditor::setModel(DatabaseModel *model, const int columnIndex)
+void DatabaseEditor::setModel(ModDatabaseModel *model, const int columnIndex)
 {
-	if (model == m_model || model == nullptr)
+	if (model == m_modDatabaseModel || model == nullptr)
 		return;
 
-	if (m_model != nullptr) {
+	if (m_modDatabaseModel != nullptr) {
 		disconnect(ui->databaseView->selectionModel(), SIGNAL(currentChanged(QModelIndex, QModelIndex)),
 				this, SLOT(showSelectedModInfo()));
-		disconnect(m_model, SIGNAL(dataChanged(QModelIndex, QModelIndex, QVector<int>)),
+		disconnect(m_modDatabaseModel, SIGNAL(dataChanged(QModelIndex, QModelIndex, QVector<int>)),
 				this, SLOT(adjustRow(QModelIndex)));
 	}
 
-	m_model = model;
-	ui->databaseView->setModel(m_model);
-	for (int i = 0; i < m_model->columnCount(); ++i)
+	m_modDatabaseModel = model;
+	ui->databaseView->setModel(m_modDatabaseModel);
+	for (int i = 0; i < m_modDatabaseModel->columnCount(); ++i)
 		ui->databaseView->hideColumn(i);
 	ui->databaseView->showColumn(columnIndex);
 	ui->databaseView->horizontalHeader()->setSectionResizeMode(columnIndex, QHeaderView::Stretch);
@@ -81,23 +81,23 @@ void DatabaseEditor::setModel(DatabaseModel *model, const int columnIndex)
 	setModsDisplay(!ui->showAllModsCheckBox->isChecked());
 	connect(ui->databaseView->selectionModel(), SIGNAL(currentChanged(QModelIndex, QModelIndex)),
 			this, SLOT(showSelectedModInfo()));
-	connect(m_model, SIGNAL(dataChanged(QModelIndex, QModelIndex)),
+	connect(m_modDatabaseModel, SIGNAL(dataChanged(QModelIndex, QModelIndex)),
 			this, SLOT(adjustRow(QModelIndex)));
 }
 
 void DatabaseEditor::setModsDisplay(const bool modlistOnly)
 {
-	if (m_model == nullptr)
+	if (m_modDatabaseModel == nullptr)
 		return;
 
 	hideAllRows();
 	if (this->isVisible())
 		QApplication::processEvents();
 
-	int databaseSize = m_model->databaseSize();
+	int databaseSize = m_modDatabaseModel->databaseSize();
 	if (modlistOnly) {
 		for (int modIndex = 0; modIndex < databaseSize; ++modIndex) {
-			if (m_model->modIsExists(modIndex))
+			if (m_modDatabaseModel->modIsExists(modIndex))
 				ui->databaseView->setRowHidden(modIndex, false);
 		}
 	}
@@ -111,14 +111,14 @@ void DatabaseEditor::setModsDisplay(const bool modlistOnly)
 
 void DatabaseEditor::filterModsDisplay(const QString &str)
 {
-	if (m_model == nullptr)
+	if (m_modDatabaseModel == nullptr)
 		return;
 
-	int rowCount = m_model->databaseSize();
+	int rowCount = m_modDatabaseModel->databaseSize();
 	for (int rowIndex = 0; rowIndex < rowCount; ++rowIndex) {
-		if (ui->showAllModsCheckBox->isChecked() || m_model->modIsExists(rowIndex)) {
+		if (ui->showAllModsCheckBox->isChecked() || m_modDatabaseModel->modIsExists(rowIndex)) {
 			ui->databaseView->setRowHidden(rowIndex, false);
-			if (!m_model->data(m_model->index(rowIndex)).toString().contains(str, Qt::CaseSensitivity::CaseInsensitive))
+			if (!m_modDatabaseModel->data(m_modDatabaseModel->index(rowIndex)).toString().contains(str, Qt::CaseSensitivity::CaseInsensitive))
 				ui->databaseView->setRowHidden(rowIndex, true);
 		}
 	}
@@ -130,7 +130,7 @@ void DatabaseEditor::removeSelectedMod()
 	if (!modIndex.isValid())
 		return;
 
-	m_model->removeFromDatabase(modIndex.row());
+	m_modDatabaseModel->removeFromDatabase(modIndex.row());
 }
 
 void DatabaseEditor::saveSelectedModInfo()
@@ -139,19 +139,19 @@ void DatabaseEditor::saveSelectedModInfo()
 	if (!modIndex.isValid())
 		return;
 
-	ModInfo modInfo = m_model->modInfo(modIndex.row());
+	ModInfo modInfo = m_modDatabaseModel->modInfo(modIndex.row());
 	QString text;
 
 	text = ui->modNameLineEdit->text();
 	if (!text.isEmpty() && text != modInfo.name) {
-		m_model->modInfoRef(modIndex.row()).name = text;
-		m_model->updateRow(modIndex);
+		m_modDatabaseModel->modInfoRef(modIndex.row()).name = text;
+		m_modDatabaseModel->updateRow(modIndex);
 	}
 
 	text = ui->steamModNameLineEdit->text();
 	if (!text.isEmpty() && text != modInfo.steamName) {
-		m_model->modInfoRef(modIndex.row()).steamName = text;
-		m_model->updateRow(modIndex);
+		m_modDatabaseModel->modInfoRef(modIndex.row()).steamName = text;
+		m_modDatabaseModel->updateRow(modIndex);
 	}
 }
 
@@ -166,7 +166,7 @@ void DatabaseEditor::showSelectedModInfo()
 {
 	QModelIndex modIndex = ui->databaseView->selectionModel()->currentIndex();
 	if(modIndex.isValid()) {
-		ModInfo modInfo = m_model->modInfo(modIndex.row());
+		ModInfo modInfo = m_modDatabaseModel->modInfo(modIndex.row());
 
 		ui->modNameLineEdit->setText(modInfo.name);
 		ui->modFolderNameLineEdit->setText(modInfo.folderName);
@@ -202,7 +202,7 @@ void DatabaseEditor::changeEvent(QEvent *event)
 
 void DatabaseEditor::adjustRow(const QModelIndex &index)
 {
-	if (index.isValid() && index.row() < m_model->databaseSize())
+	if (index.isValid() && index.row() < m_modDatabaseModel->databaseSize())
 		ui->databaseView->resizeRowToContents(index.row());
 }
 
@@ -215,10 +215,10 @@ void DatabaseEditor::openWorkshopPage()
 {
 	if (ui->openWorkshopWithSteamCheckBox->isChecked()) {
 		QDesktopServices::openUrl(QUrl("steam://url/CommunityFilePage/" +
-									   m_model->modFolderName(ui->databaseView->selectionModel()->currentIndex().row())));
+									   m_modDatabaseModel->modFolderName(ui->databaseView->selectionModel()->currentIndex().row())));
 	} else {
 		QDesktopServices::openUrl(QUrl("https://steamcommunity.com/sharedfiles/filedetails/?id=" +
-									   m_model->modFolderName(ui->databaseView->selectionModel()->currentIndex().row())));
+									   m_modDatabaseModel->modFolderName(ui->databaseView->selectionModel()->currentIndex().row())));
 	}
 }
 

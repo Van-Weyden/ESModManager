@@ -8,7 +8,7 @@ class QSettings;
 class QTranslator;
 
 class DatabaseEditor;
-class DatabaseModel;
+class ModDatabaseModel;
 class ModScanner;
 class SteamRequester;
 
@@ -118,7 +118,7 @@ private:
 	QString m_modsFolderPath = "";
 	QString m_tempModsFolderPath = "";
 
-	DatabaseModel *m_model = nullptr;
+	ModDatabaseModel *m_modDatabaseModel = nullptr;
 	ModScanner *m_scanner = nullptr;
 
 	QByteArray m_launcherMd5;

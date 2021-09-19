@@ -14,7 +14,7 @@
 #include <QTranslator>
 
 #include "DatabaseEditor.h"
-#include "DatabaseModel.h"
+#include "ModDatabaseModel.h"
 #include "ModScanner.h"
 #include "SteamRequester.h"
 
@@ -109,8 +109,8 @@ MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
 	QMainWindow(parent),
 	ui(new Ui::MainWindow)
 {
-	m_model = new DatabaseModel();
-	m_steamRequester = new SteamRequester(m_model);
+	m_modDatabaseModel = new ModDatabaseModel();
+	m_steamRequester = new SteamRequester(m_modDatabaseModel);
 	m_thread = new QThread;
 	connect(m_thread, SIGNAL(started()), m_steamRequester, SLOT(requestModNames()));
 	connect(m_steamRequester, SIGNAL(modProcessed()), this, SLOT(steamModNameProcessed()), Qt::BlockingQueuedConnection);
@@ -125,11 +125,11 @@ MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
 	ui->rusLangButton->setIcon(QIcon(":/images/Flag-Russia.ico"));
 
 	ui->enabledModsList->setStyleSheet("QListView::item:!selected:!hover { border-bottom: 1px solid #E5E5E5; }");
-	ui->enabledModsList->setModel(m_model);
+	ui->enabledModsList->setModel(m_modDatabaseModel);
 
 
 	ui->disabledModsList->setStyleSheet("QListView::item:!selected:!hover { border-bottom: 1px solid #E5E5E5; }");
-	ui->disabledModsList->setModel(m_model);
+	ui->disabledModsList->setModel(m_modDatabaseModel);
 
 	//A small crutch for highlighting when you hover the mouse, but you couldn't select the line
 	connect(ui->enabledModsList->selectionModel(), SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
@@ -159,9 +159,9 @@ MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
 	connect(ui->actionAnnouncements, SIGNAL(triggered()), this, SLOT(showAnnouncementMessageBox()));
 
 	connect(ui->completeNamesCheckBox, SIGNAL(stateChanged(int)),
-			m_model, SLOT(setCompleteModNames(int)));
+			m_modDatabaseModel, SLOT(setCompleteModNames(int)));
 	connect(ui->useSteamModNamesCheckBox, SIGNAL(stateChanged(int)),
-			m_model, SLOT(setUsingSteamModNames(int)));
+			m_modDatabaseModel, SLOT(setUsingSteamModNames(int)));
 
 	connect(ui->eraseDatabaseButton, SIGNAL(clicked()), this, SLOT(eraseDatabase()));
 	connect(ui->databaseEditorButton, SIGNAL(clicked()), m_databaseEditor, SLOT(show()));
@@ -174,8 +174,8 @@ MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
 	connect(ui->refreshButton, SIGNAL(clicked()), this, SLOT(refreshModlist()));
 	connect(ui->runButton, SIGNAL(clicked()), this, SLOT(runGame()));
 
-	connect(ui->enabledModsList, SIGNAL(clicked(QModelIndex)), m_model, SLOT(disableMod(QModelIndex)));
-	connect(ui->disabledModsList, SIGNAL(clicked(QModelIndex)), m_model, SLOT(enableMod(QModelIndex)));
+	connect(ui->enabledModsList, SIGNAL(clicked(QModelIndex)), m_modDatabaseModel, SLOT(disableMod(QModelIndex)));
+	connect(ui->disabledModsList, SIGNAL(clicked(QModelIndex)), m_modDatabaseModel, SLOT(enableMod(QModelIndex)));
 
 	connect(ui->clearSearchPushButton, SIGNAL(clicked()), ui->searchLineEdit, SLOT(clear()));
 	connect(ui->searchLineEdit, SIGNAL(textChanged(QString)), this, SLOT(filterModsDisplay(QString)));
@@ -185,7 +185,7 @@ MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
 	connect(m_steamRequester, SIGNAL(finished()), ui->progressLabel, SLOT(hide()));
 	connect(m_steamRequester, SIGNAL(finished()), ui->progressBar, SLOT(hide()));
 	connect(m_databaseEditor, SIGNAL(openModFolder(int)), this, SLOT(openModFolder(int)));
-	connect(m_model, SIGNAL(modCheckStateChanged(int, bool)), this, SLOT(setRowVisibility(int, bool)));
+	connect(m_modDatabaseModel, SIGNAL(modCheckStateChanged(int, bool)), this, SLOT(setRowVisibility(int, bool)));
 
 	//this->adjustSize();
 
@@ -230,7 +230,7 @@ MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
 			if (QFileInfo::exists(gamePath + gameFileName())) {
 				setGameFolder(gamePath);
 			} else {
-				m_model->setModsExistsState(false);
+				m_modDatabaseModel->setModsExistsState(false);
 				checkRowsVisibility();
 			}
 		}
@@ -241,7 +241,7 @@ MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
 		refreshModlist();
 	}
 
-	m_databaseEditor->setModel(m_model, 1);
+	m_databaseEditor->setModel(m_modDatabaseModel, 1);
 }
 
 MainWindow::~MainWindow()
@@ -257,7 +257,7 @@ MainWindow::~MainWindow()
 	delete m_translator;
 	delete m_qtTranslator;
 	delete m_settings;
-	delete m_model;
+	delete m_modDatabaseModel;
 	delete m_databaseEditor;
 	delete m_scanner;
 
@@ -269,10 +269,10 @@ void MainWindow::checkRowsVisibility()
 	clearSearchField();
 
 	bool enabled, exists;
-	int databaseSize = m_model->databaseSize();
+	int databaseSize = m_modDatabaseModel->databaseSize();
 	for (int rowIndex = 0; rowIndex < databaseSize; ++rowIndex) {
-		enabled = m_model->modIsEnabled(rowIndex);
-		exists = m_model->modIsExists(rowIndex);
+		enabled = m_modDatabaseModel->modIsEnabled(rowIndex);
+		exists = m_modDatabaseModel->modIsExists(rowIndex);
 
 		ui->enabledModsList->setRowHidden(rowIndex, !exists || !enabled);
 		ui->disabledModsList->setRowHidden(rowIndex, !exists || enabled);
@@ -290,7 +290,7 @@ void MainWindow::hideAllRows()
 {
 	clearSearchField();
 
-	int rowCount = m_model->databaseSize();
+	int rowCount = m_modDatabaseModel->databaseSize();
 	for (int rowIndex = 0; rowIndex < rowCount; ++rowIndex) {
 		ui->enabledModsList->setRowHidden(rowIndex, true);
 		ui->disabledModsList->setRowHidden(rowIndex, true);
@@ -319,7 +319,7 @@ void MainWindow::loadDatabase()
 			modInfo.steamName = mod["Steam name"].toString();
 			modInfo.enabled = mod["Is enabled"].toBool();
 
-			m_model->appendDatabase(modInfo);
+			m_modDatabaseModel->add(modInfo);
 		}
 	}
 }
@@ -338,8 +338,8 @@ void MainWindow::saveDatabase() const
 	QJsonObject mod;
 	ModInfo modInfo;
 
-	for (int i = 0; i < m_model->databaseSize(); ++i) {
-		modInfo = m_model->modInfo(i);
+	for (int i = 0; i < m_modDatabaseModel->databaseSize(); ++i) {
+		modInfo = m_modDatabaseModel->modInfo(i);
 		mod["Name"] = modInfo.name;
 		mod["Folder name"] = modInfo.folderName;
 		mod["Steam name"] = modInfo.steamName;
@@ -352,12 +352,12 @@ void MainWindow::saveDatabase() const
 
 void MainWindow::scanMods()
 {
-	m_model->setModsExistsState(false);
+	m_modDatabaseModel->setModsExistsState(false);
 
-	m_scanner->scanMods(m_modsFolderPath, *m_model);
-	m_scanner->scanMods(m_tempModsFolderPath, *m_model, ModScanner::ForceFalse);
+	m_scanner->scanMods(m_modsFolderPath, *m_modDatabaseModel);
+	m_scanner->scanMods(m_tempModsFolderPath, *m_modDatabaseModel, ModScanner::ForceFalse);
 
-	m_model->sortDatabase();
+	m_modDatabaseModel->sortDatabase();
 }
 
 void MainWindow::setGameFolder(const QString &folderPath)
@@ -416,34 +416,34 @@ void MainWindow::addShortcutToDesktop() const
 
 void MainWindow::disableAllMods()
 {
-	m_model->blockSignals(true);
+	m_modDatabaseModel->blockSignals(true);
 
-	for (int i = 0; i < m_model->databaseSize(); ++i) {
-		if (m_model->modInfo(i).existsAndEnabledCheck(true, true)) {
-			m_model->modInfoRef(i).enabled = false;
+	for (int i = 0; i < m_modDatabaseModel->databaseSize(); ++i) {
+		if (m_modDatabaseModel->modInfo(i).existsAndEnabledCheck(true, true)) {
+			m_modDatabaseModel->modInfoRef(i).enabled = false;
 			ui->enabledModsList->setRowHidden(i, true);
 			ui->disabledModsList->setRowHidden(i, false);
 		}
 	}
 
-	m_model->blockSignals(false);
+	m_modDatabaseModel->blockSignals(false);
 
 	ui->searchLineEdit->clear();
 }
 
 void MainWindow::enableAllMods()
 {
-	m_model->blockSignals(true);
+	m_modDatabaseModel->blockSignals(true);
 
-	for (int i = 0; i < m_model->databaseSize(); ++i) {
-		if (m_model->modInfo(i).existsAndEnabledCheck(true, false)) {
-			m_model->modInfoRef(i).enabled = true;
+	for (int i = 0; i < m_modDatabaseModel->databaseSize(); ++i) {
+		if (m_modDatabaseModel->modInfo(i).existsAndEnabledCheck(true, false)) {
+			m_modDatabaseModel->modInfoRef(i).enabled = true;
 			ui->enabledModsList->setRowHidden(i, false);
 			ui->disabledModsList->setRowHidden(i, true);
 		}
 	}
 
-	m_model->blockSignals(false);
+	m_modDatabaseModel->blockSignals(false);
 
 	ui->searchLineEdit->clear();
 }
@@ -451,21 +451,21 @@ void MainWindow::enableAllMods()
 void MainWindow::eraseDatabase()
 {
 	QFile::remove("mods_database.json");
-	m_model->clearDatabase();
+	m_modDatabaseModel->clear();
 	refreshModlist();
 }
 
 void MainWindow::filterModsDisplay(const QString &str)
 {
-	int rowCount = m_model->databaseSize();
+	int rowCount = m_modDatabaseModel->databaseSize();
 	bool enabled;
 	for (int rowIndex = 0; rowIndex < rowCount; ++rowIndex)
-		if (m_model->modIsExists(rowIndex)) {
-			enabled = m_model->modIsEnabled(rowIndex);
+		if (m_modDatabaseModel->modIsExists(rowIndex)) {
+			enabled = m_modDatabaseModel->modIsEnabled(rowIndex);
 			ui->enabledModsList->setRowHidden(rowIndex, !enabled);
 			ui->disabledModsList->setRowHidden(rowIndex, enabled);
 
-			if (!m_model->data(m_model->index(rowIndex)).toString().contains(str, Qt::CaseSensitivity::CaseInsensitive)) {
+			if (!m_modDatabaseModel->data(m_modDatabaseModel->index(rowIndex)).toString().contains(str, Qt::CaseSensitivity::CaseInsensitive)) {
 				if (enabled)
 					ui->enabledModsList->setRowHidden(rowIndex, true);
 				else
@@ -761,10 +761,10 @@ void MainWindow::openManagerFolder()
 
 bool MainWindow::openModFolder(const int modIndex)
 {
-	if (QDir().exists(m_modsFolderPath + m_model->modFolderName(modIndex))) {
-		return QDesktopServices::openUrl(QUrl("file:///" + m_modsFolderPath + m_model->modFolderName(modIndex)));
-	} else if (QDir().exists(m_tempModsFolderPath + m_model->modFolderName(modIndex))) {
-		return QDesktopServices::openUrl(QUrl("file:///" + m_tempModsFolderPath + m_model->modFolderName(modIndex)));
+	if (QDir().exists(m_modsFolderPath + m_modDatabaseModel->modFolderName(modIndex))) {
+		return QDesktopServices::openUrl(QUrl("file:///" + m_modsFolderPath + m_modDatabaseModel->modFolderName(modIndex)));
+	} else if (QDir().exists(m_tempModsFolderPath + m_modDatabaseModel->modFolderName(modIndex))) {
+		return QDesktopServices::openUrl(QUrl("file:///" + m_tempModsFolderPath + m_modDatabaseModel->modFolderName(modIndex)));
 	}
 
 	return false;
@@ -893,19 +893,19 @@ void MainWindow::restoreOriginLauncher() const
 void MainWindow::moveModFolders(QString *unmovedModsToTempFolder, QString *unmovedModsFromTempFolder) const
 {
 	QDir dir;
-	int databaseSize = m_model->databaseSize();
+	int databaseSize = m_modDatabaseModel->databaseSize();
 	for (int i = 0; i < databaseSize; ++i) {
-		if (m_model->modInfo(i).exists) {
-			if (m_model->modInfo(i).enabled) {
-				if (dir.exists(m_tempModsFolderPath + m_model->modFolderName(i)) &&
-					!dir.rename(m_tempModsFolderPath + m_model->modFolderName(i), m_modsFolderPath + m_model->modFolderName(i)) &&
+		if (m_modDatabaseModel->modInfo(i).exists) {
+			if (m_modDatabaseModel->modInfo(i).enabled) {
+				if (dir.exists(m_tempModsFolderPath + m_modDatabaseModel->modFolderName(i)) &&
+					!dir.rename(m_tempModsFolderPath + m_modDatabaseModel->modFolderName(i), m_modsFolderPath + m_modDatabaseModel->modFolderName(i)) &&
 					unmovedModsFromTempFolder != nullptr) {
-					unmovedModsFromTempFolder->append(m_model->modFolderName(i) + '\n');
+					unmovedModsFromTempFolder->append(m_modDatabaseModel->modFolderName(i) + '\n');
 				}
-			} else if (dir.exists(m_modsFolderPath + m_model->modFolderName(i)) &&
-				!dir.rename(m_modsFolderPath + m_model->modFolderName(i), m_tempModsFolderPath + m_model->modFolderName(i)) &&
+			} else if (dir.exists(m_modsFolderPath + m_modDatabaseModel->modFolderName(i)) &&
+				!dir.rename(m_modsFolderPath + m_modDatabaseModel->modFolderName(i), m_tempModsFolderPath + m_modDatabaseModel->modFolderName(i)) &&
 				unmovedModsToTempFolder != nullptr) {
-				unmovedModsToTempFolder->append(m_model->modFolderName(i) + '\n');
+				unmovedModsToTempFolder->append(m_modDatabaseModel->modFolderName(i) + '\n');
 			}
 		}
 	}
@@ -917,10 +917,10 @@ void MainWindow::moveModFoldersBack() const
 		return;
 
 	QDir dir;
-	int databaseSize = m_model->databaseSize();
+	int databaseSize = m_modDatabaseModel->databaseSize();
 	for (int i = 0; i < databaseSize; ++i) {
-		if (m_model->modInfo(i).exists && dir.exists(m_tempModsFolderPath + m_model->modFolderName(i)))
-			dir.rename(m_tempModsFolderPath + m_model->modFolderName(i), m_modsFolderPath + m_model->modFolderName(i));
+		if (m_modDatabaseModel->modInfo(i).exists && dir.exists(m_tempModsFolderPath + m_modDatabaseModel->modFolderName(i)))
+			dir.rename(m_tempModsFolderPath + m_modDatabaseModel->modFolderName(i), m_modsFolderPath + m_modDatabaseModel->modFolderName(i));
 	}
 }
 
@@ -1070,7 +1070,7 @@ void MainWindow::saveSettings() const
 
 	moveModFoldersBack();
 	checkOriginLauncherReplacement();
-	m_model->sortDatabase();
+	m_modDatabaseModel->sortDatabase();
 	saveDatabase();
 }
 

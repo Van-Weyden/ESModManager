@@ -28,8 +28,8 @@ CONFIG += c++11
 
 SOURCES += \
         DatabaseEditor.cpp \
-        DatabaseModel.cpp \
         MainWindow.cpp \
+        ModDatabaseModel.cpp \
         ModInfo.cpp \
         ModScanner.cpp \
         RegExpPatterns.cpp \
@@ -38,8 +38,8 @@ SOURCES += \
 
 HEADERS += \
         DatabaseEditor.h \
-        DatabaseModel.h \
         MainWindow.h \
+        ModDatabaseModel.h \
         ModInfo.h \
         ModScanner.h \
         RegExpPatterns.h \

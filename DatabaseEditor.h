@@ -3,7 +3,7 @@
 
 #include <QWidget>
 
-class DatabaseModel;
+class ModDatabaseModel;
 
 namespace Ui {
 	class DatabaseEditor;
@@ -19,7 +19,7 @@ public:
 
 	void checkModsDisplay();
 	void hideAllRows();
-	void setModel(DatabaseModel *model, const int columnIndex = 0);
+	void setModel(ModDatabaseModel *model, const int columnIndex = 0);
 	void setModsDisplay(const bool modlistOnly = true);
 
 public slots:
@@ -44,7 +44,7 @@ signals:
 private:
 	Ui::DatabaseEditor *ui;
 
-	DatabaseModel *m_model = nullptr;
+	ModDatabaseModel *m_modDatabaseModel = nullptr;
 };
 
 #endif // DATABASEEDITOR_H

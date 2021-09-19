@@ -8,18 +8,18 @@
 class QThread;
 class SteamRequester;
 
-class DatabaseModel : public QAbstractListModel
+class ModDatabaseModel : public QAbstractListModel
 {
 	Q_OBJECT
 
 public:
-	DatabaseModel();
-	~DatabaseModel() = default;
+	ModDatabaseModel();
+	~ModDatabaseModel() = default;
 
 	bool isNameValid(const QString &name) const;
 
-	void appendDatabase(const ModInfo &modInfo);
-	inline void clearDatabase();
+	void add(const ModInfo &modInfo);
+	inline void clear();
 	inline int columnCount(const QModelIndex &parent = QModelIndex()) const;
 	inline int databaseSize() const;
 	inline const QString &modFolderName(const int index) const;
@@ -48,85 +48,85 @@ public slots:
 	void enableMod(const QModelIndex &index);
 	void disableMod(const QModelIndex &index);
 
+signals:
+	void modCheckStateChanged(const int rowIndex, const bool state);
+
 protected slots:
 	void setCompleteModNames(const int mode);
 	void setUsingSteamModNames(const int mode);
 
-signals:
-	void modCheckStateChanged(const int rowIndex, const bool state);
-
 private:
 	QVector<ModInfo> m_database;
 
-	bool m_completeModNames = true;
-	bool m_useSteamModNames = true;
+	bool m_completeModNames;
+	bool m_useSteamModNames;
 };
 
 
 
 //public:
 
-inline void DatabaseModel::clearDatabase()
+inline void ModDatabaseModel::clear()
 {
 	beginResetModel(); m_database.clear(); endResetModel();
 }
 
-inline int DatabaseModel::columnCount(const QModelIndex &/*parent*/) const
+inline int ModDatabaseModel::columnCount(const QModelIndex &/*parent*/) const
 {
 	return 2;
 }
 
-inline int DatabaseModel::databaseSize() const
+inline int ModDatabaseModel::databaseSize() const
 {
 	return m_database.size();
 }
 
-inline const QString &DatabaseModel::modFolderName(const int index) const
+inline const QString &ModDatabaseModel::modFolderName(const int index) const
 {
 	return m_database.at(index).folderName;
 }
 
-inline const ModInfo &DatabaseModel::modInfo(const int index) const
+inline const ModInfo &ModDatabaseModel::modInfo(const int index) const
 {
 	return m_database.at(index);
 }
 
-inline ModInfo &DatabaseModel::modInfoRef(const int index)
+inline ModInfo &ModDatabaseModel::modInfoRef(const int index)
 {
 	return m_database[index];
 }
 
-inline bool DatabaseModel::modIsEnabled(const int index) const
+inline bool ModDatabaseModel::modIsEnabled(const int index) const
 {
 	return m_database.at(index).enabled;
 }
 
-inline bool DatabaseModel::modIsExists(const int index) const
+inline bool ModDatabaseModel::modIsExists(const int index) const
 {
 	return m_database.at(index).exists;
 }
 
-inline const QString &DatabaseModel::modName(const int index) const
+inline const QString &ModDatabaseModel::modName(const int index) const
 {
 	return m_database.at(index).name;
 }
 
-inline const QString &DatabaseModel::modSteamName(const int index) const
+inline const QString &ModDatabaseModel::modSteamName(const int index) const
 {
 	return m_database.at(index).steamName;
 }
 
-inline int DatabaseModel::rowCount(const QModelIndex &/*parent*/) const
+inline int ModDatabaseModel::rowCount(const QModelIndex &/*parent*/) const
 {
 	return m_database.size();
 }
 
-inline void DatabaseModel::updateRow(const int index)
+inline void ModDatabaseModel::updateRow(const int index)
 {
 	emit dataChanged(this->index(index), this->index(index));
 }
 
-inline void DatabaseModel::updateRow(const QModelIndex &index)
+inline void ModDatabaseModel::updateRow(const QModelIndex &index)
 {
 	emit dataChanged(index, index);
 }

@@ -5,16 +5,19 @@
 #include "RegExpPatterns.h"
 #include "SteamRequester.h"
 
-#include "DatabaseModel.h"
+#include "ModDatabaseModel.h"
 
 //public:
 
-DatabaseModel::DatabaseModel()
+ModDatabaseModel::ModDatabaseModel()
 {
+	m_completeModNames = true;
+	m_useSteamModNames = true;
+
 	qRegisterMetaType<QVector<int> >("QVector<int>");
 }
 
-bool DatabaseModel::isNameValid(const QString &name) const
+bool ModDatabaseModel::isNameValid(const QString &name) const
 {
 	return !(name.isEmpty() ||
 			 name.contains(ModInfo::generateUnknownNameStub()) ||
@@ -24,7 +27,7 @@ bool DatabaseModel::isNameValid(const QString &name) const
 	);
 }
 
-void DatabaseModel::appendDatabase(const ModInfo &modInfo)
+void ModDatabaseModel::add(const ModInfo &modInfo)
 {
 	beginInsertRows(QModelIndex(), m_database.size(), m_database.size());
 	m_database.append(modInfo);
@@ -35,7 +38,7 @@ void DatabaseModel::appendDatabase(const ModInfo &modInfo)
 	endInsertRows();
 }
 
-QVariant DatabaseModel::data(const QModelIndex &index, int role) const
+QVariant ModDatabaseModel::data(const QModelIndex &index, int role) const
 {
 	if (!index.isValid())
 		return QVariant();
@@ -90,7 +93,7 @@ QVariant DatabaseModel::data(const QModelIndex &index, int role) const
 	return QVariant();
 }
 
-Qt::ItemFlags DatabaseModel::flags(const QModelIndex &index) const
+Qt::ItemFlags ModDatabaseModel::flags(const QModelIndex &index) const
 {
 	Qt::ItemFlags flags = QAbstractItemModel::flags(index);
 	if (index.column() == 0)
@@ -98,7 +101,7 @@ Qt::ItemFlags DatabaseModel::flags(const QModelIndex &index) const
 	return flags;
 }
 
-QVariant DatabaseModel::headerData(int section, Qt::Orientation orientation, int role) const
+QVariant ModDatabaseModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
 	if (role == Qt::DisplayRole) {
 		if (orientation == Qt::Horizontal) {
@@ -111,14 +114,14 @@ QVariant DatabaseModel::headerData(int section, Qt::Orientation orientation, int
 	return QVariant();
 }
 
-void DatabaseModel::removeFromDatabase(const int index)
+void ModDatabaseModel::removeFromDatabase(const int index)
 {
 	beginRemoveRows(QModelIndex(), index, index);
 	m_database.removeAt(index);
 	endRemoveRows();
 }
 
-void DatabaseModel::setCompleteModNames(const bool enabled)
+void ModDatabaseModel::setCompleteModNames(const bool enabled)
 {
 	if (m_completeModNames == enabled)
 		return;
@@ -127,7 +130,7 @@ void DatabaseModel::setCompleteModNames(const bool enabled)
 	emit dataChanged(index(0), index(m_database.size() - 1));
 }
 
-bool DatabaseModel::setData(const QModelIndex &index, const QVariant &value, int role)
+bool ModDatabaseModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
 	if (!index.isValid())
 		return false;
@@ -159,13 +162,13 @@ bool DatabaseModel::setData(const QModelIndex &index, const QVariant &value, int
 	return isDataChanged;
 }
 
-void DatabaseModel::setModsExistsState(const bool isExists)
+void ModDatabaseModel::setModsExistsState(const bool isExists)
 {
 	for (int i = 0; i < m_database.size(); ++i)
 		m_database[i].exists = isExists;
 }
 
-void DatabaseModel::setUsingSteamModNames(const bool use)
+void ModDatabaseModel::setUsingSteamModNames(const bool use)
 {
 	if (m_useSteamModNames == use)
 		return;
@@ -174,7 +177,7 @@ void DatabaseModel::setUsingSteamModNames(const bool use)
 	emit dataChanged(index(0), index(m_database.size() - 1));
 }
 
-void DatabaseModel::sortDatabase()
+void ModDatabaseModel::sortDatabase()
 {
 	//Names sorting (order like in Windows explorer)
 	QCollator collator;
@@ -190,7 +193,7 @@ void DatabaseModel::sortDatabase()
 
 //public slots:
 
-void DatabaseModel::enableMod(const QModelIndex &index)
+void ModDatabaseModel::enableMod(const QModelIndex &index)
 {
 	if (!m_database.at(index.row()).enabled) {
 		m_database[index.row()].enabled = true;
@@ -199,7 +202,7 @@ void DatabaseModel::enableMod(const QModelIndex &index)
 	}
 }
 
-void DatabaseModel::disableMod(const QModelIndex &index)
+void ModDatabaseModel::disableMod(const QModelIndex &index)
 {
 	if (m_database.at(index.row()).enabled) {
 		m_database[index.row()].enabled = false;
@@ -210,7 +213,7 @@ void DatabaseModel::disableMod(const QModelIndex &index)
 
 //protected slots:
 
-void DatabaseModel::setCompleteModNames(const int mode)
+void ModDatabaseModel::setCompleteModNames(const int mode)
 {
 	if (mode == Qt::CheckState::Checked) {
 		setCompleteModNames(true);
@@ -219,7 +222,7 @@ void DatabaseModel::setCompleteModNames(const int mode)
 	}
 }
 
-void DatabaseModel::setUsingSteamModNames(const int mode)
+void ModDatabaseModel::setUsingSteamModNames(const int mode)
 {
 	if (mode == Qt::CheckState::Checked) {
 		setUsingSteamModNames(true);

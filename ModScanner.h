@@ -3,7 +3,7 @@
 
 #include <QObject>
 
-class DatabaseModel;
+class ModDatabaseModel;
 
 class ModScanner : public QObject
 {
@@ -18,7 +18,7 @@ public:
 	};
 
 	explicit ModScanner(QObject *parent = nullptr);
-	void scanMods(const QString &modsFolderPath, DatabaseModel &databaseModel,
+	void scanMods(const QString &modsFolderPath, ModDatabaseModel &modDatabaseModel,
 				  const EnabledFlagValue enabledFlagValue = NotOverride);
 
 signals:
@@ -26,7 +26,7 @@ signals:
 
 private:
 	void scanMod(const QString &modFolderName, const QString &modFolderPath,
-				 DatabaseModel &databaseModel, const int oldDatabaseSize,
+				 ModDatabaseModel &modDatabaseModel, const int oldDatabaseSize,
 				 const EnabledFlagValue enabledFlagValue = NotOverride);
 
 	QRegExp m_initRegExp;
