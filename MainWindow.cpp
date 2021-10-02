@@ -1,4 +1,5 @@
 #include <QCollator>
+#include <QCryptographicHash>
 #include <QDesktopServices>
 #include <QDirIterator>
 #include <QFileDialog>
@@ -21,87 +22,42 @@
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
 
-#include <QCryptographicHash>
-QByteArray fileChecksum(const QString &fileName, QCryptographicHash::Algorithm hashAlgorithm = QCryptographicHash::Md5)
+QByteArray fileChecksum(const QString &fileName, QCryptographicHash::Algorithm hashAlgorithm = QCryptographicHash::Md5);
+void rewriteFileIfDataIsDifferent(const QString &fileName, const QByteArray &newData);
+
+class WaitingLauncherArgs
 {
-	QFile file(fileName);
-	if (file.exists() && file.open(QFile::ReadOnly)) {
-		QCryptographicHash hash(hashAlgorithm);
-		if (hash.addData(&file)) {
-			file.close();
-			return hash.result();
-		}
-	}
-	return QByteArray();
-}
+public:
+    WaitingLauncherArgs(const QString &programFolderPath, const QString &programName);
 
-QString applicationVersionToString(const int version)
-{
-	return QString::number(majorApplicationVersion(version)) + '.' +
-		   QString::number(minorApplicationVersion(version)) + '.' +
-		   QString::number(microApplicationVersion(version));
-}
+    void setProgramFolderPath(const QString &programFolderPath);
+    void setProgramName(const QString &programName);
 
-int applicationVersionFromString(const QString &version)
-{
-	QStringList subVersions = version.split('.');
-	int subVersionsCount = subVersions.count();
-	return applicationVersion(subVersionsCount > 0 ? subVersions[0].toInt() : 1,
-							  subVersionsCount > 1 ? subVersions[1].toInt() : 0,
-							  subVersionsCount > 2 ? subVersions[2].toInt() : 0);
-}
+    void setIsMonitoringNeeded(const bool isMonitoringNeeded);
+    void setDontLaunchIfAlreadyLaunched(const bool dontLaunchIfAlreadyLaunched);
+    void setLaunchProgramAfterClose(const bool launchProgramAfterClose);
 
-void rewriteFileIfDataIsDifferent(const QString &fileName, const QByteArray &newData)
-{
-	QFile file(fileName);
+    void setProgramOnErrorFolderPath(const QString &programOnErrorFolderPath);
+    void setProgramOnErrorName(const QString &programOnErrorName);
+    void setProgramAfterCloseFolderPath(const QString &programAfterCloseFolderPath);
+    void setProgramAfterCloseName(const QString &programAfterCloseName);
 
-	if (QFile::exists(fileName)) {
-		if (file.open(QFile::ReadOnly)) {
-			QByteArray currentData = file.readAll();
-			file.close();
+    QString toString() const;
+    QByteArray toUtf8() const;
 
-			if (currentData == newData) {
-				return;
-			}
-		} else {
-			return;
-		}
-	}
+private:
+    QString m_programFolderPath;
+    QString m_programName;
+    bool m_isMonitoringNeeded = false;
+    bool m_dontLaunchIfAlreadyLaunched = false;
+    bool m_launchProgramAfterClose = false;
+    QString m_programOnErrorFolderPath = QString();
+    QString m_programOnErrorName = QString();
+    QString m_programAfterCloseFolderPath = QString();
+    QString m_programAfterCloseName = QString();
+};
 
-	if (file.open(QFile::WriteOnly)) {
-		file.write(newData);
-		file.close();
-	}
-}
-
-QString generateWaitingLauncherArgs(const QString &programFolderPath,
-									const QString &programName,
-									const bool isMonitoringNeeded = false,
-									const bool dontLaunchIfAlreadyLaunched = false,
-									const bool launchProgramAfterClose = false,
-									const QString &programOnErrorFolderPath = QString(),
-									const QString &programOnErrorName = QString(),
-									const QString &programAfterCloseFolderPath = QString(),
-									const QString &programAfterCloseName = QString())
-{
-	QString args =	"\"" + programFolderPath + "\" " +
-					"\"" + programName + "\"" +
-					(isMonitoringNeeded				? " -IsMonitoringNeeded"			: "") +
-					(dontLaunchIfAlreadyLaunched	? " -DontLaunchIfAlreadyLaunched"	: "") +
-					(launchProgramAfterClose		? " -LaunchProgramAfterClose"		: "");
-
-	if (!programOnErrorFolderPath.isEmpty() && !programOnErrorName.isEmpty()) {
-		args += " -ProgramOnError \"" + programOnErrorFolderPath + "\" " +
-								 "\"" + programOnErrorName + "\"";
-	}
-
-	if (!programAfterCloseFolderPath.isEmpty() && !programAfterCloseName.isEmpty()) {
-		args += " -ProgramAfterClose \"" + programAfterCloseFolderPath + "\" " +
-									"\"" + programAfterCloseName + "\"";
-	}
-
-	return args;
-}
+///class MainWindow:
 
 //public:
 
@@ -581,14 +537,9 @@ void MainWindow::runGame()
 	gameLauncher.setWorkingDirectory(LauncherFolderPath);
 	gameLauncher.setProgram(launcherFilePath());
 
-	rewriteFileIfDataIsDifferent(
-		launcherDataFilePath(),
-		generateWaitingLauncherArgs(
-			m_gameFolderPath,
-			gameFileName(false),
-			true
-		).toUtf8()
-	);
+    WaitingLauncherArgs args(m_gameFolderPath, gameFileName(false));
+    args.setIsMonitoringNeeded(true);
+    rewriteFileIfDataIsDifferent(launcherDataFilePath(), args.toUtf8());
 
 	//We must ensure that autoexit flag is up to date because it will be read by our .rpy script
 	m_settings->setValue("General/bAutoexit", ui->autoexitCheckBox->isChecked());
@@ -834,18 +785,10 @@ void MainWindow::checkOriginLauncherReplacement() const
 			}
 		}
 
-		rewriteFileIfDataIsDifferent(
-			gameLauncherDataFilePath(),
-			generateWaitingLauncherArgs(
-				QCoreApplication::applicationDirPath(),
-				managerFileName(false),
-				false,
-				false,
-				false,
-				m_gameFolderPath,
-				cleanerFileName(false)
-			).toUtf8()
-		);
+        WaitingLauncherArgs args(QCoreApplication::applicationDirPath(), managerFileName(false));
+        args.setProgramOnErrorFolderPath(m_gameFolderPath);
+        args.setProgramOnErrorName(cleanerFileName(false));
+        rewriteFileIfDataIsDifferent(gameLauncherDataFilePath(), args.toUtf8());
 
 		QByteArray cleanerData;
 		{
@@ -1123,4 +1066,140 @@ void MainWindow::applyBackwardCompatibilityFixes(const int loadedApplicationVers
 			}
 		}
 	}
+}
+
+
+
+///class WaitingLauncherArgs:
+
+WaitingLauncherArgs::WaitingLauncherArgs(const QString &programFolderPath, const QString &programName) :
+    m_programFolderPath(programFolderPath),
+    m_programName(programName)
+{}
+
+void WaitingLauncherArgs::setProgramFolderPath(const QString &programFolderPath)
+{
+    m_programFolderPath = programFolderPath;
+}
+
+void WaitingLauncherArgs::setProgramName(const QString &programName)
+{
+    m_programName = programName;
+}
+
+void WaitingLauncherArgs::setIsMonitoringNeeded(const bool isMonitoringNeeded)
+{
+    m_isMonitoringNeeded = isMonitoringNeeded;
+}
+
+void WaitingLauncherArgs::setDontLaunchIfAlreadyLaunched(const bool dontLaunchIfAlreadyLaunched)
+{
+    m_dontLaunchIfAlreadyLaunched = dontLaunchIfAlreadyLaunched;
+}
+
+void WaitingLauncherArgs::setLaunchProgramAfterClose(const bool launchProgramAfterClose)
+{
+    m_launchProgramAfterClose = launchProgramAfterClose;
+}
+
+void WaitingLauncherArgs::setProgramOnErrorFolderPath(const QString &programOnErrorFolderPath)
+{
+    m_programOnErrorFolderPath = programOnErrorFolderPath;
+}
+
+void WaitingLauncherArgs::setProgramOnErrorName(const QString &programOnErrorName)
+{
+    m_programOnErrorName = programOnErrorName;
+}
+
+void WaitingLauncherArgs::setProgramAfterCloseFolderPath(const QString &programAfterCloseFolderPath)
+{
+    m_programAfterCloseFolderPath = programAfterCloseFolderPath;
+}
+
+void WaitingLauncherArgs::setProgramAfterCloseName(const QString &programAfterCloseName)
+{
+    m_programAfterCloseName = programAfterCloseName;
+}
+
+QString WaitingLauncherArgs::toString() const
+{
+    QString args =	"\"" + m_programFolderPath + "\" " +
+                    "\"" + m_programName + "\"" +
+                    (m_isMonitoringNeeded				? " -IsMonitoringNeeded"			: "") +
+                    (m_dontLaunchIfAlreadyLaunched	? " -DontLaunchIfAlreadyLaunched"	: "") +
+                    (m_launchProgramAfterClose		? " -LaunchProgramAfterClose"		: "");
+
+    if (!m_programOnErrorFolderPath.isEmpty() && !m_programOnErrorName.isEmpty()) {
+        args += " -ProgramOnError \"" + m_programOnErrorFolderPath + "\" " +
+                                 "\"" + m_programOnErrorName + "\"";
+    }
+
+    if (!m_programAfterCloseFolderPath.isEmpty() && !m_programAfterCloseName.isEmpty()) {
+        args += " -ProgramAfterClose \"" + m_programAfterCloseFolderPath + "\" " +
+                                    "\"" + m_programAfterCloseName + "\"";
+    }
+
+    return args;
+}
+
+QByteArray WaitingLauncherArgs::toUtf8() const
+{
+    return toString().toUtf8();
+}
+
+///Additional function from the header:
+
+QString applicationVersionToString(const int version)
+{
+    return QString::number(majorApplicationVersion(version)) + '.' +
+           QString::number(minorApplicationVersion(version)) + '.' +
+           QString::number(microApplicationVersion(version));
+}
+
+int applicationVersionFromString(const QString &version)
+{
+    QStringList subVersions = version.split('.');
+    int subVersionsCount = subVersions.count();
+    return applicationVersion(subVersionsCount > 0 ? subVersions[0].toInt() : 1,
+                              subVersionsCount > 1 ? subVersions[1].toInt() : 0,
+                              subVersionsCount > 2 ? subVersions[2].toInt() : 0);
+}
+
+///Additional functions:
+
+QByteArray fileChecksum(const QString &fileName, QCryptographicHash::Algorithm hashAlgorithm)
+{
+    QFile file(fileName);
+    if (file.exists() && file.open(QFile::ReadOnly)) {
+        QCryptographicHash hash(hashAlgorithm);
+        if (hash.addData(&file)) {
+            file.close();
+            return hash.result();
+        }
+    }
+    return QByteArray();
+}
+
+void rewriteFileIfDataIsDifferent(const QString &fileName, const QByteArray &newData)
+{
+    QFile file(fileName);
+
+    if (QFile::exists(fileName)) {
+        if (file.open(QFile::ReadOnly)) {
+            QByteArray currentData = file.readAll();
+            file.close();
+
+            if (currentData == newData) {
+                return;
+            }
+        } else {
+            return;
+        }
+    }
+
+    if (file.open(QFile::WriteOnly)) {
+        file.write(newData);
+        file.close();
+    }
 }
