@@ -28,12 +28,12 @@ inline constexpr int majorApplicationVersion(int version)
 
 inline constexpr int minorApplicationVersion(int version)
 {
-    return ((version  & 1047552) >> 10);
+    return ((version  & 1047552) >> 10);    //11111 11111 00000 00000
 }
 
 inline constexpr int microApplicationVersion(int version)
 {
-    return (version & 1023);
+    return (version & 1023);    //11111 11111
 }
 
 QString applicationVersionToString(const int version);
@@ -133,9 +133,11 @@ private:
     static constexpr const char *LauncherFolderPath     = "launcher/";
     static constexpr const char *LauncherFileName       = "ESLauncher";
     static constexpr const char *CleanerFileName        = "ESModManagerCleaner";
-    static constexpr const char *GameFileName           = "Everlasting Summer";
-    static constexpr const char *OriginGameFileName     = "Everlasting Summer (origin)";
-    static constexpr const char *ModifiedGameFileName   = "Everlasting Summer (modified)";
+
+    const bool Is64BitOs;
+    const char *GameFileName;
+    const char *OriginGameFileName;
+    const char *ModifiedGameFileName;
 
     static QString addExecutableExtension(const QString &fileName);         //inline
 
@@ -145,9 +147,9 @@ private:
     static QString launcherDataFileName();                                  //inline
     static QString cleanerFileName(const bool addExtension = true);         //inline
     static QString cleanerDataFileName();                                   //inline
-    static QString gameFileName(const bool addExtension = true);            //inline
-    static QString originGameFileName(const bool addExtension = true);      //inline
-    static QString modifiedGameFileName(const bool addExtension = true);    //inline
+    QString gameFileName(const bool addExtension = true) const;             //inline
+    QString originGameFileName(const bool addExtension = true) const;       //inline
+    QString modifiedGameFileName(const bool addExtension = true) const;     //inline
 
     QString launcherFilePath() const;           //inline
     QString launcherDataFilePath() const;       //inline
@@ -210,23 +212,20 @@ inline QString MainWindow::cleanerDataFileName()
     return "ESModManagerCleaner.dat";
 }
 
-inline QString MainWindow::gameFileName(const bool addExtension)
+inline QString MainWindow::gameFileName(const bool addExtension) const
 {
     return (addExtension ? addExecutableExtension(GameFileName) : GameFileName);
 }
 
-inline QString MainWindow::originGameFileName(const bool addExtension)
+inline QString MainWindow::originGameFileName(const bool addExtension) const
 {
     return (addExtension ? addExecutableExtension(OriginGameFileName) : OriginGameFileName);
 }
 
-inline QString MainWindow::modifiedGameFileName(const bool addExtension)
+inline QString MainWindow::modifiedGameFileName(const bool addExtension) const
 {
     return (addExtension ? addExecutableExtension(ModifiedGameFileName) : ModifiedGameFileName);
 }
-
-
-
 
 inline QString MainWindow::launcherFilePath() const
 {

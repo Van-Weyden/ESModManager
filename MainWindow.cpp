@@ -1,5 +1,6 @@
 #include <QCollator>
 #include <QCryptographicHash>
+#include <QDebug>
 #include <QDesktopServices>
 #include <QDirIterator>
 #include <QFileDialog>
@@ -63,7 +64,11 @@ private:
 
 MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow)
+    ui(new Ui::MainWindow),
+    Is64BitOs(QSysInfo::currentCpuArchitecture().contains(QLatin1String("64"))),
+    GameFileName(Is64BitOs ? "Everlasting Summer" : "Everlasting Summer-32"),
+    OriginGameFileName(Is64BitOs ? "Everlasting Summer (origin)" : "Everlasting Summer-32 (origin)"),
+    ModifiedGameFileName(Is64BitOs ? "Everlasting Summer (modified)" : "Everlasting Summer-32 (modified)")
 {
     m_modDatabaseModel = new ModDatabaseModel();
     m_steamRequester = new SteamRequester(m_modDatabaseModel);
