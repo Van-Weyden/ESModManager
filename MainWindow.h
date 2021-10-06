@@ -44,7 +44,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    static constexpr const int CurrentApplicationVersion = applicationVersion(1, 1, 13);
+    static constexpr const int CurrentApplicationVersion = applicationVersion(1, 1, 14);
 
     explicit MainWindow(QWidget *parent = nullptr, const bool runCheck = true);
     ~MainWindow();

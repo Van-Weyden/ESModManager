@@ -338,7 +338,7 @@ void MainWindow::setGameFolder(const QString &folderPath)
     else {
         //Non-Steam version
         m_modsFolderPath = m_gameFolderPath;
-        m_modsFolderPath.append("\\game\\mods\\");
+        m_modsFolderPath.append("game\\mods\\");
     }
     ui->modsFolderLineEdit->setText(m_modsFolderPath);
 
