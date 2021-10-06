@@ -6,45 +6,45 @@
 class ModDatabaseModel;
 
 namespace Ui {
-	class DatabaseEditor;
+    class DatabaseEditor;
 }
 
 class DatabaseEditor : public QWidget
 {
-	Q_OBJECT
+    Q_OBJECT
 
 public:
-	explicit DatabaseEditor(QWidget *parent = nullptr);
-	~DatabaseEditor();
+    explicit DatabaseEditor(QWidget *parent = nullptr);
+    ~DatabaseEditor();
 
-	void checkModsDisplay();
-	void hideAllRows();
-	void setModel(ModDatabaseModel *model, const int columnIndex = 0);
-	void setModsDisplay(const bool modlistOnly = true);
+    void checkModsDisplay();
+    void hideAllRows();
+    void setModel(ModDatabaseModel *model, const int columnIndex = 0);
+    void setModsDisplay(const bool modlistOnly = true);
 
 public slots:
-	void filterModsDisplay(const QString &str);
-	void removeSelectedMod();
-	void saveSelectedModInfo();
-	void show();
-	void showSelectedModInfo();
+    void filterModsDisplay(const QString &str);
+    void removeSelectedMod();
+    void saveSelectedModInfo();
+    void show();
+    void showSelectedModInfo();
 
 protected:
-	void changeEvent(QEvent *event);
+    void changeEvent(QEvent *event);
 
 private slots:
-	void adjustRow(const QModelIndex &index);
-	void openCurrentModFolder();
-	void openWorkshopPage();
-	void setModsDisplayMode(const int mode);
+    void adjustRow(const QModelIndex &index);
+    void openCurrentModFolder();
+    void openWorkshopPage();
+    void setModsDisplayMode(const int mode);
 
 signals:
-	void openModFolder(const int modIndex);
+    void openModFolder(const int modIndex);
 
 private:
-	Ui::DatabaseEditor *ui;
+    Ui::DatabaseEditor *ui;
 
-	ModDatabaseModel *m_modDatabaseModel = nullptr;
+    ModDatabaseModel *m_modDatabaseModel = nullptr;
 };
 
 #endif // DATABASEEDITOR_H
