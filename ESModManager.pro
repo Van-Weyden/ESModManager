@@ -28,6 +28,7 @@ CONFIG += c++11
 
 SOURCES += \
         DatabaseEditor.cpp \
+        Logger.cpp \
         MainWindow.cpp \
         ModDatabaseModel.cpp \
         ModInfo.cpp \
@@ -38,6 +39,7 @@ SOURCES += \
 
 HEADERS += \
         DatabaseEditor.h \
+        Logger.h \
         MainWindow.h \
         ModDatabaseModel.h \
         ModInfo.h \
