@@ -42,7 +42,7 @@ void SteamRequester::processModName(QNetworkReply *reply)
         for (int i = 0; i < m_modDatabaseModel->databaseSize(); ++i) {
             if (m_modDatabaseModel->modFolderName(i) == modFolderName) {
                 //During the processing of the request, the data could change, so check again
-                if (!steamModName.isEmpty() && m_modDatabaseModel->isNameValid(m_modDatabaseModel->modSteamName(i))) {
+                if (!steamModName.isEmpty() && !m_modDatabaseModel->isNameValid(m_modDatabaseModel->modSteamName(i))) {
                     m_modDatabaseModel->modInfoRef(i).steamName = steamModName;
                     emit m_modDatabaseModel->dataChanged(m_modDatabaseModel->index(i, 0), m_modDatabaseModel->index(i, 1));
                 }
