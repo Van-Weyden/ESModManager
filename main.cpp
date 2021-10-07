@@ -1,18 +1,24 @@
 #include <QApplication>
+#include <QDebug>
 
+#include "Logger.h"
 #include "MainWindow.h"
 
 int main(int argc, char *argv[])
 {
-	QApplication app(argc, argv);
+#if !defined(QT_NO_DEBUG) || defined(ESMM_FORCE_FILE_LOG)
+    Logger::attach();
+#endif
 
-	MainWindow mw;
+    QApplication app(argc, argv);
 
-	if (mw.isEnabled()) {
-		mw.show();
-	} else {
-		return 0;
-	}
+    MainWindow mw;
 
-	return app.exec();
+    if (mw.isEnabled()) {
+        mw.show();
+    } else {
+        return 0;
+    }
+
+    return app.exec();
 }

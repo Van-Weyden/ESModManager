@@ -6,37 +6,37 @@
 class QNetworkReply;
 class QNetworkAccessManager;
 
-class DatabaseModel;
+class ModDatabaseModel;
 
 class SteamRequester : public QObject
 {
-	Q_OBJECT
+    Q_OBJECT
 
 public:   
-	/**
-	 * @brief SteamRequester - Creates an object of SteamRequester with model "model".
-	 * SteamRequester does not take ownership of model.
-	 */
-	SteamRequester(DatabaseModel *model);
-	~SteamRequester() = default;
-	inline bool isRunning() const;
+    /**
+     * @brief SteamRequester - Creates an object of SteamRequester with model "model".
+     * SteamRequester does not take ownership of model.
+     */
+    SteamRequester(ModDatabaseModel *modDatabaseModel);
+    ~SteamRequester() = default;
+    inline bool isRunning() const;
 
 public slots:
-	void processModName(QNetworkReply *reply = nullptr);
-	void requestModNames();
+    void processModName(QNetworkReply *reply = nullptr);
+    void requestModNames();
 
 signals:
-	void finished();
-	void modProcessed();
+    void finished();
+    void modProcessed();
 
 private:
-	void modNameProcessed();
+    void modNameProcessed();
 
-	QNetworkAccessManager *m_manager = nullptr;
-	DatabaseModel *m_model = nullptr;
-	bool m_isRunning = false;
+    QNetworkAccessManager *m_networkAccessManager = nullptr;
+    ModDatabaseModel *m_modDatabaseModel = nullptr;
+    bool m_isRunning = false;
 
-	int m_countOfRemainingMods = 0;
+    int m_countOfRemainingMods = 0;
 };
 
 
@@ -45,7 +45,7 @@ private:
 
 inline bool SteamRequester::isRunning() const
 {
-	return m_isRunning;
+    return m_isRunning;
 }
 
 #endif // STEAMWEBAPI_H
