@@ -543,8 +543,8 @@ void MainWindow::runGame()
     this->hide();
 
     QProcess gameLauncher;
-    gameLauncher.setWorkingDirectory(LauncherFolderPath);
-    gameLauncher.setProgram(launcherFilePath());
+    gameLauncher.setWorkingDirectory(QDir(LauncherFolderPath).absolutePath());
+    gameLauncher.setProgram(QFileInfo(launcherFilePath()).absoluteFilePath());
 
     WaitingLauncherArgs args(m_gameFolderPath, gameFileName(false));
     args.setIsMonitoringNeeded(true);
@@ -778,7 +778,7 @@ void MainWindow::checkOriginLauncherReplacement() const
 
     if (ui->replaceOriginLauncherCheckBox->isChecked()) {
         if (gameLauncherMd5 != m_launcherMd5) {
-            if (!m_previousLauncherMd5.isEmpty() && m_previousLauncherMd5 != gameLauncherMd5) {
+            if (gameLauncherMd5 != m_previousLauncherMd5) {
                 QFile(originGameFilePath()).remove();
             }
 
@@ -825,7 +825,7 @@ void MainWindow::restoreOriginLauncher() const
     QByteArray gameLauncherMd5 = fileChecksum(gameFilePath());
 
     if (QFile(originGameFilePath()).exists()) {
-        // The game launcher may have been changed
+        // The game launcher may has been changed
 
         if (gameLauncherMd5 != fileChecksum(originGameFilePath())) {
             if (fileChecksum(modifiedGameFilePath()) != m_launcherMd5) {
@@ -836,7 +836,7 @@ void MainWindow::restoreOriginLauncher() const
                 }
             }
 
-            if (m_previousLauncherMd5.isEmpty() || gameLauncherMd5 == m_launcherMd5 || gameLauncherMd5 == m_previousLauncherMd5) {
+            if (gameLauncherMd5 == m_launcherMd5 || gameLauncherMd5 == m_previousLauncherMd5) {
                 QFile(gameFilePath()).remove();
                 QFile::rename(originGameFilePath(), gameFilePath());
             }
@@ -896,8 +896,6 @@ void MainWindow::readSettings()
             loadedApplicationVersion = applicationVersionFromString(value.toString());
         }
     }
-
-    applyBackwardCompatibilityFixes(loadedApplicationVersion);
 
     if (m_settings->contains("General/sLang")) {
         value = m_settings->value("General/sLang");
@@ -1006,6 +1004,7 @@ void MainWindow::readSettings()
         }
     }
 
+    applyBackwardCompatibilityFixes(loadedApplicationVersion);
     checkAnnouncementPopup(loadedApplicationVersion);
 }
 
@@ -1036,6 +1035,10 @@ void MainWindow::saveSettings() const
 
 void MainWindow::applyBackwardCompatibilityFixes(const int loadedApplicationVersion)
 {
+    if (loadedApplicationVersion == CurrentApplicationVersion) {
+        return;
+    }
+
     if (loadedApplicationVersion < applicationVersion(1, 1, 9)) {
         ///Fix bug from old versions when game folder path contained "Everlasting Summer.exe"
         m_gameFolderPath.remove("Everlasting Summer.exe");
@@ -1082,6 +1085,13 @@ void MainWindow::applyBackwardCompatibilityFixes(const int loadedApplicationVers
                 rewriteFileIfDataIsDifferent("mods_database.json", database.toJson());
             }
         }
+    }
+
+    ///Fix bug from old versions when game files integrity check was not implemented
+    if (loadedApplicationVersion < applicationVersion(1, 1, 11)) {
+        m_previousLauncherMd5 = "H2\xb7+g\xdeZ\x9f\x91\x99\x8f\x36\xc9\xa7#\xeb";
+    } else if (loadedApplicationVersion < applicationVersion(1, 1, 13)) {
+        m_previousLauncherMd5 = "\x12\xd2\x91\xab\xdb%b\x1eO\x1e\xd5&\xd1~}\xd2";
     }
 }
 
