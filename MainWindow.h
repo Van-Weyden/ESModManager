@@ -16,36 +16,11 @@ namespace Ui {
     class MainWindow;
 }
 
-static constexpr int applicationVersion(const int major, const int minor = 0, const int micro = 0)
-{
-    return ((major << 20) | (minor << 10) | micro);
-}
-
-inline constexpr int majorApplicationVersion(int version)
-{
-    return (version >> 20);
-}
-
-inline constexpr int minorApplicationVersion(int version)
-{
-    return ((version  & 1047552) >> 10);    //11111 11111 00000 00000
-}
-
-inline constexpr int microApplicationVersion(int version)
-{
-    return (version & 1023);    //11111 11111
-}
-
-QString applicationVersionToString(const int version);
-int applicationVersionFromString(const QString &version);
-
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    static constexpr const int CurrentApplicationVersion = applicationVersion(1, 1, 14);
-
     explicit MainWindow(QWidget *parent = nullptr, const bool runCheck = true);
     ~MainWindow();
 
@@ -57,7 +32,7 @@ public:
     void saveDatabase() const;
     void scanMods();
 
-    void setGameFolder(const QString &folderPath);
+    void setGameFolder(const QString &folderPath, const bool refreshModlist = true);
     bool setLanguage(const QString &lang);
 
 public slots:
@@ -93,9 +68,10 @@ private slots:
     void steamModNameProcessed();
 
 private:
+    bool isGameFolderValid(const QString &folderPath);
     void checkAnnouncementPopup(const int loadedApplicationVersion);
     bool checkGameMd5(const QString &folderPath);
-    void checkOriginLauncherReplacement() const;
+    void checkOriginLauncherReplacement();
     void restoreOriginLauncher() const;
     void moveModFolders(QString *unmovedModsToTempFolder = nullptr,
                         QString *unmovedModsFromTempFolder = nullptr) const;
@@ -134,10 +110,8 @@ private:
     static constexpr const char *LauncherFileName       = "ESLauncher";
     static constexpr const char *CleanerFileName        = "ESModManagerCleaner";
 
-    const bool Is64BitOs;
-    const char *GameFileName;
-    const char *OriginGameFileName;
-    const char *ModifiedGameFileName;
+    static const bool Is64BitOs;
+    QString m_gameFileName;
 
     static QString addExecutableExtension(const QString &fileName);         //inline
 
@@ -214,17 +188,17 @@ inline QString MainWindow::cleanerDataFileName()
 
 inline QString MainWindow::gameFileName(const bool addExtension) const
 {
-    return (addExtension ? addExecutableExtension(GameFileName) : GameFileName);
+    return (addExtension ? addExecutableExtension(m_gameFileName) : m_gameFileName);
 }
 
 inline QString MainWindow::originGameFileName(const bool addExtension) const
 {
-    return (addExtension ? addExecutableExtension(OriginGameFileName) : OriginGameFileName);
+    return (addExtension ? addExecutableExtension(m_gameFileName + " (origin)") : m_gameFileName + " (origin)");
 }
 
 inline QString MainWindow::modifiedGameFileName(const bool addExtension) const
 {
-    return (addExtension ? addExecutableExtension(ModifiedGameFileName) : ModifiedGameFileName);
+    return (addExtension ? addExecutableExtension(m_gameFileName + " (modified)") : m_gameFileName + " (modified)");
 }
 
 inline QString MainWindow::launcherFilePath() const

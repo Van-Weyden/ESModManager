@@ -10,9 +10,36 @@ namespace WaitingLauncher
 {
     class Program
     {
+        static bool IsDebugLogEnabled = false;
+        static string DebugLogFile = "log.txt";
+
+        public static void Log(string data, bool addEndLine = true, bool addTime = true)
+        {
+            if (IsDebugLogEnabled)
+            {
+                File.AppendAllText(DebugLogFile,
+                    (addTime ? "[" + DateTime.Now + "] " : "") + 
+                    data + 
+                    (addEndLine ? "\n" : "")
+                );
+            }
+        }
+
+        public enum ExitCode
+        {
+            WrongInitArgs = 0,
+            ProgramStarted = 1,
+            ProgramAfterCloseStarted = 2,
+            ProgramFailedToStart = -1,
+            ProgramAfterCloseFailedToStart = -2,
+        };
+
         static int Main(string[] args)
         {
-            int returnCode = 0;
+            Program.Log("", true, false);
+            Program.Log("Main: program started");
+
+            ExitCode returnCode;
             Launcher launcher = new Launcher();
 
             string[] parsedArgs = new string[] { };
@@ -21,7 +48,6 @@ namespace WaitingLauncher
             {
                 for (int i = 0; i < args.Length; ++i)
                 {
-                    
                     parsedArgs = parsedArgs.Concat(Regex.Matches(args[i], "((\\\"([^\\\"])*\\\")|([^ \\\"]+))")
                                        .Cast<Match>()
                                        .Select(m => m.Value)
@@ -29,12 +55,19 @@ namespace WaitingLauncher
                 }
             }
 
+            Program.Log("Main: args parsed");
+
             if (launcher.InitFromArgs(parsedArgs) || (parsedArgs.Length == 0 && launcher.InitFromFile("LaunchedProgram.ini")))
                 returnCode = launcher.LaunchProgram();
             else
+            {
+                Program.Log("Main: WrongInitArgs");
+                returnCode = ExitCode.WrongInitArgs;
                 Launcher.WriteUsageInfo();
+            }
 
-            return returnCode;
+            Program.Log("Main: exit code: " + returnCode.ToString());
+            return (int)returnCode;
         }
     };
 
@@ -75,15 +108,17 @@ namespace WaitingLauncher
             return (!m_dontLaunchIfAlreadyLaunched || !IsProcessRunning(m_programName));
         }
 
-        public int LaunchProgram()
+        public Program.ExitCode LaunchProgram()
         {
+            Program.Log("Launcher::LaunchProgram");
             if (!IsInit())
-                return 0;
+                return Program.ExitCode.WrongInitArgs;
 
-            int returnCode = m_processLauncher.SetProcess(m_programFolderPath, m_programName) ? 1 : -1;
-
-            if (returnCode != -1)
+            Program.ExitCode returnCode;
+            if (m_processLauncher.SetProcess(m_programFolderPath, m_programName))
             {
+                returnCode = Program.ExitCode.ProgramStarted;
+
                 if (IsNeedToLaunchProgram())
                     m_processLauncher.StartProcess();
 
@@ -95,6 +130,8 @@ namespace WaitingLauncher
                         returnCode = LaunchProgramAfterClose();
                 }
             }
+            else
+                returnCode = Program.ExitCode.ProgramFailedToStart;
 
             if (returnCode < 0)
                 m_processLauncher.StartProcess(m_programOnErrorFolderPath, m_programOnErrorName);
@@ -102,15 +139,15 @@ namespace WaitingLauncher
             return returnCode;
         }
 
-        public int LaunchProgramAfterClose()
+        public Program.ExitCode LaunchProgramAfterClose()
         {
             if (!IsInit())
-                return 0;
+                return Program.ExitCode.WrongInitArgs;
 
             if (m_processLauncher.StartProcess(m_programAfterCloseFolderPath, m_programAfterCloseName))
-                return 2;
+                return Program.ExitCode.ProgramAfterCloseStarted;
 
-            return -2;
+            return Program.ExitCode.ProgramAfterCloseFailedToStart;
         }
 
         public static bool WaitProgramLaunch(string programName, int waitStep = 100, int timeout = -1)
@@ -156,6 +193,7 @@ namespace WaitingLauncher
 
         public bool InitFromArgs(string[] args)
         {
+            Program.Log("Launcher::InitFromArgs");
             ResetInit();
 
             if (args != null && args.Length >= 2)
@@ -213,6 +251,7 @@ namespace WaitingLauncher
 
         public bool InitFromFile(string path)
         {
+            Program.Log("Launcher::InitFromFile");
             ResetInit();
 
             if (File.Exists(path))
@@ -357,6 +396,8 @@ namespace WaitingLauncher
 
             if (workingDirectory == null || fileName == null)
             {
+                Program.Log("ProcessLauncher::SetProcess: workingDirectory is null : " + (workingDirectory == null));
+                Program.Log("ProcessLauncher::SetProcess: fileName is null : " + (fileName == null));
                 return false;
             }
 
@@ -364,6 +405,8 @@ namespace WaitingLauncher
             m_startInfo.WorkingDirectory = m_backslashesRegex.Replace(m_startInfo.WorkingDirectory, "\\");
             m_startInfo.WorkingDirectory += (m_startInfo.WorkingDirectory.EndsWith("\\") ? "" : "\\");
             m_startInfo.FileName = fileName + (fileName.EndsWith(".exe") ? "" : ".exe");
+
+            Program.Log("ProcessLauncher::SetProcess: filePath: " + m_startInfo.WorkingDirectory + m_startInfo.FileName);
 
             return File.Exists(m_startInfo.WorkingDirectory + m_startInfo.FileName);
         }

@@ -15,6 +15,7 @@
 #include <QThread>
 #include <QTranslator>
 
+#include "applicationVersion.h"
 #include "DatabaseEditor.h"
 #include "ModDatabaseModel.h"
 #include "ModScanner.h"
@@ -23,6 +24,7 @@
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
 
+constexpr const char *gameFileName(const bool is64BitOs);
 QByteArray fileChecksum(const QString &fileName, QCryptographicHash::Algorithm hashAlgorithm = QCryptographicHash::Md5);
 void rewriteFileIfDataIsDifferent(const QString &fileName, const QByteArray &newData);
 
@@ -60,15 +62,13 @@ private:
 
 ///class MainWindow:
 
+const bool MainWindow::Is64BitOs = QSysInfo::currentCpuArchitecture().contains(QLatin1String("64"));
+
 //public:
 
 MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow),
-    Is64BitOs(QSysInfo::currentCpuArchitecture().contains(QLatin1String("64"))),
-    GameFileName(Is64BitOs ? "Everlasting Summer" : "Everlasting Summer-32"),
-    OriginGameFileName(Is64BitOs ? "Everlasting Summer (origin)" : "Everlasting Summer-32 (origin)"),
-    ModifiedGameFileName(Is64BitOs ? "Everlasting Summer (modified)" : "Everlasting Summer-32 (modified)")
+    ui(new Ui::MainWindow)
 {
     m_modDatabaseModel = new ModDatabaseModel();
     m_steamRequester = new SteamRequester(m_modDatabaseModel);
@@ -151,6 +151,28 @@ MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
     //this->adjustSize();
 
     readSettings();
+    loadDatabase();
+
+    if (isGameFolderValid(m_gameFolderPath)) {
+        ui->gameFolderLineEdit->setText(m_gameFolderPath);
+        ui->modsFolderLineEdit->setText(m_modsFolderPath);
+        ui->tempModsFolderLineEdit->setText(m_tempModsFolderPath);
+    } else {
+        QString gamePath = DefaultGameFolderPath;
+        if (isGameFolderValid(gamePath)) {
+            setGameFolder(gamePath, false);
+        } else {
+            gamePath = QCoreApplication::applicationDirPath().section('/', 0, -6);
+            gamePath.replace('/', '\\');
+            gamePath.append("\\common\\Everlasting Summer\\");
+            if (isGameFolderValid(gamePath)) {
+                setGameFolder(gamePath, false);
+            } else {
+                m_modDatabaseModel->setModsExistsState(false);
+                checkRowsVisibility();
+            }
+        }
+    }
 
     ///Process check block (whether the game / manager is already running)
     if (runCheck)
@@ -163,7 +185,7 @@ MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
                                               "Close the game before starting the manager!"),
                                   QMessageBox::StandardButton::Ok, QMessageBox::StandardButton::NoButton);
             this->setEnabled(false);
-            QApplication::exit();
+            QApplication::exit(-1);
             return;
         }
 
@@ -172,36 +194,13 @@ MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
                                            tr("Mod manager is already running!"),
                                   QMessageBox::StandardButton::Ok, QMessageBox::StandardButton::NoButton);
             this->setEnabled(false);
-            QApplication::exit();
+            QApplication::exit(-2);
             return;
         }
     }
     ///End of check block
 
-    loadDatabase();
-
-    if (m_gameFolderPath.isEmpty()) {
-        QString gamePath = DefaultGameFolderPath;
-        if (QFileInfo::exists(gamePath + gameFileName())) {
-            setGameFolder(gamePath);
-        } else {
-            gamePath = QCoreApplication::applicationDirPath().section('/', 0, -6);
-            gamePath.replace('/', '\\');
-            gamePath.append("\\common\\Everlasting Summer\\");
-            if (QFileInfo::exists(gamePath + gameFileName())) {
-                setGameFolder(gamePath);
-            } else {
-                m_modDatabaseModel->setModsExistsState(false);
-                checkRowsVisibility();
-            }
-        }
-    } else {
-        ui->gameFolderLineEdit->setText(m_gameFolderPath);
-        ui->modsFolderLineEdit->setText(m_modsFolderPath);
-        ui->tempModsFolderLineEdit->setText(m_tempModsFolderPath);
-        refreshModlist();
-    }
-
+    refreshModlist();
     m_databaseEditor->setModel(m_modDatabaseModel, 1);
 }
 
@@ -209,6 +208,12 @@ MainWindow::~MainWindow()
 {
     if (isEnabled()) {
         saveSettings();
+
+        moveModFoldersBack();
+        checkOriginLauncherReplacement();
+
+        m_modDatabaseModel->sortDatabase();
+        saveDatabase();
     }
 
     QApplication::removeTranslator(m_translator);
@@ -321,7 +326,7 @@ void MainWindow::scanMods()
     m_modDatabaseModel->sortDatabase();
 }
 
-void MainWindow::setGameFolder(const QString &folderPath)
+void MainWindow::setGameFolder(const QString &folderPath, const bool refreshModlist)
 {
     if (folderPath.isEmpty()) {
         return;
@@ -353,7 +358,9 @@ void MainWindow::setGameFolder(const QString &folderPath)
     }
     ui->tempModsFolderLineEdit->setText(m_tempModsFolderPath);
 
-    refreshModlist();
+    if (refreshModlist) {
+        this->refreshModlist();
+    }
 }
 
 bool MainWindow::setLanguage(const QString &lang)
@@ -482,11 +489,7 @@ void MainWindow::refreshModlist()
 
 void MainWindow::runGame()
 {
-    if (m_gameFolderPath.isEmpty()) {
-        return;
-    }
-
-    if (!checkGameMd5(m_gameFolderPath)) {
+    if (!isGameFolderValid(m_gameFolderPath) || !checkGameMd5(m_gameFolderPath)) {
         QMessageBox::critical(
             this,
             tr("Wrong game %1").arg(ExecutableExtension),
@@ -543,8 +546,8 @@ void MainWindow::runGame()
     this->hide();
 
     QProcess gameLauncher;
-    gameLauncher.setWorkingDirectory(LauncherFolderPath);
-    gameLauncher.setProgram(launcherFilePath());
+    gameLauncher.setWorkingDirectory(QDir(LauncherFolderPath).absolutePath());
+    gameLauncher.setProgram(QFileInfo(launcherFilePath()).absoluteFilePath());
 
     WaitingLauncherArgs args(m_gameFolderPath, gameFileName(false));
     args.setIsMonitoringNeeded(true);
@@ -577,7 +580,7 @@ void MainWindow::selectGameFolder()
                                                            m_gameFolderPath, QFileDialog::Option::DontUseNativeDialog);
     if (gameFolderUrl.isValid()) {
         QString folderPath = gameFolderUrl.toString().replace('/', '\\');
-        if (QFileInfo::exists(folderPath + '\\' + gameFileName())) {
+        if (isGameFolderValid(folderPath + '\\')) {
             folderPath[0] = folderPath.at(0).toUpper();
             setGameFolder(folderPath + '\\');
         }
@@ -637,7 +640,7 @@ void MainWindow::showAboutInfo()
                              QMessageBox::StandardButton::Close, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
     messageAbout.setTextFormat(Qt::TextFormat::RichText);
     messageAbout.setText(
-        tr("Everlasting Summer mod manager v.") + applicationVersionToString(CurrentApplicationVersion) + ".<br>" +
+        tr("Everlasting Summer mod manager v.") + applicationVersionToString() + ".<br>" +
         tr("Author:") + " <a href='https://steamcommunity.com/id/van_weyden/'>Slavyan</a><br>" +
         tr("Help in testing:") + " <a href='https://steamcommunity.com/profiles/76561198058938676/'>Hatsune Miku</a>,"
                                  " 🔰 <a href='https://steamcommunity.com/id/lena_sova/'>" + tr("Lena") + "</a>🔰 ," +
@@ -743,9 +746,30 @@ void MainWindow::steamModNameProcessed()
 
 //private:
 
+bool MainWindow::isGameFolderValid(const QString &folderPath)
+{
+    //In case of different versions of the game, it is necessary to double-check the name of the game launcher
+    m_gameFileName = ::gameFileName(Is64BitOs);
+
+    bool isFolderValid = QFileInfo::exists(folderPath + gameFileName());
+
+    if (!isFolderValid && !Is64BitOs) {
+        //The user may have chosen an older version of the game without a separate 32-bit launcher
+        m_gameFileName = ::gameFileName(true);
+        isFolderValid = QFileInfo::exists(folderPath + gameFileName());
+
+        if (!isFolderValid) {
+            //Definitely wrong folder, restore the name of the game launcher
+            m_gameFileName = ::gameFileName(false);
+        }
+    }
+
+    return isFolderValid;
+}
+
 void MainWindow::checkAnnouncementPopup(const int loadedApplicationVersion)
 {
-    if (loadedApplicationVersion == CurrentApplicationVersion) {
+    if (loadedApplicationVersion == currentApplicationVersion()) {
         return;
     }
 
@@ -768,9 +792,9 @@ bool MainWindow::checkGameMd5(const QString &folderPath)
     return isGameMd5Valid;
 }
 
-void MainWindow::checkOriginLauncherReplacement() const
-{
-    if (m_gameFolderPath.isEmpty()) {
+void MainWindow::checkOriginLauncherReplacement()
+{   
+    if (!isGameFolderValid(m_gameFolderPath)) {
         return;
     }
 
@@ -778,7 +802,7 @@ void MainWindow::checkOriginLauncherReplacement() const
 
     if (ui->replaceOriginLauncherCheckBox->isChecked()) {
         if (gameLauncherMd5 != m_launcherMd5) {
-            if (!m_previousLauncherMd5.isEmpty() && m_previousLauncherMd5 != gameLauncherMd5) {
+            if (gameLauncherMd5 != m_previousLauncherMd5) {
                 QFile(originGameFilePath()).remove();
             }
 
@@ -825,7 +849,7 @@ void MainWindow::restoreOriginLauncher() const
     QByteArray gameLauncherMd5 = fileChecksum(gameFilePath());
 
     if (QFile(originGameFilePath()).exists()) {
-        // The game launcher may have been changed
+        // The game launcher may has been changed
 
         if (gameLauncherMd5 != fileChecksum(originGameFilePath())) {
             if (fileChecksum(modifiedGameFilePath()) != m_launcherMd5) {
@@ -836,7 +860,7 @@ void MainWindow::restoreOriginLauncher() const
                 }
             }
 
-            if (m_previousLauncherMd5.isEmpty() || gameLauncherMd5 == m_launcherMd5 || gameLauncherMd5 == m_previousLauncherMd5) {
+            if (gameLauncherMd5 == m_launcherMd5 || gameLauncherMd5 == m_previousLauncherMd5) {
                 QFile(gameFilePath()).remove();
                 QFile::rename(originGameFilePath(), gameFilePath());
             }
@@ -896,8 +920,6 @@ void MainWindow::readSettings()
             loadedApplicationVersion = applicationVersionFromString(value.toString());
         }
     }
-
-    applyBackwardCompatibilityFixes(loadedApplicationVersion);
 
     if (m_settings->contains("General/sLang")) {
         value = m_settings->value("General/sLang");
@@ -1006,13 +1028,14 @@ void MainWindow::readSettings()
         }
     }
 
+    applyBackwardCompatibilityFixes(loadedApplicationVersion);
     checkAnnouncementPopup(loadedApplicationVersion);
 }
 
 void MainWindow::saveSettings() const
 {
     m_settings->clear();
-    m_settings->setValue("General/sAppVersion", applicationVersionToString(CurrentApplicationVersion));
+    m_settings->setValue("General/sAppVersion", applicationVersionToString());
     m_settings->setValue("General/sLang", m_lang);
     m_settings->setValue("General/bMaximized", this->isMaximized());
     m_settings->setValue("General/qsSize", this->size());
@@ -1027,15 +1050,14 @@ void MainWindow::saveSettings() const
     m_settings->setValue("Editor/bMaximized", m_databaseEditor->isMaximized());
     m_settings->setValue("Editor/qsSize", m_databaseEditor->size());
     m_settings->setValue("General/baLastLauncherHash", m_launcherMd5);
-
-    moveModFoldersBack();
-    checkOriginLauncherReplacement();
-    m_modDatabaseModel->sortDatabase();
-    saveDatabase();
 }
 
 void MainWindow::applyBackwardCompatibilityFixes(const int loadedApplicationVersion)
 {
+    if (loadedApplicationVersion == currentApplicationVersion()) {
+        return;
+    }
+
     if (loadedApplicationVersion < applicationVersion(1, 1, 9)) {
         ///Fix bug from old versions when game folder path contained "Everlasting Summer.exe"
         m_gameFolderPath.remove("Everlasting Summer.exe");
@@ -1082,6 +1104,13 @@ void MainWindow::applyBackwardCompatibilityFixes(const int loadedApplicationVers
                 rewriteFileIfDataIsDifferent("mods_database.json", database.toJson());
             }
         }
+    }
+
+    ///Fix bug from old versions when game files integrity check was not implemented
+    if (loadedApplicationVersion < applicationVersion(1, 1, 11)) {
+        m_previousLauncherMd5 = "H2\xb7+g\xdeZ\x9f\x91\x99\x8f\x36\xc9\xa7#\xeb";
+    } else if (loadedApplicationVersion < applicationVersion(1, 1, 13)) {
+        m_previousLauncherMd5 = "\x12\xd2\x91\xab\xdb%b\x1eO\x1e\xd5&\xd1~}\xd2";
     }
 }
 
@@ -1165,25 +1194,12 @@ QByteArray WaitingLauncherArgs::toUtf8() const
     return toString().toUtf8();
 }
 
-///Additional function from the header:
-
-QString applicationVersionToString(const int version)
-{
-    return QString::number(majorApplicationVersion(version)) + '.' +
-           QString::number(minorApplicationVersion(version)) + '.' +
-           QString::number(microApplicationVersion(version));
-}
-
-int applicationVersionFromString(const QString &version)
-{
-    QStringList subVersions = version.split('.');
-    int subVersionsCount = subVersions.count();
-    return applicationVersion(subVersionsCount > 0 ? subVersions[0].toInt() : 1,
-                              subVersionsCount > 1 ? subVersions[1].toInt() : 0,
-                              subVersionsCount > 2 ? subVersions[2].toInt() : 0);
-}
-
 ///Additional functions:
+
+constexpr const char *gameFileName(const bool is64BitOs)
+{
+    return (is64BitOs ? "Everlasting Summer" : "Everlasting Summer-32");
+}
 
 QByteArray fileChecksum(const QString &fileName, QCryptographicHash::Algorithm hashAlgorithm)
 {
