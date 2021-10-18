@@ -35,6 +35,7 @@ SOURCES += \
         ModScanner.cpp \
         RegExpPatterns.cpp \
         SteamRequester.cpp \
+        applicationVersion.cpp \
         main.cpp
 
 HEADERS += \
@@ -45,7 +46,8 @@ HEADERS += \
         ModInfo.h \
         ModScanner.h \
         RegExpPatterns.h \
-        SteamRequester.h
+        SteamRequester.h \
+        applicationVersion.h
 
 FORMS += \
         DatabaseEditor.ui \

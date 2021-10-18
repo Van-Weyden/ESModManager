@@ -15,6 +15,7 @@
 #include <QThread>
 #include <QTranslator>
 
+#include "applicationVersion.h"
 #include "DatabaseEditor.h"
 #include "ModDatabaseModel.h"
 #include "ModScanner.h"
@@ -639,7 +640,7 @@ void MainWindow::showAboutInfo()
                              QMessageBox::StandardButton::Close, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
     messageAbout.setTextFormat(Qt::TextFormat::RichText);
     messageAbout.setText(
-        tr("Everlasting Summer mod manager v.") + applicationVersionToString(CurrentApplicationVersion) + ".<br>" +
+        tr("Everlasting Summer mod manager v.") + applicationVersionToString() + ".<br>" +
         tr("Author:") + " <a href='https://steamcommunity.com/id/van_weyden/'>Slavyan</a><br>" +
         tr("Help in testing:") + " <a href='https://steamcommunity.com/profiles/76561198058938676/'>Hatsune Miku</a>,"
                                  " 🔰 <a href='https://steamcommunity.com/id/lena_sova/'>" + tr("Lena") + "</a>🔰 ," +
@@ -768,7 +769,7 @@ bool MainWindow::isGameFolderValid(const QString &folderPath)
 
 void MainWindow::checkAnnouncementPopup(const int loadedApplicationVersion)
 {
-    if (loadedApplicationVersion == CurrentApplicationVersion) {
+    if (loadedApplicationVersion == currentApplicationVersion()) {
         return;
     }
 
@@ -1034,7 +1035,7 @@ void MainWindow::readSettings()
 void MainWindow::saveSettings() const
 {
     m_settings->clear();
-    m_settings->setValue("General/sAppVersion", applicationVersionToString(CurrentApplicationVersion));
+    m_settings->setValue("General/sAppVersion", applicationVersionToString());
     m_settings->setValue("General/sLang", m_lang);
     m_settings->setValue("General/bMaximized", this->isMaximized());
     m_settings->setValue("General/qsSize", this->size());
@@ -1053,7 +1054,7 @@ void MainWindow::saveSettings() const
 
 void MainWindow::applyBackwardCompatibilityFixes(const int loadedApplicationVersion)
 {
-    if (loadedApplicationVersion == CurrentApplicationVersion) {
+    if (loadedApplicationVersion == currentApplicationVersion()) {
         return;
     }
 
@@ -1191,24 +1192,6 @@ QString WaitingLauncherArgs::toString() const
 QByteArray WaitingLauncherArgs::toUtf8() const
 {
     return toString().toUtf8();
-}
-
-///Additional function from the header:
-
-QString applicationVersionToString(const int version)
-{
-    return QString::number(majorApplicationVersion(version)) + '.' +
-           QString::number(minorApplicationVersion(version)) + '.' +
-           QString::number(microApplicationVersion(version));
-}
-
-int applicationVersionFromString(const QString &version)
-{
-    QStringList subVersions = version.split('.');
-    int subVersionsCount = subVersions.count();
-    return applicationVersion(subVersionsCount > 0 ? subVersions[0].toInt() : 1,
-                              subVersionsCount > 1 ? subVersions[1].toInt() : 0,
-                              subVersionsCount > 2 ? subVersions[2].toInt() : 0);
 }
 
 ///Additional functions:
