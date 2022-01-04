@@ -8,6 +8,11 @@ constexpr int applicationVersion(const int major, const int minor = 0, const int
     return ((major << 20) | (minor << 10) | micro);
 }
 
+constexpr int currentApplicationVersion()
+{
+    return applicationVersion(1, 1, 16);
+}
+
 constexpr int majorApplicationVersion(int version)
 {
     return (version >> 20);
@@ -23,12 +28,7 @@ constexpr int microApplicationVersion(int version)
     return (version & 1023);                //1023 == 11111 11111
 }
 
-constexpr int currentApplicationVersion()
-{
-    return applicationVersion(1, 1, 15);
-}
-
-QString applicationVersionToString(const int version = currentApplicationVersion());
-int applicationVersionFromString(const QString &version);
+QString applicationVersionToString(const int version = currentApplicationVersion(), const char separator = '.');
+int applicationVersionFromString(const QString &version, const char separator = '.');
 
 #endif // APPLICATIONVERSION_H
