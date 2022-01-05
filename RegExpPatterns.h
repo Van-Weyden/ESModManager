@@ -29,7 +29,7 @@ namespace RegExpPatterns
     inline QString oneOrMoreOccurences(const QString &expression);
     inline QString zeroOrMoreOccurences(const QString &expression);
     inline QString applyRepeatCount(const QString &expression,
-                                       const RepeatCount count);
+                                    const RepeatCount count);
 
     QString oneOf(const QStringList &expressions);
     QString allOf(const QStringList &expressions);

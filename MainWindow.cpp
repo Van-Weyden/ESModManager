@@ -24,8 +24,8 @@
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
 
-constexpr const char *gameFileName(const bool is64BitOs);
-QByteArray fileChecksum(const QString &fileName, QCryptographicHash::Algorithm hashAlgorithm = QCryptographicHash::Md5);
+inline constexpr const char *gameFileName(const bool is64BitOs);
+QByteArray fileChecksumHex(const QString &fileName, QCryptographicHash::Algorithm hashAlgorithm = QCryptographicHash::Md5);
 void rewriteFileIfDataIsDifferent(const QString &fileName, const QByteArray &newData);
 
 class WaitingLauncherArgs
@@ -51,13 +51,13 @@ public:
 private:
     QString m_programFolderPath;
     QString m_programName;
-    bool m_isMonitoringNeeded = false;
-    bool m_dontLaunchIfAlreadyLaunched = false;
-    bool m_launchProgramAfterClose = false;
-    QString m_programOnErrorFolderPath = QString();
-    QString m_programOnErrorName = QString();
-    QString m_programAfterCloseFolderPath = QString();
-    QString m_programAfterCloseName = QString();
+    bool m_isMonitoringNeeded               = false;
+    bool m_dontLaunchIfAlreadyLaunched      = false;
+    bool m_launchProgramAfterClose          = false;
+    QString m_programOnErrorFolderPath      = QString();
+    QString m_programOnErrorName            = QString();
+    QString m_programAfterCloseFolderPath   = QString();
+    QString m_programAfterCloseName         = QString();
 };
 
 ///class MainWindow:
@@ -106,7 +106,7 @@ MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
     m_settings = new QSettings(QString("settings.ini"), QSettings::IniFormat, this);
     m_qtTranslator = new QTranslator();
     m_translator = new QTranslator();
-    m_launcherMd5 = fileChecksum(launcherFilePath());
+    m_launcherChecksum = fileChecksumHex(launcherFilePath());
 
     //connections:
 
@@ -152,6 +152,34 @@ MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
 
     readSettings();
     loadDatabase();
+
+    if (!m_launcherChecksumDatabase.contains(m_launcherChecksum)) {
+        QMessageBox::StandardButton pressedButton = QMessageBox::critical(
+            this,
+            tr("Database error"),
+            tr("The modified game launcher database is corrupted or missing. "
+               "This can lead to damage to the original launcher of the game "
+               "(which in this case can only be restored by checking the integrity of the files from the Steam side). "
+               "Click on the \"Ok\" button to add the current launcher to the database. "
+               "This should fix the problem however there is still a risk of origin file corruption. "
+               "If you do not want to risk it, click on the \"Cancel\" button (the application will close) "
+               "and wait for the fix or the response on this error from the developer.") + "\n\n" +
+               tr("In any case, please report this error to the developer - especially if it is not the first time it appears."),
+            QMessageBox::StandardButton::Ok | QMessageBox::StandardButton::Cancel
+        );
+
+        m_launcherChecksumDatabase.append(m_launcherChecksum);
+
+        if (pressedButton == QMessageBox::StandardButton::Ok) {
+            QFile launcherChecksumDatabaseFile(launcherChecksumDatabaseFilePath());
+            launcherChecksumDatabaseFile.open(QFile::Append);
+            launcherChecksumDatabaseFile.write(m_launcherChecksum + '\n');
+            launcherChecksumDatabaseFile.close();
+        } else {
+            this->setEnabled(false);
+            return;
+        }
+    }
 
     if (isGameFolderValid(m_gameFolderPath)) {
         ui->gameFolderLineEdit->setText(m_gameFolderPath);
@@ -265,7 +293,7 @@ void MainWindow::hideAllRows()
 
 void MainWindow::loadDatabase()
 {
-    QFile file("mods_database.json");
+    QFile file(modDatabaseFileName());
     if (file.exists()) {
         QJsonDocument database;
         //QJsonParseError err;
@@ -287,6 +315,19 @@ void MainWindow::loadDatabase()
 
             m_modDatabaseModel->add(modInfo);
         }
+    }
+
+    file.setFileName(launcherChecksumDatabaseFilePath());
+    if (file.exists()) {
+        file.open(QFile::ReadOnly);
+        do {
+            QByteArray checksum = QString(file.readLine()).remove(QRegExp("[ \\n\\r]")).toUtf8();
+
+            if (!checksum.isEmpty()) {
+                m_launcherChecksumDatabase.append(checksum);
+            }
+        } while (file.canReadLine());
+        file.close();
     }
 }
 
@@ -489,7 +530,7 @@ void MainWindow::refreshModlist()
 
 void MainWindow::runGame()
 {
-    if (!isGameFolderValid(m_gameFolderPath) || !checkGameMd5(m_gameFolderPath)) {
+    if (!isGameFolderValid(m_gameFolderPath) || !checkOriginGameLauncher(m_gameFolderPath)) {
         QMessageBox::critical(
             this,
             tr("Wrong game %1").arg(ExecutableExtension),
@@ -779,17 +820,17 @@ void MainWindow::checkAnnouncementPopup(const int loadedApplicationVersion)
     }
 }
 
-bool MainWindow::checkGameMd5(const QString &folderPath)
+bool MainWindow::checkOriginGameLauncher(const QString &folderPath) const
 {
-    QByteArray gameMd5 = fileChecksum(folderPath + originGameFileName());
-    bool isGameMd5Valid = (!gameMd5.isNull() && gameMd5 != m_launcherMd5);
+    QByteArray gameLauncherChecksum = fileChecksumHex(folderPath + originGameFileName());
+    bool isOriginFileValid = (!gameLauncherChecksum.isNull() && !isWaitingLauncher(gameLauncherChecksum));
 
-    if (!isGameMd5Valid) {
-        gameMd5 = fileChecksum(folderPath + gameFileName());
-        isGameMd5Valid = (!gameMd5.isNull() && gameMd5 != m_launcherMd5);
+    if (!isOriginFileValid) {
+        gameLauncherChecksum = fileChecksumHex(folderPath + gameFileName());
+        isOriginFileValid = (!gameLauncherChecksum.isNull() && !isWaitingLauncher(gameLauncherChecksum));
     }
 
-    return isGameMd5Valid;
+    return isOriginFileValid;
 }
 
 void MainWindow::checkOriginLauncherReplacement()
@@ -798,21 +839,18 @@ void MainWindow::checkOriginLauncherReplacement()
         return;
     }
 
-    QByteArray gameLauncherMd5 = fileChecksum(gameFilePath());
+    QByteArray gameLauncherChecksum = fileChecksumHex(gameFilePath());
 
     if (ui->replaceOriginLauncherCheckBox->isChecked()) {
-        if (gameLauncherMd5 != m_launcherMd5) {
-            if (gameLauncherMd5 != m_previousLauncherMd5) {
+        if (m_launcherChecksum != gameLauncherChecksum) {
+            if (!isWaitingLauncher(gameLauncherChecksum)) {
                 QFile(originGameFilePath()).remove();
-            }
-
-            if (QFile(originGameFilePath()).exists()) {
-                QFile(gameFilePath()).remove();
-            } else {
                 QFile::rename(gameFilePath(), originGameFilePath());
+            } else {
+                QFile(gameFilePath()).remove();
             }
 
-            if (m_launcherMd5 == fileChecksum(modifiedGameFilePath())) {
+            if (m_launcherChecksum == fileChecksumHex(modifiedGameFilePath())) {
                 QFile::rename(modifiedGameFilePath(), gameFilePath());
             } else {
                 QFile(modifiedGameFilePath()).remove();
@@ -834,7 +872,7 @@ void MainWindow::checkOriginLauncherReplacement()
         }
 
         rewriteFileIfDataIsDifferent(cleanerFilePath(), cleanerData);
-        rewriteFileIfDataIsDifferent(cleanerDataFilePath(), m_launcherMd5);
+        rewriteFileIfDataIsDifferent(cleanerDataFilePath(), m_launcherChecksum);
     } else {
         restoreOriginLauncher();
         QFile::remove(modifiedGameFilePath());
@@ -846,21 +884,21 @@ void MainWindow::checkOriginLauncherReplacement()
 
 void MainWindow::restoreOriginLauncher() const
 {
-    QByteArray gameLauncherMd5 = fileChecksum(gameFilePath());
+    QByteArray gameLauncherChecksum = fileChecksumHex(gameFilePath());
 
     if (QFile(originGameFilePath()).exists()) {
         // The game launcher may has been changed
 
-        if (gameLauncherMd5 != fileChecksum(originGameFilePath())) {
-            if (fileChecksum(modifiedGameFilePath()) != m_launcherMd5) {
+        if (gameLauncherChecksum != fileChecksumHex(originGameFilePath())) {
+            if (fileChecksumHex(modifiedGameFilePath()) != m_launcherChecksum) {
                 QFile(modifiedGameFilePath()).remove();
 
-                if (gameLauncherMd5 == m_launcherMd5) {
+                if (gameLauncherChecksum == m_launcherChecksum) {
                     QFile::rename(gameFilePath(), modifiedGameFilePath());
                 }
             }
 
-            if (gameLauncherMd5 == m_launcherMd5 || gameLauncherMd5 == m_previousLauncherMd5) {
+            if (isWaitingLauncher(gameLauncherChecksum)) {
                 QFile(gameFilePath()).remove();
                 QFile::rename(originGameFilePath(), gameFilePath());
             }
@@ -1021,13 +1059,6 @@ void MainWindow::readSettings()
         }
     }
 
-    if (m_settings->contains("General/baLastLauncherHash")) {
-        value = m_settings->value("General/baLastLauncherHash");
-        if (value != invalidValue) {
-            m_previousLauncherMd5 = value.toByteArray();
-        }
-    }
-
     applyBackwardCompatibilityFixes(loadedApplicationVersion);
     checkAnnouncementPopup(loadedApplicationVersion);
 }
@@ -1049,7 +1080,6 @@ void MainWindow::saveSettings() const
     m_settings->setValue("General/bUseSteamModNames", ui->useSteamModNamesCheckBox->isChecked());
     m_settings->setValue("Editor/bMaximized", m_databaseEditor->isMaximized());
     m_settings->setValue("Editor/qsSize", m_databaseEditor->size());
-    m_settings->setValue("General/baLastLauncherHash", m_launcherMd5);
 }
 
 void MainWindow::applyBackwardCompatibilityFixes(const int loadedApplicationVersion)
@@ -1073,12 +1103,12 @@ void MainWindow::applyBackwardCompatibilityFixes(const int loadedApplicationVers
         ///Conversion from old version of DB
         {
             QFile file("mods_database.dat");
-            QJsonDocument database;
-            QJsonArray mods;
-            QJsonObject mod;
 
             if (file.exists()) {
                 QString name, folderName, enabled;
+                QJsonDocument database;
+                QJsonArray mods;
+                QJsonObject mod;
                 ModInfo modInfo;
 
                 file.open(QFile::ReadOnly);
@@ -1105,65 +1135,58 @@ void MainWindow::applyBackwardCompatibilityFixes(const int loadedApplicationVers
             }
         }
     }
-
-    ///Fix bug from old versions when game files integrity check was not implemented
-    if (loadedApplicationVersion < applicationVersion(1, 1, 11)) {
-        m_previousLauncherMd5 = "H2\xb7+g\xdeZ\x9f\x91\x99\x8f\x36\xc9\xa7#\xeb";
-    } else if (loadedApplicationVersion < applicationVersion(1, 1, 13)) {
-        m_previousLauncherMd5 = "\x12\xd2\x91\xab\xdb%b\x1eO\x1e\xd5&\xd1~}\xd2";
-    }
 }
 
 
 
 ///class WaitingLauncherArgs:
 
-WaitingLauncherArgs::WaitingLauncherArgs(const QString &programFolderPath, const QString &programName) :
+inline WaitingLauncherArgs::WaitingLauncherArgs(const QString &programFolderPath, const QString &programName) :
     m_programFolderPath(programFolderPath),
     m_programName(programName)
 {}
 
-void WaitingLauncherArgs::setProgramFolderPath(const QString &programFolderPath)
+inline void WaitingLauncherArgs::setProgramFolderPath(const QString &programFolderPath)
 {
     m_programFolderPath = programFolderPath;
 }
 
-void WaitingLauncherArgs::setProgramName(const QString &programName)
+inline void WaitingLauncherArgs::setProgramName(const QString &programName)
 {
     m_programName = programName;
 }
 
-void WaitingLauncherArgs::setIsMonitoringNeeded(const bool isMonitoringNeeded)
+inline void WaitingLauncherArgs::setIsMonitoringNeeded(const bool isMonitoringNeeded)
 {
     m_isMonitoringNeeded = isMonitoringNeeded;
 }
 
-void WaitingLauncherArgs::setDontLaunchIfAlreadyLaunched(const bool dontLaunchIfAlreadyLaunched)
+inline void WaitingLauncherArgs::setDontLaunchIfAlreadyLaunched(const bool dontLaunchIfAlreadyLaunched)
 {
     m_dontLaunchIfAlreadyLaunched = dontLaunchIfAlreadyLaunched;
 }
 
-void WaitingLauncherArgs::setLaunchProgramAfterClose(const bool launchProgramAfterClose)
+inline void WaitingLauncherArgs::setLaunchProgramAfterClose(const bool launchProgramAfterClose)
 {
     m_launchProgramAfterClose = launchProgramAfterClose;
 }
 
-void WaitingLauncherArgs::setProgramOnErrorFolderPath(const QString &programOnErrorFolderPath)
+inline void WaitingLauncherArgs::setProgramOnErrorFolderPath(const QString &programOnErrorFolderPath)
 {
     m_programOnErrorFolderPath = programOnErrorFolderPath;
 }
 
-void WaitingLauncherArgs::setProgramOnErrorName(const QString &programOnErrorName)
+inline void WaitingLauncherArgs::setProgramOnErrorName(const QString &programOnErrorName)
 {
     m_programOnErrorName = programOnErrorName;
 }
 
-void WaitingLauncherArgs::setProgramAfterCloseFolderPath(const QString &programAfterCloseFolderPath)
+inline void WaitingLauncherArgs::setProgramAfterCloseFolderPath(const QString &programAfterCloseFolderPath)
 {
     m_programAfterCloseFolderPath = programAfterCloseFolderPath;
 }
 
-void WaitingLauncherArgs::setProgramAfterCloseName(const QString &programAfterCloseName)
+inline void WaitingLauncherArgs::setProgramAfterCloseName(const QString &programAfterCloseName)
 {
     m_programAfterCloseName = programAfterCloseName;
 }
@@ -1189,26 +1212,26 @@ QString WaitingLauncherArgs::toString() const
     return args;
 }
 
-QByteArray WaitingLauncherArgs::toUtf8() const
+inline QByteArray WaitingLauncherArgs::toUtf8() const
 {
     return toString().toUtf8();
 }
 
 ///Additional functions:
 
-constexpr const char *gameFileName(const bool is64BitOs)
+inline constexpr const char *gameFileName(const bool is64BitOs)
 {
     return (is64BitOs ? "Everlasting Summer" : "Everlasting Summer-32");
 }
 
-QByteArray fileChecksum(const QString &fileName, QCryptographicHash::Algorithm hashAlgorithm)
+QByteArray fileChecksumHex(const QString &fileName, QCryptographicHash::Algorithm hashAlgorithm)
 {
     QFile file(fileName);
     if (file.exists() && file.open(QFile::ReadOnly)) {
         QCryptographicHash hash(hashAlgorithm);
         if (hash.addData(&file)) {
             file.close();
-            return hash.result();
+            return hash.result().toHex();
         }
     }
     return QByteArray();
