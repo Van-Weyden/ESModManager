@@ -10,8 +10,8 @@ namespace WaitingLauncher
 {
     class Program
     {
-        static bool IsDebugLogEnabled = false;
-        static string DebugLogFile = "log.txt";
+        static readonly bool IsDebugLogEnabled = false;
+        static readonly string DebugLogFile = "log.txt";
 
         public static void Log(string data, bool addEndLine = true, bool addTime = true)
         {
@@ -77,6 +77,7 @@ namespace WaitingLauncher
         {
             public const string ProgramFolderPath               = "ProgramPath";
             public const string ProgramName                     = "ProgramName";
+            public const string IsLauncherHasSameName           = "IsLauncherHasSameName";
             public const string IsMonitoringNeeded              = "IsMonitoringNeeded";
             public const string DontLaunchIfAlreadyLaunched     = "DontLaunchIfAlreadyLaunched";
             public const string LaunchProgramAfterClose         = "LaunchProgramAfterClose";
@@ -90,6 +91,7 @@ namespace WaitingLauncher
 
         internal static class ArgCode
         {
+            public const string IsLauncherHasSameName           = "-" + KeyWord.IsLauncherHasSameName;
             public const string IsMonitoringNeeded              = "-" + KeyWord.IsMonitoringNeeded;
             public const string DontLaunchIfAlreadyLaunched     = "-" + KeyWord.DontLaunchIfAlreadyLaunched;
             public const string LaunchProgramAfterClose         = "-" + KeyWord.LaunchProgramAfterClose;
@@ -150,12 +152,12 @@ namespace WaitingLauncher
             return Program.ExitCode.ProgramAfterCloseFailedToStart;
         }
 
-        public static bool WaitProgramLaunch(string programName, int waitStep = 100, int timeout = -1)
+        public bool WaitProgramLaunch(string programName, int waitStep = 100, int timeout = -1)
         {
             return WaitForCondition(() => { return IsProcessRunning(programName); }, waitStep, timeout);
         }
 
-        public static bool WaitProgramStop(string programName, int waitStep = 100, int timeout = -1)
+        public bool WaitProgramStop(string programName, int waitStep = 100, int timeout = -1)
         {
             return WaitForCondition(() => { return !IsProcessRunning(programName); }, waitStep, timeout);
         }
@@ -182,6 +184,7 @@ namespace WaitingLauncher
         {
             m_programFolderPath             = null;
             m_programName                   = null;
+            m_isLauncherHasSameName         = false;
             m_isMonitoringNeeded            = false;
             m_dontLaunchIfAlreadyLaunched   = false;
             m_launchProgramAfterClose       = false;
@@ -207,6 +210,10 @@ namespace WaitingLauncher
 
                     switch (arg)
                     {
+                        case ArgCode.IsLauncherHasSameName:
+                            m_isLauncherHasSameName = true;
+                        break;
+
                         case ArgCode.IsMonitoringNeeded:
                             m_isMonitoringNeeded = true;
                         break;
@@ -257,15 +264,13 @@ namespace WaitingLauncher
             if (File.Exists(path))
             {
                 StreamReader reader = File.OpenText(path);
-
 //              regex = oneOf({
-//                  quotedExpression(escapedSymbol("\"")),
+//                  quotedExpression(escapedSymbol('\"')),
 //                  oneOrMoreOccurences(
 //                      oneOf({
-//                          anyEscapedSymbolInExpression,
-//                           symbolNotFromSet({
-//                              " ",
-//                              escapedSymbol("\"")
+//                          symbolNotFromSet({
+//                              ' ',
+//                              escapedSymbol('\"')
 //                          })
 //                      })
 //		            )
@@ -291,49 +296,58 @@ namespace WaitingLauncher
         [return: MarshalAs(UnmanagedType.Bool)]
         static extern bool FreeConsole();
 
-        public static bool IsProcessRunning(string processName)
+        public bool IsProcessRunning(string processName)
         {
-            return (Process.GetProcessesByName(processName).Length != 0);
+            return (Process.GetProcessesByName(processName).Length > (m_isLauncherHasSameName ? 1 : 0));
         }
 
         public static void WriteUsageInfo()
         {
             if (AllocConsole())
             {
-                Console.WriteLine("\nParameters:\n\n\"ProgramFolderPath\" \"ProgramName\" [" +
-                    ArgCode.IsMonitoringNeeded          + " IsMonitoringNeeded] [" +
-                    ArgCode.DontLaunchIfAlreadyLaunched + " DontLaunchIfAlreadyLaunched] [" +
-                    ArgCode.LaunchProgramAfterClose     + " LaunchProgramAfterClose] [" +
-                    ArgCode.ProgramOnError              + " \"ProgramOnErrorFolderPath\" \"ProgramOnErrorName\"] [" +
-                    ArgCode.ProgramAfterClose           + " \"ProgramAfterCloseFolderPath\" \"ProgramAfterCloseName\"]" +
-                    "\n");
+                Console.WriteLine(
+                    "\nParameters:\n\n\"" + KeyWord.ProgramFolderPath + "\" \"" + KeyWord.ProgramName + "\" [" +
+                    ArgCode.IsMonitoringNeeded          + "] [" +
+                    ArgCode.DontLaunchIfAlreadyLaunched + "] [" +
+                    ArgCode.LaunchProgramAfterClose     + "] [" +
+                    ArgCode.ProgramOnError              + " \"" +
+                        KeyWord.ProgramOnErrorFolderPath    + "\" \"" +
+                        KeyWord.ProgramOnErrorName          + "\"] [" +
+                    ArgCode.ProgramAfterClose           + " \"" +
+                        KeyWord.ProgramAfterCloseFolderPath + "\" \"" +
+                        KeyWord.ProgramAfterCloseName       + "\"]" +
+                    "\n"
+                );
 
-                Console.WriteLine("ProgramFolderPath: " +
+                Console.WriteLine(KeyWord.ProgramFolderPath + ": " +
                     "path to the folder with the monitored program;");
-                Console.WriteLine("ProgramName: " +
+                Console.WriteLine(KeyWord.ProgramName + ": " +
                     "name of the monitored program;");
 
-                Console.WriteLine("IsMonitoringNeeded: " +
+                Console.WriteLine(KeyWord.IsLauncherHasSameName + ": " +
+                    "flag indicating that the launcher has the same name and shouldn't be taking in account while processes check" +
+                    "(false by default);");
+                Console.WriteLine(KeyWord.IsMonitoringNeeded + ": " +
                     "flag indicating the need to monitor the program until it is closed" +
                     "(false by default);");
-                Console.WriteLine("DontLaunchIfAlreadyLaunched: " +
+                Console.WriteLine(KeyWord.DontLaunchIfAlreadyLaunched + ": " +
                     "flag indicating whether to run the program if it is already running" +
                     "(false by default);");
-                Console.WriteLine("LaunchProgramAfterClose: " +
+                Console.WriteLine(KeyWord.LaunchProgramAfterClose + ": " +
                     "flag indicating whether to run the program after closing the monitored program" +
                     "(false by default);");
 
-                Console.WriteLine("ProgramOnErrorFolderPath: " +
+                Console.WriteLine(KeyWord.ProgramOnErrorFolderPath + ": " + 
                     "path to the program folder which will be launched in case of " +
                     "an error when starting the previously specified programs;");
-                Console.WriteLine("ProgramOnErrorName: " +
+                Console.WriteLine(KeyWord.ProgramOnErrorName + ": " +
                     "name of the program which will be launched in case of " +
                     "an error when starting the previously specified programs;");
 
-                Console.WriteLine("ProgramAfterCloseFolderPath: " +
+                Console.WriteLine(KeyWord.ProgramAfterCloseFolderPath + ": " +
                     "path to the program folder which will be launched after the monitored program is closed " +
                     "(if not specified, the origin program path will be used);");
-                Console.WriteLine("ProgramAfterCloseName: " +
+                Console.WriteLine(KeyWord.ProgramAfterCloseName + ": " +
                     "name of the program which will be launched after the monitored program is closed " +
                     "(if not specified, the origin program name will be used).");
 
@@ -349,6 +363,7 @@ namespace WaitingLauncher
         private ProcessLauncher m_processLauncher;
         private string m_programFolderPath;
         private string m_programName;
+        private bool m_isLauncherHasSameName;
         private bool m_isMonitoringNeeded;
         private bool m_dontLaunchIfAlreadyLaunched;
         private bool m_launchProgramAfterClose;
