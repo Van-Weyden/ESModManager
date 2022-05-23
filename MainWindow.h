@@ -81,6 +81,7 @@ private:
     void saveSettings() const;
 
     void applyBackwardCompatibilityFixes(const int loadedApplicationVersion);
+    QString rkkOrionMessage();
 
     Ui::MainWindow *ui = nullptr;
     DatabaseEditor *m_databaseEditor = nullptr;

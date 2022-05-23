@@ -689,13 +689,7 @@ void MainWindow::showAboutInfo()
         "<br><br>" +
         tr("This program is used to 'fix' conflicts of mods and speed up the launch of the game. "
            "Before launching the game, all unselected mods are moved to another folder, so the game engine will not load them.") +
-        "<br><br>" +
-        tr("If you need similar functionality on your Android device, "
-           "you can use the RKK Orion client from A&A Creative Team:") + "<br>"
-           "<a href='https://play.google.com/store/apps/details?id=com.alativity.esorion.installer'>" +
-        tr("RKK Orion in Google Play Market") + "</a>" + "<br>"
-           "<a href='" + tr("https://rkk.alativity.design/threads/client-rkk-orion.143/") + "'>" +
-        tr("RKK Orion Project Forum") + "</a>"
+        "<br><br>" + rkkOrionMessage()
     );
     messageAbout.setInformativeText(tr("You can leave your questions/suggestions") +
                                     " <a href='https://steamcommunity.com/sharedfiles/filedetails/?id=1826799366'>" +
@@ -713,14 +707,7 @@ void MainWindow::showAnnouncementMessageBox()
                              QMessageBox::StandardButton::Close,
                              nullptr, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
     messageAbout.setTextFormat(Qt::TextFormat::RichText);
-    messageAbout.setText(
-        tr("If you need similar functionality on your Android device, "
-           "you can use the RKK Orion client from A&A Creative Team:") + "<br>"
-           "<a href='https://play.google.com/store/apps/details?id=com.alativity.esorion.installer'>" +
-           tr("RKK Orion in Google Play Market") + "</a>" + "<br>"
-           "<a href='" + tr("https://rkk.alativity.design/threads/client-rkk-orion.143/") + "'>" +
-           tr("RKK Orion Project Forum") + "</a>"
-    );
+    messageAbout.setText(rkkOrionMessage());
 
     messageAbout.exec();
 }
@@ -1137,6 +1124,14 @@ void MainWindow::applyBackwardCompatibilityFixes(const int loadedApplicationVers
     }
 }
 
+QString MainWindow::rkkOrionMessage()
+{
+    return tr("If you need similar functionality on your Android device, "
+              "you can use the RKK Orion client from A&A Creative Team:") + "<br>"
+              "<a href='https://play.google.com/store/apps/details?id=com.alativity.esorion.installer'>" +
+              tr("RKK Orion in Google Play Market") + "</a>" + "<br>"
+              "<a href='https://fl.alativity.com/ZCvBg'>" + tr("RKK Orion Project Discord") + "</a>";
+}
 
 
 ///class WaitingLauncherArgs:
