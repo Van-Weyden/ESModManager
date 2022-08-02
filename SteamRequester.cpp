@@ -44,7 +44,10 @@ void SteamRequester::processModName(QNetworkReply *reply)
                 //During the processing of the request, the data could change, so check again
                 if (!steamModName.isEmpty() && !m_modDatabaseModel->isNameValid(m_modDatabaseModel->modSteamName(i))) {
                     m_modDatabaseModel->modInfoRef(i).steamName = steamModName;
-                    emit m_modDatabaseModel->dataChanged(m_modDatabaseModel->index(i, 0), m_modDatabaseModel->index(i, 1));
+                    emit m_modDatabaseModel->dataChanged(
+                                m_modDatabaseModel->index(i, 0),
+                                m_modDatabaseModel->index(i, 1)
+                    );
                 }
                 break;
             }
