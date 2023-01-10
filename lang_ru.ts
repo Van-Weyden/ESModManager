@@ -477,7 +477,6 @@ Close the game before starting the manager!</source>
     <message>
         <location filename="MainWindow.cpp" line="1129"/>
         <source>If you need similar functionality on your Android device, you can use the RKK Orion client from A&amp;A Creative Team:</source>
-        <oldsource>If you need similar functionality on your Android device, you can use the RKK Orion client from A&amp;A Creative Team: </oldsource>
         <translation>Если вам нужен похожий функционал на вашем Android устройстве, вы можете использовать Клиент RKK Orion от A&amp;A Creative Team:</translation>
     </message>
     <message>

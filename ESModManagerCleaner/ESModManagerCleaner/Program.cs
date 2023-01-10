@@ -1,6 +1,6 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 
@@ -8,14 +8,31 @@ namespace ESModManagerCleaner
 {
     class Program
     {
+        static readonly bool IsDebugLogEnabled = false;
+        static readonly string DebugLogFile = "log.txt";
+
+        public static void Log(string data, bool addEndLine = true, bool addTime = true)
+        {
+            if (IsDebugLogEnabled)
+            {
+                File.AppendAllText(DebugLogFile,
+                    (addTime ? "[" + DateTime.Now + "] " : "") +
+                    Assembly.GetEntryAssembly().GetName().Name + ": " +
+                    data +
+                    (addEndLine ? "\n" : "")
+                );
+            }
+        }
+
         static void Main(string[] args)
         {
-            string appPath = System.Reflection.Assembly.GetEntryAssembly().Location;
+            Log("Main: program started");
+            string appPath = Assembly.GetEntryAssembly().Location;
             string appFolderPath = new FileInfo(appPath).DirectoryName + '\\';
+            
+            RestoreOriginFile(appFolderPath, "Everlasting Summer");
+            RestoreOriginFile(appFolderPath, "Everlasting Summer-32");
 
-            RestoreGameLauncher(appFolderPath);
-
-            File.Delete(appFolderPath + "Everlasting Summer (modified).exe");
             File.Delete(appFolderPath + "LaunchedProgram.ini");
 
             Process.Start(new ProcessStartInfo()
@@ -33,24 +50,41 @@ namespace ESModManagerCleaner
             });
         }
 
-        static void RestoreGameLauncher(string appFolderPath)
+        static void RestoreOriginFile(string appFolderPath, string fileName)
         {
-            if (File.Exists(appFolderPath + "Everlasting Summer (origin).exe"))
+            if (File.Exists(appFolderPath + fileName + " (modified).exe"))
+            {
+                File.Delete(appFolderPath + fileName + " (modified).exe");
+            }
+
+            string originFilePath = appFolderPath + fileName + " (origin).exe";
+            string modifiedFilePath = appFolderPath + fileName + ".exe";
+
+            if (File.Exists(originFilePath))
             {
                 if (File.Exists(appFolderPath + "ESModManagerCleaner.dat"))
                 {
-                    byte[] launcherHash = File.ReadAllBytes(appFolderPath + "ESModManagerCleaner.dat");
+                    byte[] originFileHash = File.ReadAllBytes(appFolderPath + "ESModManagerCleaner.dat");
                     File.Delete(appFolderPath + "ESModManagerCleaner.dat");
-                    FileStream stream = File.OpenRead(appFolderPath + "Everlasting Summer.exe");
-                    byte[] executableHash = MD5.Create().ComputeHash(stream);
+                    FileStream stream = File.OpenRead(modifiedFilePath);
+                    byte[] modifiedFileHash = MD5.Create().ComputeHash(stream);
                     stream.Close();
 
-                    if (!launcherHash.SequenceEqual(executableHash))
+                    string originFileHashString = System.Text.Encoding.UTF8.GetString(originFileHash);
+                    string modifiedFileHashString = BitConverter.ToString(modifiedFileHash).Replace("-", "").ToLower();
+
+                    Log("originFileHashString: " + originFileHashString);
+                    Log("modifiedFileHashString: " + modifiedFileHashString);
+
+                    if (!originFileHashString.Equals(modifiedFileHashString))
+                    {
+                        Log("hashes are not equal.");
                         return;
+                    }
                 }
 
-                File.Delete(appFolderPath + "Everlasting Summer.exe");
-                File.Move(appFolderPath + "Everlasting Summer (origin).exe", appFolderPath + "Everlasting Summer.exe");
+                File.Delete(modifiedFilePath);
+                File.Move(originFilePath, modifiedFilePath);
             }
         }
     }
