@@ -49,7 +49,7 @@ QVariant ModDatabaseModel::data(const QModelIndex &index, int role) const
         case Qt::DisplayRole:
             if (m_completeModNames) {
                 bool isModNameValid = isNameValid(m_database.at(index.row()).name);
-                bool isSteamModNameValid = isNameValid(m_database.at(index.row()).name);
+                bool isSteamModNameValid = isNameValid(m_database.at(index.row()).steamName);
                 if (m_useSteamModNames) {
                     if (isSteamModNameValid || !isModNameValid) {
                         return m_database.at(index.row()).steamName;
