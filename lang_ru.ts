@@ -475,52 +475,50 @@ Close the game before starting the manager!</source>
         <translation>Эта программа предназначена для &quot;исправления&quot; конфликтов модов и ускорения загрузки игры. Перед запуском игры она перемещает все моды, не выбранные пользователем, в другую папку, поэтому игра не будет их загружать.</translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="693"/>
-        <location filename="MainWindow.cpp" line="717"/>
+        <location filename="MainWindow.cpp" line="1129"/>
         <source>If you need similar functionality on your Android device, you can use the RKK Orion client from A&amp;A Creative Team:</source>
-        <oldsource>If you need similar functionality on your Android device, you can use the RKK Orion client from A&amp;A Creative Team: </oldsource>
         <translation>Если вам нужен похожий функционал на вашем Android устройстве, вы можете использовать Клиент RKK Orion от A&amp;A Creative Team:</translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="696"/>
-        <location filename="MainWindow.cpp" line="720"/>
+        <location filename="MainWindow.cpp" line="1132"/>
         <source>RKK Orion in Google Play Market</source>
         <translation>RKK Orion в Google Play Market</translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="697"/>
-        <location filename="MainWindow.cpp" line="721"/>
+        <location filename="MainWindow.cpp" line="1133"/>
+        <source>RKK Orion Project Discord</source>
+        <translation>Сервер Discord проекта RKK Orion</translation>
+    </message>
+    <message>
         <source>https://rkk.alativity.design/threads/client-rkk-orion.143/</source>
-        <translation>https://rkk.alativity.design/threads/klient-rkk-orion.91/</translation>
+        <translation type="vanished">https://rkk.alativity.design/threads/klient-rkk-orion.91/</translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="698"/>
-        <location filename="MainWindow.cpp" line="722"/>
         <source>RKK Orion Project Forum</source>
-        <translation>Форум проекта RKK Orion</translation>
+        <translation type="vanished">Форум проекта RKK Orion</translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="702"/>
+        <location filename="MainWindow.cpp" line="696"/>
         <source>in the Steam Workshop</source>
         <translation>в Мастерской Steam</translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="703"/>
+        <location filename="MainWindow.cpp" line="697"/>
         <source>or</source>
         <translation>или</translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="705"/>
+        <location filename="MainWindow.cpp" line="699"/>
         <source>on the Discord server</source>
         <translation>на нашем сервере Discord</translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="730"/>
+        <location filename="MainWindow.cpp" line="717"/>
         <source>Warning</source>
         <translation>Предупреждение</translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="734"/>
+        <location filename="MainWindow.cpp" line="721"/>
         <source>This manager modifies the game files in such a way that when the game is started via Steam, the manager will be launched first.
 
 However, due to periodic checks of the game files integrity by Steam, the original files can be restored. In this case, the manager will also start before the game, but only if the game can load all installed mods.
@@ -537,7 +535,7 @@ You can now add a shortcut to the desktop to make it easier to launch the manage
 Вы можете добавить сейчас ярлык на рабочий стол, чтобы упростить запуск менеджера в таких ситуациях.</translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="742"/>
+        <location filename="MainWindow.cpp" line="729"/>
         <source>Do you want to add a manager shortcut to your desktop?</source>
         <translation>Вы хотите добавить ярлык менеджера на рабочий стол?</translation>
     </message>
@@ -546,7 +544,7 @@ You can now add a shortcut to the desktop to make it easier to launch the manage
         <translation type="vanished"> [фильтр]</translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="700"/>
+        <location filename="MainWindow.cpp" line="694"/>
         <source>You can leave your questions/suggestions</source>
         <translation>Вы можете оставить свои вопросы/предложения</translation>
     </message>
@@ -555,7 +553,7 @@ You can now add a shortcut to the desktop to make it easier to launch the manage
         <translation type="vanished">здесь</translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="712"/>
+        <location filename="MainWindow.cpp" line="706"/>
         <source>Announcement</source>
         <translation>Объявление</translation>
     </message>

@@ -25,7 +25,8 @@
 #include "ui_MainWindow.h"
 
 inline constexpr const char *gameFileName(const bool is64BitOs);
-QByteArray fileChecksumHex(const QString &fileName, QCryptographicHash::Algorithm hashAlgorithm = QCryptographicHash::Md5);
+QByteArray fileChecksumHex(const QString &fileName,
+                           QCryptographicHash::Algorithm hashAlgorithm = QCryptographicHash::Md5);
 void rewriteFileIfDataIsDifferent(const QString &fileName, const QByteArray &newData);
 
 class WaitingLauncherArgs
@@ -164,7 +165,8 @@ MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
                "This should fix the problem however there is still a risk of origin file corruption. "
                "If you do not want to risk it, click on the \"Cancel\" button (the application will close) "
                "and wait for the fix or the response on this error from the developer.") + "\n\n" +
-               tr("In any case, please report this error to the developer - especially if it is not the first time it appears."),
+               tr("In any case, please report this error to the developer - "
+                  "especially if it is not the first time it appears."),
             QMessageBox::StandardButton::Ok | QMessageBox::StandardButton::Cancel
         );
 
@@ -203,24 +205,26 @@ MainWindow::MainWindow(QWidget *parent, const bool runCheck) :
     }
 
     ///Process check block (whether the game / manager is already running)
-    if (runCheck)
-    {
+    if (runCheck) {
         QProcess processChecker;
 
         if (processChecker.execute(processCheckerFileName(), QStringList(gameFileName(false))) > 0) {
-            QMessageBox::critical(nullptr, tr("Game is running"),
-                                           tr("Everlasting Summer is running!\n"
-                                              "Close the game before starting the manager!"),
-                                  QMessageBox::StandardButton::Ok, QMessageBox::StandardButton::NoButton);
+            QMessageBox::critical(
+                nullptr, tr("Game is running"),
+                tr("Everlasting Summer is running!\nClose the game before starting the manager!"),
+                QMessageBox::StandardButton::Ok, QMessageBox::StandardButton::NoButton
+            );
             this->setEnabled(false);
             QApplication::exit(-1);
             return;
         }
 
         if (processChecker.execute(processCheckerFileName(), QStringList(managerFileName(false))) > 1) {
-            QMessageBox::critical(nullptr, tr("Mod manager is running"),
-                                           tr("Mod manager is already running!"),
-                                  QMessageBox::StandardButton::Ok, QMessageBox::StandardButton::NoButton);
+            QMessageBox::critical(
+                nullptr, tr("Mod manager is running"),
+                tr("Mod manager is already running!"),
+                QMessageBox::StandardButton::Ok, QMessageBox::StandardButton::NoButton
+            );
             this->setEnabled(false);
             QApplication::exit(-2);
             return;
@@ -380,8 +384,7 @@ void MainWindow::setGameFolder(const QString &folderPath, const bool refreshModl
         //Steam version
         m_modsFolderPath = m_gameFolderPath.section("common\\Everlasting Summer\\", 0, 0);
         m_modsFolderPath.append("workshop\\content\\331470\\");
-    }
-    else {
+    } else {
         //Non-Steam version
         m_modsFolderPath = m_gameFolderPath;
         m_modsFolderPath.append("game\\mods\\");
@@ -390,10 +393,13 @@ void MainWindow::setGameFolder(const QString &folderPath, const bool refreshModl
 
     if (m_tempModsFolderPath != m_gameFolderPath + "mods (temp)\\") {
         if (!m_tempModsFolderPath.isEmpty() && QDir(m_tempModsFolderPath).exists() &&
-                QMessageBox::information(this, tr("Delete folder"), tr("Would you like to delete old mods temp folder?") +
-                                "\n" + m_tempModsFolderPath, QMessageBox::StandardButton::Yes, QMessageBox::StandardButton::No) ==
-                QMessageBox::StandardButton::Yes)
+                QMessageBox::information(
+                    this, tr("Delete folder"),
+                    tr("Would you like to delete old mods temp folder?") + "\n" + m_tempModsFolderPath,
+                    QMessageBox::StandardButton::Yes, QMessageBox::StandardButton::No
+                ) == QMessageBox::StandardButton::Yes) {
             QDir(m_tempModsFolderPath).removeRecursively();
+        }
 
         m_tempModsFolderPath = m_gameFolderPath + "mods (temp)\\";
     }
@@ -468,7 +474,7 @@ void MainWindow::filterModsDisplay(const QString &str)
 {
     int rowCount = m_modDatabaseModel->databaseSize();
     bool enabled;
-    for (int rowIndex = 0; rowIndex < rowCount; ++rowIndex)
+    for (int rowIndex = 0; rowIndex < rowCount; ++rowIndex) {
         if (m_modDatabaseModel->modIsExists(rowIndex)) {
             enabled = m_modDatabaseModel->modIsEnabled(rowIndex);
             ui->enabledModsList->setRowHidden(rowIndex, !enabled);
@@ -477,12 +483,10 @@ void MainWindow::filterModsDisplay(const QString &str)
             QString modName = m_modDatabaseModel->data(m_modDatabaseModel->index(rowIndex)).toString();
 
             if (!modName.contains(str, Qt::CaseSensitivity::CaseInsensitive)) {
-                if (enabled)
-                    ui->enabledModsList->setRowHidden(rowIndex, true);
-                else
-                    ui->disabledModsList->setRowHidden(rowIndex, true);
+                (enabled ? ui->enabledModsList : ui->disabledModsList)->setRowHidden(rowIndex, true);
             }
         }
+    }
 }
 
 void MainWindow::refreshModlist()
@@ -542,8 +546,9 @@ void MainWindow::runGame()
         return;
     }
 
-    if (m_databaseEditor->isVisible())
+    if (m_databaseEditor->isVisible()) {
         m_databaseEditor->close();
+    }
 
     QDir dir(m_tempModsFolderPath);
     if (!dir.exists()) {
@@ -617,25 +622,33 @@ void MainWindow::runGame()
 
 void MainWindow::selectGameFolder()
 {
-    QUrl gameFolderUrl = QFileDialog::getExistingDirectory(this, tr("Select Everlasting Summer folder"),
-                                                           m_gameFolderPath, QFileDialog::Option::DontUseNativeDialog);
+    QUrl gameFolderUrl = QFileDialog::getExistingDirectory(
+        this, tr("Select Everlasting Summer folder"),
+        m_gameFolderPath,
+        QFileDialog::Option::DontUseNativeDialog
+    );
     if (gameFolderUrl.isValid()) {
         QString folderPath = gameFolderUrl.toString().replace('/', '\\');
         if (isGameFolderValid(folderPath + '\\')) {
             folderPath[0] = folderPath.at(0).toUpper();
             setGameFolder(folderPath + '\\');
-        }
-        else {
-            QMessageBox::critical(this, tr("Wrong game folder"), tr("Game folder doesn't contains \n '%1'!").arg(gameFileName()),
-                                  QMessageBox::StandardButton::Ok, QMessageBox::StandardButton::NoButton);
+        } else {
+            QMessageBox::critical(
+                this, tr("Wrong game folder"),
+                tr("Game folder doesn't contains \n '%1'!").arg(gameFileName()),
+                QMessageBox::StandardButton::Ok, QMessageBox::StandardButton::NoButton
+            );
         }
     }
 }
 
 void MainWindow::selectModsFolder()
 {
-    QUrl modsFolderUrl = QFileDialog::getExistingDirectory(this, tr("Select folder of Everlasting Summer mods"),
-                                                            m_modsFolderPath, QFileDialog::Option::DontUseNativeDialog);
+    QUrl modsFolderUrl = QFileDialog::getExistingDirectory(
+        this, tr("Select folder of Everlasting Summer mods"),
+        m_modsFolderPath,
+        QFileDialog::Option::DontUseNativeDialog
+    );
     if (modsFolderUrl.isValid()) {
         QString modsFolderPath = modsFolderUrl.toString().replace('/', '\\');
 
@@ -649,16 +662,21 @@ void MainWindow::selectModsFolder()
 
 void MainWindow::selectTempModsFolder()
 {
-    QUrl tempModsFolderUrl = QFileDialog::getExistingDirectory(this, tr("Select temp folder for unused Everlasting Summer mods"),
-                                                                m_tempModsFolderPath, QFileDialog::DontUseNativeDialog);
+    QUrl tempModsFolderUrl = QFileDialog::getExistingDirectory(
+        this, tr("Select temp folder for unused Everlasting Summer mods"),
+        m_tempModsFolderPath,
+        QFileDialog::DontUseNativeDialog
+    );
     if (tempModsFolderUrl.isValid()) {
         QString tempModsFolderPath = tempModsFolderUrl.toString().replace('/', '\\');
         if (m_tempModsFolderPath != tempModsFolderPath) {
-            if (!m_tempModsFolderPath.isEmpty() && QDir(m_tempModsFolderPath).exists()
-                && QMessageBox::information(this, tr("Delete folder"), tr("Would you like to delete old mods temp folder?") +
-                                             "\n" + m_tempModsFolderPath,
-                                             QMessageBox::StandardButton::Yes, QMessageBox::StandardButton::No)
-                == QMessageBox::StandardButton::Yes) {
+            if (!m_tempModsFolderPath.isEmpty() &&
+                QDir(m_tempModsFolderPath).exists() &&
+                QMessageBox::information(
+                    this, tr("Delete folder"),
+                    tr("Would you like to delete old mods temp folder?") + "\n" + m_tempModsFolderPath,
+                    QMessageBox::StandardButton::Yes, QMessageBox::StandardButton::No
+                ) == QMessageBox::StandardButton::Yes) {
                 QDir(m_tempModsFolderPath).removeRecursively();
             }
 
@@ -677,32 +695,33 @@ void MainWindow::setRowVisibility(const int rowIndex, const bool isVisibleInFirs
 
 void MainWindow::showAboutInfo()
 {
-    QMessageBox messageAbout(QMessageBox::NoIcon, tr("About ") + this->windowTitle(), "",
-                             QMessageBox::StandardButton::Close, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
+    QMessageBox messageAbout(
+        QMessageBox::NoIcon,
+        tr("About ") + this->windowTitle(), "",
+        QMessageBox::StandardButton::Close, this,
+        Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint
+    );
     messageAbout.setTextFormat(Qt::TextFormat::RichText);
     messageAbout.setText(
         tr("Everlasting Summer mod manager v.") + applicationVersionToString() + ".<br>" +
         tr("Author:") + " <a href='https://steamcommunity.com/id/van_weyden/'>Slavyan</a><br>" +
-        tr("Help in testing:") + " <a href='https://steamcommunity.com/profiles/76561198058938676/'>Hatsune Miku</a>,"
-                                 " 🔰 <a href='https://steamcommunity.com/id/lena_sova/'>" + tr("Lena") + "</a>🔰 ," +
-                                 " <a href='https://vk.com/svet_mag'>" + tr("Alexey Golikov") + "</a>"
+        tr("Help in testing:") +
+        " <a href='https://steamcommunity.com/profiles/76561198058938676/'>Hatsune Miku</a>,"
+        " 🔰 <a href='https://steamcommunity.com/id/lena_sova/'>" + tr("Lena") + "</a>🔰 ,"
+        " <a href='https://vk.com/svet_mag'>" + tr("Alexey Golikov") + "</a>"
         "<br><br>" +
         tr("This program is used to 'fix' conflicts of mods and speed up the launch of the game. "
-           "Before launching the game, all unselected mods are moved to another folder, so the game engine will not load them.") +
-        "<br><br>" +
-        tr("If you need similar functionality on your Android device, "
-           "you can use the RKK Orion client from A&A Creative Team:") + "<br>"
-           "<a href='https://play.google.com/store/apps/details?id=com.alativity.esorion.installer'>" +
-        tr("RKK Orion in Google Play Market") + "</a>" + "<br>"
-           "<a href='" + tr("https://rkk.alativity.design/threads/client-rkk-orion.143/") + "'>" +
-        tr("RKK Orion Project Forum") + "</a>"
+           "Before launching the game, all unselected mods are moved to another folder, "
+           "so the game engine will not load them.") +
+        "<br><br>" + rkkOrionMessage()
     );
-    messageAbout.setInformativeText(tr("You can leave your questions/suggestions") +
-                                    " <a href='https://steamcommunity.com/sharedfiles/filedetails/?id=1826799366'>" +
-                                    tr("in the Steam Workshop") + "</a> " +
-                                    tr("or") +
-                                    " <a href='https://discord.gg/d2qYfsc'>" +
-                                    tr("on the Discord server") + "</a>."
+    messageAbout.setInformativeText(
+        tr("You can leave your questions/suggestions") +
+        " <a href='https://steamcommunity.com/sharedfiles/filedetails/?id=1826799366'>" +
+        tr("in the Steam Workshop") + "</a> " +
+        tr("or") +
+        " <a href='https://discord.gg/d2qYfsc'>" +
+        tr("on the Discord server") + "</a>."
     );
     messageAbout.exec();
 }
@@ -713,14 +732,7 @@ void MainWindow::showAnnouncementMessageBox()
                              QMessageBox::StandardButton::Close,
                              nullptr, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
     messageAbout.setTextFormat(Qt::TextFormat::RichText);
-    messageAbout.setText(
-        tr("If you need similar functionality on your Android device, "
-           "you can use the RKK Orion client from A&A Creative Team:") + "<br>"
-           "<a href='https://play.google.com/store/apps/details?id=com.alativity.esorion.installer'>" +
-           tr("RKK Orion in Google Play Market") + "</a>" + "<br>"
-           "<a href='" + tr("https://rkk.alativity.design/threads/client-rkk-orion.143/") + "'>" +
-           tr("RKK Orion Project Forum") + "</a>"
-    );
+    messageAbout.setText(rkkOrionMessage());
 
     messageAbout.exec();
 }
@@ -732,7 +744,8 @@ void MainWindow::showShortcutAddMessageBox()
                              nullptr, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
     messageAbout.setText(
         tr("This manager modifies the game files in such a way that when the game is started via Steam, "
-           "the manager will be launched first.\n\nHowever, due to periodic checks of the game files integrity by Steam, "
+           "the manager will be launched first.\n\n"
+           "However, due to periodic checks of the game files integrity by Steam, "
            "the original files can be restored. In this case, the manager will also start before the game, "
            "but only if the game can load all installed mods.\n\n In other words, "
            "if there are too many mods, and Steam will restore the original game launcher, "
@@ -768,9 +781,13 @@ void MainWindow::openManagerFolder()
 bool MainWindow::openModFolder(const int modIndex)
 {
     if (QDir().exists(m_modsFolderPath + m_modDatabaseModel->modFolderName(modIndex))) {
-        return QDesktopServices::openUrl(QUrl("file:///" + m_modsFolderPath + m_modDatabaseModel->modFolderName(modIndex)));
+        return QDesktopServices::openUrl(
+            QUrl("file:///" + m_modsFolderPath + m_modDatabaseModel->modFolderName(modIndex))
+        );
     } else if (QDir().exists(m_tempModsFolderPath + m_modDatabaseModel->modFolderName(modIndex))) {
-        return QDesktopServices::openUrl(QUrl("file:///" + m_tempModsFolderPath + m_modDatabaseModel->modFolderName(modIndex)));
+        return QDesktopServices::openUrl(
+            QUrl("file:///" + m_tempModsFolderPath + m_modDatabaseModel->modFolderName(modIndex))
+        );
     }
 
     return false;
@@ -906,25 +923,36 @@ void MainWindow::restoreOriginLauncher() const
     }
 }
 
-void MainWindow::moveModFolders(QString *unmovedModsToTempFolder, QString *unmovedModsFromTempFolder) const
+void MainWindow::moveModFolder(const QString &from, const QString &to, const QString &modFolderName,
+                               QString *unmovedModsFolder) const
 {
     QDir dir;
+    if (dir.exists(from + modFolderName)) {
+        if (!dir.rename(from + modFolderName, to + modFolderName) && unmovedModsFolder != nullptr) {
+            unmovedModsFolder->append(modFolderName + '\n');
+        }
+    }
+}
+
+void MainWindow::moveModFolders(QString *unmovedModsToTempFolder, QString *unmovedModsFromTempFolder) const
+{
     int databaseSize = m_modDatabaseModel->databaseSize();
     for (int i = 0; i < databaseSize; ++i) {
         if (m_modDatabaseModel->modInfo(i).exists) {
-            QString modFolder = m_modsFolderPath + m_modDatabaseModel->modFolderName(i);
-            QString modTempFolder = m_tempModsFolderPath + m_modDatabaseModel->modFolderName(i);
-
             if (m_modDatabaseModel->modInfo(i).enabled) {
-                if (dir.exists(modTempFolder) && !dir.rename(modTempFolder, modFolder)
-                    && unmovedModsFromTempFolder != nullptr) {
-                    unmovedModsFromTempFolder->append(m_modDatabaseModel->modFolderName(i) + '\n');
-                }
+                moveModFolder(
+                    m_tempModsFolderPath,
+                    m_modsFolderPath,
+                    m_modDatabaseModel->modFolderName(i),
+                    unmovedModsFromTempFolder
+                );
             } else {
-                if (dir.exists(modFolder) && !dir.rename(modFolder, modTempFolder)
-                    && unmovedModsToTempFolder != nullptr) {
-                    unmovedModsToTempFolder->append(m_modDatabaseModel->modFolderName(i) + '\n');
-                }
+                moveModFolder(
+                    m_modsFolderPath,
+                    m_tempModsFolderPath,
+                    m_modDatabaseModel->modFolderName(i),
+                    unmovedModsToTempFolder
+                );
             }
         }
     }
@@ -932,16 +960,18 @@ void MainWindow::moveModFolders(QString *unmovedModsToTempFolder, QString *unmov
 
 void MainWindow::moveModFoldersBack() const
 {
-    if (!ui->moveModsBackCheckBox->isChecked())
+    if (!ui->moveModsBackCheckBox->isChecked()) {
         return;
+    }
 
-    QDir dir;
     int databaseSize = m_modDatabaseModel->databaseSize();
     for (int i = 0; i < databaseSize; ++i) {
-        QString modFolder = m_modsFolderPath + m_modDatabaseModel->modFolderName(i);
-        QString modTempFolder = m_tempModsFolderPath + m_modDatabaseModel->modFolderName(i);
-        if (m_modDatabaseModel->modInfo(i).exists && dir.exists(modTempFolder)) {
-            dir.rename(modTempFolder, modFolder);
+        if (m_modDatabaseModel->modInfo(i).exists) {
+            moveModFolder(
+                m_tempModsFolderPath,
+                m_modsFolderPath,
+                m_modDatabaseModel->modFolderName(i)
+            );
         }
     }
 }
@@ -1125,8 +1155,7 @@ void MainWindow::applyBackwardCompatibilityFixes(const int loadedApplicationVers
 
                     mod["Is enabled"] = bool(QString(file.readLine()).remove(QRegExp("[\\n\\r]")).toInt());
                     mods.append(mod);
-                }
-                while (file.canReadLine());
+                } while (file.canReadLine());
                 file.close();
                 file.remove();
 
@@ -1137,6 +1166,14 @@ void MainWindow::applyBackwardCompatibilityFixes(const int loadedApplicationVers
     }
 }
 
+QString MainWindow::rkkOrionMessage()
+{
+    return tr("If you need similar functionality on your Android device, "
+              "you can use the RKK Orion client from A&A Creative Team:") + "<br>"
+              "<a href='https://play.google.com/store/apps/details?id=com.alativity.esorion.installer'>" +
+              tr("RKK Orion in Google Play Market") + "</a>" + "<br>"
+              "<a href='https://fl.alativity.com/ZCvBg'>" + tr("RKK Orion Project Discord") + "</a>";
+}
 
 
 ///class WaitingLauncherArgs:

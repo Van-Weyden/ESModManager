@@ -19,11 +19,12 @@ ModDatabaseModel::ModDatabaseModel()
 
 bool ModDatabaseModel::isNameValid(const QString &name) const
 {
-    return !(name.isEmpty() ||
-             name.contains(ModInfo::generateUnknownNameStub()) ||
-             name.contains(ModInfo::generateFailedToGetNameStub()) ||
-             name.contains(ModInfo::generateWaitingForSteamResponseStub()) ||
-             QRegExp(RegExpPatterns::whitespace).exactMatch(name)
+    return !(
+        name.isEmpty() ||
+        name.contains(ModInfo::generateUnknownNameStub()) ||
+        name.contains(ModInfo::generateFailedToGetNameStub()) ||
+        name.contains(ModInfo::generateWaitingForSteamResponseStub()) ||
+        QRegExp(RegExpPatterns::whitespace).exactMatch(name)
     );
 }
 
@@ -47,23 +48,22 @@ QVariant ModDatabaseModel::data(const QModelIndex &index, int role) const
     switch (role) {
         case Qt::DisplayRole:
             if (m_completeModNames) {
+                bool isModNameValid = isNameValid(m_database.at(index.row()).name);
+                bool isSteamModNameValid = isNameValid(m_database.at(index.row()).steamName);
                 if (m_useSteamModNames) {
-                    if (isNameValid(m_database.at(index.row()).steamName)
-                        || !isNameValid(m_database.at(index.row()).name)) {
+                    if (isSteamModNameValid || !isModNameValid) {
                         return m_database.at(index.row()).steamName;
                     } else {
                         return m_database.at(index.row()).name;
                     }
                 } else {
-                    if (isNameValid(m_database.at(index.row()).name)
-                        || !isNameValid(m_database.at(index.row()).steamName)) {
+                    if (isModNameValid || !isSteamModNameValid) {
                         return m_database.at(index.row()).name;
                     } else {
                         return m_database.at(index.row()).steamName;
                     }
                 }
-            }
-            else {
+            } else {
                 if (m_useSteamModNames) {
                     return m_database.at(index.row()).steamName;
                 } else {
@@ -73,17 +73,14 @@ QVariant ModDatabaseModel::data(const QModelIndex &index, int role) const
         break;
 
         case Qt::ForegroundRole:
-            if (!m_database.at(index.row()).exists)
+            if (!m_database.at(index.row()).exists) {
                 return QColor(Qt::gray);
+            }
         break;
 
         case Qt::CheckStateRole:
             if (index.column() == 0) {
-                if (m_database.at(index.row()).enabled) {
-                    return Qt::Checked;
-                } else {
-                    return Qt::Unchecked;
-                }
+                return (m_database.at(index.row()).enabled ? Qt::Checked : Qt::Unchecked);
             }
         break;
 
@@ -97,8 +94,9 @@ QVariant ModDatabaseModel::data(const QModelIndex &index, int role) const
 Qt::ItemFlags ModDatabaseModel::flags(const QModelIndex &index) const
 {
     Qt::ItemFlags flags = QAbstractItemModel::flags(index);
-    if (index.column() == 0)
+    if (index.column() == 0) {
         flags |= Qt::ItemIsUserCheckable;
+    }
     return flags;
 }
 
@@ -124,8 +122,9 @@ void ModDatabaseModel::removeFromDatabase(const int index)
 
 void ModDatabaseModel::setCompleteModNames(const bool enabled)
 {
-    if (m_completeModNames == enabled)
+    if (m_completeModNames == enabled) {
         return;
+    }
 
     m_completeModNames = enabled;
     emit dataChanged(index(0), index(m_database.size() - 1));
@@ -133,8 +132,9 @@ void ModDatabaseModel::setCompleteModNames(const bool enabled)
 
 bool ModDatabaseModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
-    if (!index.isValid())
+    if (!index.isValid()) {
         return false;
+    }
 
     bool isDataChanged = false;
 
@@ -157,22 +157,25 @@ bool ModDatabaseModel::setData(const QModelIndex &index, const QVariant &value, 
         break;
     }
 
-    if (isDataChanged)
+    if (isDataChanged) {
         emit dataChanged(index, index, QVector<int>(role));
+    }
 
     return isDataChanged;
 }
 
 void ModDatabaseModel::setModsExistsState(const bool isExists)
 {
-    for (int i = 0; i < m_database.size(); ++i)
+    for (int i = 0; i < m_database.size(); ++i) {
         m_database[i].exists = isExists;
+    }
 }
 
 void ModDatabaseModel::setUsingSteamModNames(const bool use)
 {
-    if (m_useSteamModNames == use)
+    if (m_useSteamModNames == use) {
         return;
+    }
 
     m_useSteamModNames = use;
     emit dataChanged(index(0), index(m_database.size() - 1));
@@ -185,9 +188,7 @@ void ModDatabaseModel::sortDatabase()
     collator.setNumericMode(true);
     std::sort(m_database.begin(), m_database.end(),
         [&collator](const ModInfo &i, const ModInfo &j) {
-            if (i.exists ^ j.exists)
-                return i.exists;
-            return collator(i.folderName, j.folderName);
+            return ((i.exists ^ j.exists) ? i.exists : collator(i.folderName, j.folderName));
         }
     );
 }

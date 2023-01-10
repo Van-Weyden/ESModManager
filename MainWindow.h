@@ -74,6 +74,8 @@ private:
     bool checkOriginGameLauncher(const QString &folderPath) const;
     void checkOriginLauncherReplacement();
     void restoreOriginLauncher() const;
+    void moveModFolder(const QString &from, const QString &to, const QString &modFolderName,
+                       QString *unmovedModsFolder = nullptr) const;
     void moveModFolders(QString *unmovedModsToTempFolder = nullptr,
                         QString *unmovedModsFromTempFolder = nullptr) const;
     void moveModFoldersBack() const;
@@ -81,6 +83,7 @@ private:
     void saveSettings() const;
 
     void applyBackwardCompatibilityFixes(const int loadedApplicationVersion);
+    QString rkkOrionMessage();
 
     Ui::MainWindow *ui = nullptr;
     DatabaseEditor *m_databaseEditor = nullptr;
