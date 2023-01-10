@@ -939,7 +939,7 @@ void MainWindow::moveModFolders(QString *unmovedModsToTempFolder, QString *unmov
     int databaseSize = m_modDatabaseModel->databaseSize();
     for (int i = 0; i < databaseSize; ++i) {
         if (m_modDatabaseModel->modInfo(i).exists) {
-            if (m_modDatabaseModel->modInfo(i).exists) {
+            if (m_modDatabaseModel->modInfo(i).enabled) {
                 moveModFolder(
                     m_tempModsFolderPath,
                     m_modsFolderPath,
