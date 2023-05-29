@@ -2,96 +2,98 @@ init -999 python:
     import os as esmm_os
     import subprocess as esmm_subprocess
     
-    esmm_label = "ESModManager"
-    
-    esmm_executableExtension = ".exe"
-    
-    esmm_gameFileName = "Everlasting Summer"
-    esmm_managerFileName = "ESModManager"
-    esmm_processCheckerFileName = "ProcessChecker"
-    esmm_waitingLauncherFileName = "ESModManagerLauncher"
-    esmm_managerSettingsFullFileName = "settings.ini"
-    
-    esmm_managerFullFileName = esmm_managerFileName + esmm_executableExtension
-    esmm_processCheckerFullFileName = esmm_processCheckerFileName + esmm_executableExtension
-    esmm_waitingLauncherFullFileName = esmm_waitingLauncherFileName + esmm_executableExtension
-    
-    esmm_isManagerInstalled = False
-    
-    esmm_renpyFileNamesList = renpy.list_files()
-    for esmm_renpyFileName in esmm_renpyFileNamesList:
-        if (esmm_managerFullFileName in esmm_renpyFileName):
-            esmm_isManagerInstalled = True
-            esmm_managerFileFullPath = renpy.file(esmm_renpyFileName).name
-            esmm_managerBinDirPath = esmm_os.path.abspath(esmm_os.path.dirname(esmm_managerFileFullPath))
-            esmm_managerDirPath = esmm_os.path.abspath(esmm_os.path.dirname(esmm_managerBinDirPath))
-            esmm_managerBinDirPath += '\\'
-            esmm_managerDirPath += '\\'
-            esmm_processCheckerFullPath = esmm_managerBinDirPath + esmm_processCheckerFullFileName
-            break;
+    class ESModManager:
+        def __init__(self):
+            self.label = "ESModManager"
+            
+            self.executableExtension = ".exe"
+            
+            self.gameFileName = "Everlasting Summer"
+            self.managerFileName = "ESModManager"
+            self.processCheckerFileName = "ProcessChecker"
+            self.waitingLauncherFileName = "ESModManagerLauncher"
+            self.managerSettingsFullFileName = "settings.ini"
+            
+            self.managerFullFileName = self.managerFileName + self.executableExtension
+            self.processCheckerFullFileName = self.processCheckerFileName + self.executableExtension
+            self.waitingLauncherFullFileName = self.waitingLauncherFileName + self.executableExtension
+            
+            self.isManagerInstalled = False
+            
+            self.renpyFileNamesList = renpy.list_files()
+            for self.renpyFileName in self.renpyFileNamesList:
+                if (self.managerFullFileName in self.renpyFileName):
+                    self.isManagerInstalled = True
+                    self.managerFileFullPath = renpy.file(self.renpyFileName).name
+                    self.managerBinDirPath = esmm_os.path.abspath(esmm_os.path.dirname(self.managerFileFullPath))
+                    self.managerDirPath = esmm_os.path.abspath(esmm_os.path.dirname(self.managerBinDirPath))
+                    self.managerBinDirPath += '\\'
+                    self.managerDirPath += '\\'
+                    self.processCheckerFullPath = self.managerBinDirPath + self.processCheckerFullFileName
+                    break
 
-    if (esmm_isManagerInstalled):
-        esmm_needLaunchManager = False
-        esmm_processChecker = esmm_subprocess.Popen([esmm_processCheckerFullPath, esmm_managerFileName])
+            if (self.isManagerInstalled):
+                esmm_processChecker = esmm_subprocess.Popen([self.processCheckerFullPath, self.managerFileName])
+                
+                if (not esmm_processChecker.wait()):
+                    self.managerSettings = open(self.managerBinDirPath + self.managerSettingsFullFileName, "r")
+                    for self.line in self.managerSettings:
+                        if (self.line.startswith("bReplaceOriginLauncher=")):
+                            if (self.line.startswith("bReplaceOriginLauncher=true")):
+                                self.runWaitingLauncher(self.gameFileName)
+                                renpy.quit()
+                            break
+                            
+        def initEntryInGameMenu(self):
+            if (self.isManagerInstalled):
+                if (_preferences.language == None):
+                    mods[self.label] = u"Менеджер модов"
+                else:
+                    mods[self.label] = "Mod Manager"
+                
+                try:
+                    modsImages[self.label] = ("bin/ESModManager.png", False, '')
+                    imgsModsMenu_polyMods.append(self.label)
+                except:
+                    pass
         
-        if (not esmm_processChecker.wait()):
-            esmm_managerSettings = open(esmm_managerBinDirPath + esmm_managerSettingsFullFileName, "r")
-            for esmm_line in esmm_managerSettings:
-                if (esmm_line.startswith("bReplaceOriginLauncher=")):
-                    esmm_needLaunchManager = esmm_line.startswith("bReplaceOriginLauncher=true")
-                    break;
+        def onClickedInGameMenu(self):
+            if (self.isManagerInstalled):
+                esmm_processChecker = esmm_subprocess.Popen([self.processCheckerFullPath, self.managerFileName])
 
-        if (esmm_needLaunchManager):
-            esmm_subprocess.Popen([esmm_managerDirPath + esmm_waitingLauncherFullFileName, 
-                                  "",                       #Path to the folder with the monitored program (not necessary in our case)
-                                  esmm_gameFileName,        #Name of the monitored program
-                                  "true",                   #Flag indicating the need to monitor the program until it is closed
-                                  "true",                   #Flag indicating whether to run the program if it is already running
-                                  "true",                   #Flag indicating whether to run the program after closing the monitored program
-                                  esmm_managerBinDirPath,   #Path to the program folder, which will be launched after the monitored program is closed
-                                  esmm_managerFileName      #Name of the program which will be launched after the monitored program is closed
-                                ])
-            renpy.quit()
+                if (esmm_processChecker.wait()):
+                    self.managerSettings = open(self.managerBinDirPath + self.managerSettingsFullFileName, "r")
+                    for self.line in self.managerSettings:
+                        if (self.line.startswith("bAutoexit=")):
+                            #If the autoexit is disabled, the manager will be reopened automatically after closing the game.
+                            if (not self.line.startswith("bAutoexit=false")):
+                                self.runWaitingLauncher(self.managerFileName)
+                            break;
+                else:
+                    self.runWaitingLauncher(self.gameFileName)
+
+                renpy.quit()
+                
+        def runWaitingLauncher(self, monitoredProgramName):
+            esmm_subprocess.Popen([
+                self.managerDirPath + self.waitingLauncherFullFileName, 
+                "",                     #Path to the folder with the monitored program (not necessary in our case)
+                monitoredProgramName,   #Name of the monitored program
+                "true",                 #Flag indicating the need to monitor the program until it is closed
+                "true",                 #Flag indicating whether to run the program if it is already running
+                "true",                 #Flag indicating whether to run the program after closing the monitored program
+                self.managerBinDirPath, #Path to the program folder, which will be launched after the monitored program is closed
+                self.managerFileName    #Name of the program which will be launched after the monitored program is closed
+            ])
+            
+    #ESModManager class end
+    
+    esModManager = ESModManager()
 
 init python:
-    if (esmm_isManagerInstalled):
-        if (_preferences.language == None):
-            mods[esmm_label] = u"Менеджер модов"
-        else:
-            mods[esmm_label] = "Mod Manager"
-        
-        try:
-            modsImages[esmm_label] = ("bin/ESModManager.png", False, '')
-            imgsModsMenu_polyMods.append(esmm_label)
-        except:
-            pass
+    esModManager.initEntryInGameMenu()
 
 label ESModManager:
     python:
-        if (esmm_isManagerInstalled):
-            esmm_needLaunchManager = True
-            esmm_processChecker = esmm_subprocess.Popen([esmm_processCheckerFullPath, esmm_managerFileName])
-
-            if (esmm_processChecker.wait()):
-                esmm_managerSettings = open(esmm_managerBinDirPath + esmm_managerSettingsFullFileName, "r")
-                for esmm_line in esmm_managerSettings:
-                    if (esmm_line.startswith("bAutoexit=")):
-                        #If the autoexit is disabled, the manager will be reopened automatically after closing the game.
-                        esmm_needLaunchManager = not esmm_line.startswith("bAutoexit=false")
-                        esmm_programName = esmm_managerFileName
-                        break;
-            else:
-                esmm_programName = esmm_gameFileName
-            
-            if (esmm_needLaunchManager):
-                esmm_subprocess.Popen([esmm_managerDirPath + esmm_waitingLauncherFullFileName, 
-                                  "",                       #Path to the folder with the monitored program (not necessary in our case)
-                                  esmm_programName,         #Name of the monitored program
-                                  "true",                   #Flag indicating the need to monitor the program until it is closed
-                                  "true",                   #Flag indicating whether to run the program if it is already running
-                                  "true",                   #Flag indicating whether to run the program after closing the monitored program
-                                  esmm_managerBinDirPath,   #Path to the program folder, which will be launched after the monitored program is closed
-                                  esmm_managerFileName      #Name of the program which will be launched after the monitored program is closed
-                                ])
-            renpy.quit()
+        esModManager.onClickedInGameMenu()
     return
