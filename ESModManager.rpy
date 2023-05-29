@@ -4,6 +4,11 @@ init -999 python:
     
     class ESModManager:
         def __init__(self):
+            self.canUse = False
+
+            if (not renpy.windows):
+                return
+
             self.label = "ESModManager"
             
             self.executableExtension = ".exe"
@@ -18,12 +23,10 @@ init -999 python:
             self.processCheckerFullFileName = self.processCheckerFileName + self.executableExtension
             self.waitingLauncherFullFileName = self.waitingLauncherFileName + self.executableExtension
             
-            self.isManagerInstalled = False
-            
             self.renpyFileNamesList = renpy.list_files()
             for self.renpyFileName in self.renpyFileNamesList:
                 if (self.managerFullFileName in self.renpyFileName):
-                    self.isManagerInstalled = True
+                    self.canUse = True
                     self.managerFileFullPath = renpy.file(self.renpyFileName).name
                     self.managerBinDirPath = esmm_os.path.abspath(esmm_os.path.dirname(self.managerFileFullPath))
                     self.managerDirPath = esmm_os.path.abspath(esmm_os.path.dirname(self.managerBinDirPath))
@@ -32,7 +35,7 @@ init -999 python:
                     self.processCheckerFullPath = self.managerBinDirPath + self.processCheckerFullFileName
                     break
 
-            if (self.isManagerInstalled):
+            if (self.canUse):
                 esmm_processChecker = esmm_subprocess.Popen([self.processCheckerFullPath, self.managerFileName])
                 
                 if (not esmm_processChecker.wait()):
@@ -45,7 +48,7 @@ init -999 python:
                             break
                             
         def initEntryInGameMenu(self):
-            if (self.isManagerInstalled):
+            if (self.canUse):
                 if (_preferences.language == None):
                     mods[self.label] = u"Менеджер модов"
                 else:
@@ -58,7 +61,7 @@ init -999 python:
                     pass
         
         def onClickedInGameMenu(self):
-            if (self.isManagerInstalled):
+            if (self.canUse):
                 esmm_processChecker = esmm_subprocess.Popen([self.processCheckerFullPath, self.managerFileName])
 
                 if (esmm_processChecker.wait()):
