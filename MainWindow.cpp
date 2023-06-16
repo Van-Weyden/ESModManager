@@ -560,7 +560,8 @@ void MainWindow::runGame()
     if (!unmovedMods.isEmpty()) {
         QMessageBox warningMessage(
             QMessageBox::Warning, tr("Unmoved mods"),
-            tr("Disabled mods in these folders failed to move into temp folder:") + "\n\n" + unmovedMods + "\n" +
+            tr("Failed to move some of disabled mods into the temp folder.") + "\n" +
+            tr("You can press the \"Show Details...\" button to see these mod folder names.") + "\n\n" +
             tr("If you press the 'OK' button, the game will load these mods.") + "\n\n" +
             tr("You may move these folders manually from the mods folder:") + "\n\n" + m_modsFolderPath + "\n\n" +
             tr("to the temp mods folder:") + "\n\n" + m_tempModsFolderPath + "\n\n" +
@@ -568,6 +569,8 @@ void MainWindow::runGame()
             QMessageBox::StandardButton::Ok | QMessageBox::StandardButton::Open | QMessageBox::StandardButton::Cancel,
             this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint
         );
+        warningMessage.setDetailedText(unmovedMods);
+
         warningMessage.button(QMessageBox::StandardButton::Open)->setText(tr("Open mods folder and temp folder in explorer"));
         warningMessage.setDefaultButton(QMessageBox::StandardButton::Cancel);
         warningMessage.setTextInteractionFlags(Qt::TextSelectableByMouse);
