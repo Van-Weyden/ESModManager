@@ -130,7 +130,6 @@ void ModScanner::scanMods(const QString &modsFolderPath, ModDatabaseModel &modDa
         QString modFolderName = modsFolders.takeFirst();
         scanMod(modFolderName, modsFolderPath + modFolderName, modDatabaseModel, oldDatabaseSize, enabledFlagValue);
         emit modScanned(++countOfScannedMods);
-        QApplication::processEvents();
     }
 }
 
