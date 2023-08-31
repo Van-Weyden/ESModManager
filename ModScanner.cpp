@@ -23,9 +23,9 @@ ModScanner::ModScanner(QObject *parent) :
                                            + RegExpPatterns::escapedSymbol("]");
 
     m_initRegExp        = QRegExp(renPyInitRegExp("((mods)|(filters))", dictionaryKeyInBracketsPattern));
-    m_modInitRegExp        = QRegExp(renPyInitRegExp("(mods)",                dictionaryKeyInBracketsPattern));
-    m_filterInitRegExp    = QRegExp(renPyInitRegExp("(filters)",            dictionaryKeyInBracketsPattern));
-    m_modTagsRegExp        = QRegExp(renPyInitRegExp("(mod_tags)",            dictionaryKeyInBracketsPattern));
+    m_modInitRegExp     = QRegExp(renPyInitRegExp("(mods)",             dictionaryKeyInBracketsPattern));
+    m_filterInitRegExp  = QRegExp(renPyInitRegExp("(filters)",          dictionaryKeyInBracketsPattern));
+    m_modTagsRegExp     = QRegExp(renPyInitRegExp("(mod_tags)",         dictionaryKeyInBracketsPattern));
 
     m_dictionaryKeyInBracketsRegExp = QRegExp(dictionaryKeyInBracketsPattern);
     m_innerExpressionInBracesRegExp = QRegExp(
@@ -130,6 +130,7 @@ void ModScanner::scanMods(const QString &modsFolderPath, ModDatabaseModel &modDa
         QString modFolderName = modsFolders.takeFirst();
         scanMod(modFolderName, modsFolderPath + modFolderName, modDatabaseModel, oldDatabaseSize, enabledFlagValue);
         emit modScanned(++countOfScannedMods);
+        QApplication::processEvents();
     }
 }
 

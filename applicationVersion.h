@@ -10,7 +10,7 @@ constexpr int applicationVersion(const int major, const int minor = 0, const int
 
 constexpr int currentApplicationVersion()
 {
-    return applicationVersion(1, 1, 19);
+    return applicationVersion(1, 1, 20);
 }
 
 constexpr int majorApplicationVersion(int version)

@@ -294,6 +294,9 @@ If unchecked, display mod names from their source files.</string>
             <property name="styleSheet">
              <string notr="true"/>
             </property>
+            <property name="autoScroll">
+             <bool>false</bool>
+            </property>
             <property name="editTriggers">
              <set>QAbstractItemView::NoEditTriggers</set>
             </property>
@@ -326,6 +329,9 @@ If unchecked, display mod names from their source files.</string>
             </property>
             <property name="styleSheet">
              <string notr="true"/>
+            </property>
+            <property name="autoScroll">
+             <bool>false</bool>
             </property>
             <property name="editTriggers">
              <set>QAbstractItemView::NoEditTriggers</set>
