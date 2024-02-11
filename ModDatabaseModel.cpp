@@ -1,5 +1,8 @@
+#include <functional>
+
 #include <QCollator>
 #include <QColor>
+#include <QFont>
 #include <QThread>
 
 #include "RegExpPatterns.h"
@@ -14,7 +17,7 @@ ModDatabaseModel::ModDatabaseModel()
     m_completeModNames = true;
     m_useSteamModNames = true;
 
-    qRegisterMetaType<QVector<int> >("QVector<int>");
+    qRegisterMetaType<QVector<int>>("QVector<int>");
 }
 
 bool ModDatabaseModel::isNameValid(const QString &name) const
@@ -40,48 +43,72 @@ void ModDatabaseModel::add(const ModInfo &modInfo)
     endInsertRows();
 }
 
+QString ModDatabaseModel::displayedModName(const ModInfo &modInfo) const
+{
+    if (m_completeModNames) {
+        bool isModNameValid = isNameValid(modInfo.name);
+        bool isSteamModNameValid = isNameValid(modInfo.steamName);
+        if (m_useSteamModNames) {
+            if (isSteamModNameValid || !isModNameValid) {
+                return modInfo.steamName;
+            } else {
+                return modInfo.name;
+            }
+        } else {
+            if (isModNameValid || !isSteamModNameValid) {
+                return modInfo.name;
+            } else {
+                return modInfo.steamName;
+            }
+        }
+    } else {
+        if (m_useSteamModNames) {
+            return modInfo.steamName;
+        } else {
+            return modInfo.name;
+        }
+    }
+}
+
 QVariant ModDatabaseModel::data(const QModelIndex &index, int role) const
 {
-    if (!index.isValid())
+    if (!index.isValid()) {
         return QVariant();
+    }
 
     switch (role) {
         case Qt::DisplayRole:
-            if (m_completeModNames) {
-                bool isModNameValid = isNameValid(m_database.at(index.row()).name);
-                bool isSteamModNameValid = isNameValid(m_database.at(index.row()).steamName);
-                if (m_useSteamModNames) {
-                    if (isSteamModNameValid || !isModNameValid) {
-                        return m_database.at(index.row()).steamName;
-                    } else {
-                        return m_database.at(index.row()).name;
-                    }
-                } else {
-                    if (isModNameValid || !isSteamModNameValid) {
-                        return m_database.at(index.row()).name;
-                    } else {
-                        return m_database.at(index.row()).steamName;
-                    }
-                }
-            } else {
-                if (m_useSteamModNames) {
-                    return m_database.at(index.row()).steamName;
-                } else {
-                    return m_database.at(index.row()).name;
-                }
-            }
+            return displayedModName(m_database[index.row()]);
         break;
 
         case Qt::ForegroundRole:
-            if (!m_database.at(index.row()).exists) {
+            if (!m_database[index.row()].exists()) {
                 return QColor(Qt::gray);
             }
         break;
 
         case Qt::CheckStateRole:
-            if (index.column() == 0) {
-                return (m_database.at(index.row()).enabled ? Qt::Checked : Qt::Unchecked);
+            return (m_database[index.row()].marked() ? Qt::Checked : Qt::Unchecked);
+        break;
+
+        case Qt::FontRole:
+            if (m_database[index.row()].locked()) {
+                QFont font;
+                font.setBold(true);
+                return font;
             }
+        break;
+
+        case EnabledModRole:
+            return m_database[index.row()].enabled();
+        break;
+
+        case ExistsModRole:
+            return m_database[index.row()].exists();
+        break;
+
+        case MarkedModRole:
+            return m_database[index.row()].marked();
         break;
 
         default:
@@ -93,11 +120,7 @@ QVariant ModDatabaseModel::data(const QModelIndex &index, int role) const
 
 Qt::ItemFlags ModDatabaseModel::flags(const QModelIndex &index) const
 {
-    Qt::ItemFlags flags = QAbstractItemModel::flags(index);
-    if (index.column() == 0) {
-        flags |= Qt::ItemIsUserCheckable;
-    }
-    return flags;
+    return QAbstractItemModel::flags(index) | Qt::ItemIsUserCheckable;
 }
 
 QVariant ModDatabaseModel::headerData(int section, Qt::Orientation orientation, int role) const
@@ -149,11 +172,24 @@ bool ModDatabaseModel::setData(const QModelIndex &index, const QVariant &value, 
         break;
 
         case Qt::CheckStateRole:
-            if (index.column() == 0) {
-                m_database[index.row()].enabled = (Qt::CheckState(value.toInt()) == Qt::Checked);
-                emit modCheckStateChanged(index.row(), m_database.at(index.row()).enabled);
-                isDataChanged = true;
-            }
+            m_database[index.row()].setMarked(Qt::CheckState(value.toInt()) == Qt::Checked);
+            isDataChanged = true;
+        break;
+
+        case EnabledModRole:
+            isDataChanged = (m_database[index.row()].enabled() != value.toBool());
+            m_database[index.row()].setEnabled(value.toBool());
+            isDataChanged &= (m_database[index.row()].enabled() == value.toBool());
+        break;
+
+        case ExistsModRole:
+            isDataChanged = (m_database[index.row()].exists() != value.toBool());
+            m_database[index.row()].setExists(value.toBool());
+        break;
+
+        case MarkedModRole:
+            isDataChanged = (m_database[index.row()].marked() != value.toBool());
+            m_database[index.row()].setMarked(value.toBool());
         break;
     }
 
@@ -164,11 +200,50 @@ bool ModDatabaseModel::setData(const QModelIndex &index, const QVariant &value, 
     return isDataChanged;
 }
 
+void ModDatabaseModel::sort(int column, Qt::SortOrder order)
+{
+    QCollator collator;
+    collator.setNumericMode(true);
+    std::function<bool(const ModInfo &i, const ModInfo &j)> comparator;
+
+    switch (column) {
+        case 0: //By display name
+            comparator = [this, &collator](const ModInfo &i, const ModInfo &j) {
+                return collator(displayedModName(i), displayedModName(j));
+            };
+        break;
+
+        case 1: //By folder name
+            comparator = [&collator](const ModInfo &i, const ModInfo &j) {
+                return collator(i.folderName, j.folderName);
+            };
+        break;
+
+        default:
+        return;
+    }
+
+    beginResetModel();
+    std::sort(m_database.begin(), m_database.end(),
+        [&comparator, order](const ModInfo &i, const ModInfo &j) {
+            return ((i.exists() ^ j.exists()) ? i.exists() : comparator(i, j) ^ (order == Qt::DescendingOrder));
+        }
+    );
+    endResetModel();
+}
+
 void ModDatabaseModel::setModsExistsState(const bool isExists)
 {
     for (int i = 0; i < m_database.size(); ++i) {
-        m_database[i].exists = isExists;
+        m_database[i].setExists(isExists);
     }
+}
+
+void ModDatabaseModel::reset(std::function<void()> actions)
+{
+    beginResetModel();
+    actions();
+    endResetModel();
 }
 
 void ModDatabaseModel::setUsingSteamModNames(const bool use)
@@ -181,35 +256,21 @@ void ModDatabaseModel::setUsingSteamModNames(const bool use)
     emit dataChanged(index(0), index(m_database.size() - 1));
 }
 
-void ModDatabaseModel::sortDatabase()
-{
-    //Names sorting (order like in Windows explorer)
-    QCollator collator;
-    collator.setNumericMode(true);
-    std::sort(m_database.begin(), m_database.end(),
-        [&collator](const ModInfo &i, const ModInfo &j) {
-            return ((i.exists ^ j.exists) ? i.exists : collator(i.folderName, j.folderName));
-        }
-    );
-}
-
 //public slots:
 
 void ModDatabaseModel::enableMod(const QModelIndex &index)
 {
-    if (!m_database.at(index.row()).enabled) {
-        m_database[index.row()].enabled = true;
+    if (m_database[index.row()].canEnable()) {
+        m_database[index.row()].setEnabled(true);
         emit dataChanged(index, index);
-        emit modCheckStateChanged(index.row(), true);
     }
 }
 
 void ModDatabaseModel::disableMod(const QModelIndex &index)
 {
-    if (m_database.at(index.row()).enabled) {
-        m_database[index.row()].enabled = false;
+    if (m_database[index.row()].canDisable()) {
+        m_database[index.row()].setEnabled(false);
         emit dataChanged(index, index);
-        emit modCheckStateChanged(index.row(), false);
     }
 }
 

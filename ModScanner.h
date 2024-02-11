@@ -18,7 +18,7 @@ public:
     };
 
     explicit ModScanner(QObject *parent = nullptr);
-    void scanMods(const QString &modsFolderPath, ModDatabaseModel &modDatabaseModel,
+    void scanMods(const QString &modsFolderPath, ModDatabaseModel &database,
                   const EnabledFlagValue enabledFlagValue = NotOverride);
 
 signals:
@@ -26,7 +26,7 @@ signals:
 
 private:
     void scanMod(const QString &modFolderName, const QString &modFolderPath,
-                 ModDatabaseModel &modDatabaseModel, const int oldDatabaseSize,
+                 ModDatabaseModel &database, const int oldDatabaseSize,
                  const EnabledFlagValue enabledFlagValue = NotOverride);
 
     QRegExp m_initRegExp;

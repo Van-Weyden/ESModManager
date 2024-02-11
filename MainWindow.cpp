@@ -19,47 +19,14 @@
 #include "DatabaseEditor.h"
 #include "ModDatabaseModel.h"
 #include "ModScanner.h"
+#include "proxyModels.h"
 #include "SteamRequester.h"
 
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
 
 inline constexpr const char *gameFileName(const bool is64BitOs);
-QByteArray fileChecksumHex(const QString &fileName,
-                           QCryptographicHash::Algorithm hashAlgorithm = QCryptographicHash::Md5);
 void rewriteFileIfDataIsDifferent(const QString &fileName, const QByteArray &newData);
-
-class WaitingLauncherArgs
-{
-public:
-    WaitingLauncherArgs(const QString &programFolderPath, const QString &programName);
-
-    void setProgramFolderPath(const QString &programFolderPath);
-    void setProgramName(const QString &programName);
-
-    void setIsMonitoringNeeded(const bool isMonitoringNeeded);
-    void setDontLaunchIfAlreadyLaunched(const bool dontLaunchIfAlreadyLaunched);
-    void setLaunchProgramAfterClose(const bool launchProgramAfterClose);
-
-    void setProgramOnErrorFolderPath(const QString &programOnErrorFolderPath);
-    void setProgramOnErrorName(const QString &programOnErrorName);
-    void setProgramAfterCloseFolderPath(const QString &programAfterCloseFolderPath);
-    void setProgramAfterCloseName(const QString &programAfterCloseName);
-
-    QString toString() const;
-    QByteArray toUtf8() const;
-
-private:
-    QString m_programFolderPath;
-    QString m_programName;
-    bool m_isMonitoringNeeded               = false;
-    bool m_dontLaunchIfAlreadyLaunched      = false;
-    bool m_launchProgramAfterClose          = false;
-    QString m_programOnErrorFolderPath      = QString();
-    QString m_programOnErrorName            = QString();
-    QString m_programAfterCloseFolderPath   = QString();
-    QString m_programAfterCloseName         = QString();
-};
 
 ///class MainWindow:
 
@@ -86,18 +53,14 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->engLangButton->setIcon(QIcon(":/images/Flag-United-States.ico"));
     ui->rusLangButton->setIcon(QIcon(":/images/Flag-Russia.ico"));
 
-    ui->enabledModsList->setStyleSheet("QListView::item:!selected:!hover { border-bottom: 1px solid #E5E5E5; }");
-    ui->enabledModsList->setModel(m_modDatabaseModel);
+    m_enabledModsModel = new EnabledModsProxyModel(this, m_modDatabaseModel);
+    m_disabledModsModel = new DisabledModsProxyModel(this, m_modDatabaseModel);
 
+    ui->enabledModsList->setStyleSheet("QListView::item:!selected:!hover { border-bottom: 1px solid #E5E5E5; }");
+    ui->enabledModsList->setModel(m_enabledModsModel);
 
     ui->disabledModsList->setStyleSheet("QListView::item:!selected:!hover { border-bottom: 1px solid #E5E5E5; }");
-    ui->disabledModsList->setModel(m_modDatabaseModel);
-
-    //A small crutch for highlighting when you hover the mouse, but you couldn't select the line
-    connect(ui->enabledModsList->selectionModel(), SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
-            ui->enabledModsList, SLOT(clearSelection()));
-    connect(ui->disabledModsList->selectionModel(), SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
-            ui->disabledModsList, SLOT(clearSelection()));
+    ui->disabledModsList->setModel(m_disabledModsModel);
 
     ui->progressLabel->hide();
     ui->progressBar->hide();
@@ -131,18 +94,22 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->refreshButton, SIGNAL(clicked()), this, SLOT(refreshModlist()));
     connect(ui->runButton, SIGNAL(clicked()), this, SLOT(runGame()));
 
-    connect(ui->enabledModsList, SIGNAL(clicked(QModelIndex)), m_modDatabaseModel, SLOT(disableMod(QModelIndex)));
-    connect(ui->disabledModsList, SIGNAL(clicked(QModelIndex)), m_modDatabaseModel, SLOT(enableMod(QModelIndex)));
-
     connect(ui->clearSearchPushButton, SIGNAL(clicked()), ui->searchLineEdit, SLOT(clear()));
-    connect(ui->searchLineEdit, SIGNAL(textChanged(QString)), this, SLOT(filterModsDisplay(QString)));
+    connect(ui->searchLineEdit, SIGNAL(textChanged(const QString &)), m_enabledModsModel, SLOT(setFilter(const QString &)));
+    connect(ui->searchLineEdit, SIGNAL(textChanged(const QString &)), m_disabledModsModel, SLOT(setFilter(const QString &)));
 
+    connect(ui->enabledModsList, &QListView::doubleClicked, this, [this](const QModelIndex &i) {
+        m_enabledModsModel->setData(i, false, ModDatabaseModel::EnabledModRole);
+    });
+
+    connect(ui->disabledModsList, &QListView::doubleClicked, this, [this](const QModelIndex &i) {
+        m_disabledModsModel->setData(i, true, ModDatabaseModel::EnabledModRole);
+    });
 
     //Other signals:
     connect(m_steamRequester, SIGNAL(finished()), ui->progressLabel, SLOT(hide()));
     connect(m_steamRequester, SIGNAL(finished()), ui->progressBar, SLOT(hide()));
     connect(m_databaseEditor, SIGNAL(openModFolder(int)), this, SLOT(openModFolder(int)));
-    connect(m_modDatabaseModel, SIGNAL(modCheckStateChanged(int, bool)), this, SLOT(setRowVisibility(int, bool)));
 
     //this->adjustSize();
 
@@ -161,9 +128,8 @@ MainWindow::MainWindow(QWidget *parent) :
                 m_gameFolderPath = gamePath;
             } else {
                 m_modDatabaseModel->setModsExistsState(false);
-                checkRowsVisibility();
             }
-    }
+        }
 
         QDir dir = QCoreApplication::applicationDirPath();
         dir.cd("../../");
@@ -171,7 +137,7 @@ MainWindow::MainWindow(QWidget *parent) :
     }
 
     refreshModlist();
-    m_databaseEditor->setModel(m_modDatabaseModel, 1);
+    m_databaseEditor->setModel(m_modDatabaseModel);
 }
 
 MainWindow::~MainWindow()
@@ -179,7 +145,7 @@ MainWindow::~MainWindow()
     if (isEnabled()) {
         saveSettings();
 
-        m_modDatabaseModel->sortDatabase();
+        m_modDatabaseModel->sort(1);
         saveDatabase();
     }
 
@@ -197,37 +163,11 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::checkRowsVisibility()
-{
-    clearSearchField();
-
-    bool enabled, exists;
-    int databaseSize = m_modDatabaseModel->databaseSize();
-    for (int rowIndex = 0; rowIndex < databaseSize; ++rowIndex) {
-        enabled = m_modDatabaseModel->modIsEnabled(rowIndex);
-        exists = m_modDatabaseModel->modIsExists(rowIndex);
-
-        ui->enabledModsList->setRowHidden(rowIndex, !exists || !enabled);
-        ui->disabledModsList->setRowHidden(rowIndex, !exists || enabled);
-    }
-}
-
 void MainWindow::clearSearchField()
 {
     ui->searchLineEdit->blockSignals(true);
     ui->searchLineEdit->clear();
     ui->searchLineEdit->blockSignals(false);
-}
-
-void MainWindow::hideAllRows()
-{
-    clearSearchField();
-
-    int rowCount = m_modDatabaseModel->databaseSize();
-    for (int rowIndex = 0; rowIndex < rowCount; ++rowIndex) {
-        ui->enabledModsList->setRowHidden(rowIndex, true);
-        ui->disabledModsList->setRowHidden(rowIndex, true);
-    }
 }
 
 void MainWindow::loadDatabase()
@@ -236,23 +176,14 @@ void MainWindow::loadDatabase()
     if (file.exists()) {
         QJsonDocument database;
         //QJsonParseError err;
-        QJsonArray mods;
-        QJsonObject mod;
-        ModInfo modInfo;
 
         file.open(QFile::ReadOnly);
         database = QJsonDocument::fromJson(file.readAll()/*, &err*/);
         file.close();
 
-        mods = database.array();
+        QJsonArray mods = database.array();
         for (int i = 0; i < mods.size(); i++) {
-            mod = mods.at(i).toObject();
-            modInfo.name = mod["Name"].toString();
-            modInfo.folderName = mod["Folder name"].toString();
-            modInfo.steamName = mod["Steam name"].toString();
-            modInfo.enabled = mod["Is enabled"].toBool();
-
-            m_modDatabaseModel->add(modInfo);
+            m_modDatabaseModel->add(ModInfo(mods[i].toObject()));
         }
     }
 }
@@ -266,30 +197,18 @@ void MainWindow::requestSteamModNames()
 
 void MainWindow::saveDatabase() const
 {
-    QJsonDocument database;
     QJsonArray mods;
-    QJsonObject mod;
-    ModInfo modInfo;
-
     for (int i = 0; i < m_modDatabaseModel->databaseSize(); ++i) {
-        modInfo = m_modDatabaseModel->modInfo(i);
-        mod["Name"] = modInfo.name;
-        mod["Folder name"] = modInfo.folderName;
-        mod["Steam name"] = modInfo.steamName;
-        mod["Is enabled"] = modInfo.enabled;
-        mods.append(mod);
+        mods.append(m_modDatabaseModel->modInfo(i).toJsonObject());
     }
-    database.setArray(mods);
+    QJsonDocument database(mods);
     rewriteFileIfDataIsDifferent("mods_database.json", database.toJson());
 }
 
 void MainWindow::scanMods()
 {
-    m_modDatabaseModel->setModsExistsState(false);
-
     m_scanner->scanMods(m_modsFolderPath, *m_modDatabaseModel);
-
-    m_modDatabaseModel->sortDatabase();
+    m_modDatabaseModel->sort();
 }
 
 bool MainWindow::setLanguage(const QString &lang)
@@ -314,15 +233,9 @@ void MainWindow::addShortcutToDesktop() const
 void MainWindow::disableAllMods()
 {
     m_modDatabaseModel->blockSignals(true);
-
     for (int i = 0; i < m_modDatabaseModel->databaseSize(); ++i) {
-        if (m_modDatabaseModel->modInfo(i).existsAndEnabledCheck(true, true)) {
-            m_modDatabaseModel->modInfoRef(i).enabled = false;
-            ui->enabledModsList->setRowHidden(i, true);
-            ui->disabledModsList->setRowHidden(i, false);
-        }
+        m_modDatabaseModel->modInfoRef(i).setEnabled(false);
     }
-
     m_modDatabaseModel->blockSignals(false);
 
     ui->searchLineEdit->clear();
@@ -331,32 +244,12 @@ void MainWindow::disableAllMods()
 void MainWindow::enableAllMods()
 {
     m_modDatabaseModel->blockSignals(true);
-
     for (int i = 0; i < m_modDatabaseModel->databaseSize(); ++i) {
-        if (m_modDatabaseModel->modInfo(i).existsAndEnabledCheck(true, false)) {
-            m_modDatabaseModel->modInfoRef(i).enabled = true;
-            ui->enabledModsList->setRowHidden(i, false);
-            ui->disabledModsList->setRowHidden(i, true);
-        }
+        m_modDatabaseModel->modInfoRef(i).setEnabled(true);
     }
-
     m_modDatabaseModel->blockSignals(false);
 
     ui->searchLineEdit->clear();
-}
-
-void MainWindow::filterModsDisplay(const QString &str)
-{
-    int rowCount = m_modDatabaseModel->databaseSize();
-    for (int rowIndex = 0; rowIndex < rowCount; ++rowIndex) {
-        if (m_modDatabaseModel->modIsExists(rowIndex)) {
-            QString modName = m_modDatabaseModel->data(m_modDatabaseModel->index(rowIndex)).toString();
-            if (!modName.contains(str, Qt::CaseSensitivity::CaseInsensitive)) {
-                bool enabled = m_modDatabaseModel->modIsEnabled(rowIndex);
-                (enabled ? ui->enabledModsList : ui->disabledModsList)->setRowHidden(rowIndex, true);
-            }
-        }
-    }
 }
 
 void MainWindow::refreshModlist()
@@ -390,7 +283,6 @@ void MainWindow::refreshModlist()
     ui->progressLabel->show();
     ui->progressBar->show();
     requestSteamModNames();
-    checkRowsVisibility();
 
     if (wasOpened) {
         this->show();
@@ -582,7 +474,7 @@ void MainWindow::updateDisabledModsFile()
     int databaseSize = m_modDatabaseModel->databaseSize();
     for (int i = 0; i < databaseSize; ++i) {
         const auto &modInfo = m_modDatabaseModel->modInfo(i);
-        if (modInfo.exists && !modInfo.enabled) {
+        if (modInfo.exists() && !modInfo.enabled()) {
             disabledMods.append(modInfo.folderName + "\n");
         }
     }
@@ -728,102 +620,12 @@ QString MainWindow::rkkOrionMessage()
 }
 
 
-///class WaitingLauncherArgs:
-
-inline WaitingLauncherArgs::WaitingLauncherArgs(const QString &programFolderPath, const QString &programName) :
-    m_programFolderPath(programFolderPath),
-    m_programName(programName)
-{}
-
-inline void WaitingLauncherArgs::setProgramFolderPath(const QString &programFolderPath)
-{
-    m_programFolderPath = programFolderPath;
-}
-
-inline void WaitingLauncherArgs::setProgramName(const QString &programName)
-{
-    m_programName = programName;
-}
-
-inline void WaitingLauncherArgs::setIsMonitoringNeeded(const bool isMonitoringNeeded)
-{
-    m_isMonitoringNeeded = isMonitoringNeeded;
-}
-
-inline void WaitingLauncherArgs::setDontLaunchIfAlreadyLaunched(const bool dontLaunchIfAlreadyLaunched)
-{
-    m_dontLaunchIfAlreadyLaunched = dontLaunchIfAlreadyLaunched;
-}
-
-inline void WaitingLauncherArgs::setLaunchProgramAfterClose(const bool launchProgramAfterClose)
-{
-    m_launchProgramAfterClose = launchProgramAfterClose;
-}
-
-inline void WaitingLauncherArgs::setProgramOnErrorFolderPath(const QString &programOnErrorFolderPath)
-{
-    m_programOnErrorFolderPath = programOnErrorFolderPath;
-}
-
-inline void WaitingLauncherArgs::setProgramOnErrorName(const QString &programOnErrorName)
-{
-    m_programOnErrorName = programOnErrorName;
-}
-
-inline void WaitingLauncherArgs::setProgramAfterCloseFolderPath(const QString &programAfterCloseFolderPath)
-{
-    m_programAfterCloseFolderPath = programAfterCloseFolderPath;
-}
-
-inline void WaitingLauncherArgs::setProgramAfterCloseName(const QString &programAfterCloseName)
-{
-    m_programAfterCloseName = programAfterCloseName;
-}
-
-QString WaitingLauncherArgs::toString() const
-{
-    QString args = "\"" + m_programFolderPath + "\" " +
-                   "\"" + m_programName + "\"" +
-                   (m_isMonitoringNeeded           ? " -IsMonitoringNeeded"            : "") +
-                   (m_dontLaunchIfAlreadyLaunched  ? " -DontLaunchIfAlreadyLaunched"   : "") +
-                   (m_launchProgramAfterClose      ? " -LaunchProgramAfterClose"       : "");
-
-    if (!m_programOnErrorFolderPath.isEmpty() && !m_programOnErrorName.isEmpty()) {
-        args += " -ProgramOnError \"" + m_programOnErrorFolderPath + "\" " +
-                                 "\"" + m_programOnErrorName + "\"";
-    }
-
-    if (!m_programAfterCloseFolderPath.isEmpty() && !m_programAfterCloseName.isEmpty()) {
-        args += " -ProgramAfterClose \"" + m_programAfterCloseFolderPath + "\" " +
-                                    "\"" + m_programAfterCloseName + "\"";
-    }
-
-    return args;
-}
-
-inline QByteArray WaitingLauncherArgs::toUtf8() const
-{
-    return toString().toUtf8();
-}
 
 ///Additional functions:
 
 inline constexpr const char *gameFileName(const bool is64BitOs)
 {
     return (is64BitOs ? "Everlasting Summer" : "Everlasting Summer-32");
-}
-
-QByteArray fileChecksumHex(const QString &fileName, QCryptographicHash::Algorithm hashAlgorithm)
-{
-    QFile file(fileName);
-    if (file.exists() && file.open(QFile::ReadOnly)) {
-        QCryptographicHash hash(hashAlgorithm);
-        if (hash.addData(&file)) {
-            file.close();
-            return hash.result().toHex();
-        }
-    }
-    return QByteArray();
 }
 
 void rewriteFileIfDataIsDifferent(const QString &fileName, const QByteArray &newData)

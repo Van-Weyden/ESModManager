@@ -9,6 +9,8 @@ class QTranslator;
 
 class DatabaseEditor;
 class ModDatabaseModel;
+class ModFilterProxyModel;
+class ModInfo;
 class ModScanner;
 class SteamRequester;
 
@@ -26,7 +28,6 @@ public:
 
     void checkRowsVisibility();
     void clearSearchField();    //does not call filterModsDisplay slot
-    void hideAllRows();
     void loadDatabase();
     void requestSteamModNames();
     void saveDatabase() const;
@@ -38,7 +39,6 @@ public slots:
     void addShortcutToDesktop() const;
     void disableAllMods();
     void enableAllMods();
-    void filterModsDisplay(const QString &str);
     void refreshModlist();
 
     void runGame();
@@ -85,6 +85,8 @@ private:
     QString m_modsFolderPath = "";
 
     ModDatabaseModel *m_modDatabaseModel = nullptr;
+    ModFilterProxyModel *m_enabledModsModel = nullptr;
+    ModFilterProxyModel *m_disabledModsModel = nullptr;
     ModScanner *m_scanner = nullptr;
 
     static constexpr const char *DefaultGameFolderPath =

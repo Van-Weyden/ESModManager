@@ -36,7 +36,8 @@ SOURCES += \
         RegExpPatterns.cpp \
         SteamRequester.cpp \
         applicationVersion.cpp \
-        main.cpp
+        main.cpp \
+        proxyModels.cpp
 
 HEADERS += \
         DatabaseEditor.h \
@@ -47,7 +48,8 @@ HEADERS += \
         ModScanner.h \
         RegExpPatterns.h \
         SteamRequester.h \
-        applicationVersion.h
+        applicationVersion.h \
+        proxyModels.h
 
 FORMS += \
         DatabaseEditor.ui \

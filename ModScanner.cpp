@@ -119,19 +119,22 @@ ModScanner::ModScanner(QObject *parent) :
     );
 }
 
-void ModScanner::scanMods(const QString &modsFolderPath, ModDatabaseModel &modDatabaseModel,
+void ModScanner::scanMods(const QString &modsFolderPath, ModDatabaseModel &database,
                           const EnabledFlagValue enabledFlagValue)
 {
-    int countOfScannedMods = 0;
-    int oldDatabaseSize = modDatabaseModel.databaseSize();
-    QStringList modsFolders = QDir(modsFolderPath).entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+    database.reset([&]() {
+        database.setModsExistsState(false);
+        int countOfScannedMods = 0;
+        int oldDatabaseSize = database.databaseSize();
+        QStringList modsFolders = QDir(modsFolderPath).entryList(QDir::Dirs | QDir::NoDotAndDotDot);
 
-    while (!modsFolders.isEmpty()) {
-        QString modFolderName = modsFolders.takeFirst();
-        scanMod(modFolderName, modsFolderPath + modFolderName, modDatabaseModel, oldDatabaseSize, enabledFlagValue);
-        emit modScanned(++countOfScannedMods);
-        QApplication::processEvents();
-    }
+        while (!modsFolders.isEmpty()) {
+            QString modFolderName = modsFolders.takeFirst();
+            scanMod(modFolderName, modsFolderPath + modFolderName, database, oldDatabaseSize, enabledFlagValue);
+            emit modScanned(++countOfScannedMods);
+            QApplication::processEvents();
+        }
+    });
 }
 
 
@@ -142,18 +145,19 @@ int indexOfModWithUnknownNameInDatabase(const QString &modFolderName, const QStr
                                         ModDatabaseModel &database, const int oldDatabaseSize, bool *isModNameValid);
 
 void ModScanner::scanMod(const QString &modFolderName, const QString &modFolderPath,
-                         ModDatabaseModel &modDatabaseModel, const int oldDatabaseSize,
+                         ModDatabaseModel &database, const int oldDatabaseSize,
                          EnabledFlagValue enabledFlagValue)
 {
     bool isModNameValid;
     int indexInDatabase = indexOfModWithUnknownNameInDatabase(
                                 modFolderName, modFolderPath,
-                                modDatabaseModel, oldDatabaseSize, &isModNameValid);
+                                database, oldDatabaseSize, &isModNameValid);
 
     if (isModNameValid) {
         if (indexInDatabase != -1 && enabledFlagValue != EnabledFlagValue::NotOverride) {
-            modDatabaseModel.modInfoRef(indexInDatabase).enabled =
-                    (enabledFlagValue == EnabledFlagValue::ForceTrue ? true : false);
+            database.modInfoRef(indexInDatabase).setEnabled(
+                enabledFlagValue == EnabledFlagValue::ForceTrue ? true : false
+            );
         }
 
         return;
@@ -163,7 +167,7 @@ void ModScanner::scanMod(const QString &modFolderName, const QString &modFolderP
     modInfo.folderName = modFolderName;
 
     if (enabledFlagValue != EnabledFlagValue::NotOverride) {
-        modInfo.enabled = (enabledFlagValue == EnabledFlagValue::ForceTrue ? true : false);
+        modInfo.setEnabled(enabledFlagValue == EnabledFlagValue::ForceTrue ? true : false);
     }
 
     QMap<QString, QString> initMap;
@@ -250,9 +254,9 @@ void ModScanner::scanMod(const QString &modFolderName, const QString &modFolderP
     }
 
     if (indexInDatabase == -1) {
-        modDatabaseModel.add(modInfo);
+        database.add(modInfo);
     } else {
-        modDatabaseModel.modInfoRef(indexInDatabase).name = modInfo.name;
+        database.modInfoRef(indexInDatabase).name = modInfo.name;
     }
 }
 
@@ -285,7 +289,7 @@ int indexOfModWithUnknownNameInDatabase(const QString &modFolderName, const QStr
 
     for (int indexInDatabase = 0; indexInDatabase < oldDatabaseSize; ++indexInDatabase) {
         if (modFolderName == database.modFolderName(indexInDatabase)) {
-            database.modInfoRef(indexInDatabase).exists = true;
+            database.modInfoRef(indexInDatabase).setExists(true);
 
             if (isModNameValid) {
                 *isModNameValid = database.isNameValid(database.modName(indexInDatabase));

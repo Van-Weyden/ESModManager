@@ -184,8 +184,8 @@ void DatabaseEditor::showSelectedModInfo()
         ui->steamModNameLineEdit->setText(modInfo.steamName);
 
         ui->saveModInfoPushButton->setEnabled(true);
-        ui->removeModPushButton->setEnabled(ui->showAllModsCheckBox->isChecked() && !modInfo.exists);
-        ui->openModFolderPushButton->setEnabled(!ui->showAllModsCheckBox->isChecked() || modInfo.exists);
+        ui->removeModPushButton->setEnabled(ui->showAllModsCheckBox->isChecked() && !modInfo.exists());
+        ui->openModFolderPushButton->setEnabled(!ui->showAllModsCheckBox->isChecked() || modInfo.exists());
         ui->openWorkshopPushButton->setEnabled(ModInfo::isSteamId(modInfo.folderName));
     } else {
         ui->saveModInfoPushButton->setEnabled(false);

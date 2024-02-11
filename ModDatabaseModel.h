@@ -13,6 +13,11 @@ class ModDatabaseModel : public QAbstractListModel
     Q_OBJECT
 
 public:
+    static constexpr int EnabledModRole = Qt::UserRole;
+    static constexpr int ExistsModRole = EnabledModRole + 1;
+    static constexpr int MarkedModRole = ExistsModRole + 1;
+
+public:
     ModDatabaseModel();
     ~ModDatabaseModel() = default;
 
@@ -20,7 +25,6 @@ public:
 
     void add(const ModInfo &modInfo);
     inline void clear();
-    inline int columnCount(const QModelIndex &parent = QModelIndex()) const;
     inline int databaseSize() const;
     inline const QString &modFolderName(const int index) const;
     inline const ModInfo &modInfo(const int index) const;
@@ -30,17 +34,22 @@ public:
     inline const QString &modName(const int index) const;
     inline const QString &modSteamName(const int index) const;
 
-    inline int rowCount(const QModelIndex &parent = QModelIndex()) const;
+    QString displayedModName(const ModInfo &modInfo) const;
 
-    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
-    Qt::ItemFlags flags(const QModelIndex &index) const;
-    QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
+    inline int columnCount(const QModelIndex &parent = QModelIndex()) const override;
+    inline int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+    QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
+    Qt::ItemFlags flags(const QModelIndex &index) const override;
+    bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
+    void sort(int column = 0, Qt::SortOrder order = Qt::AscendingOrder) override;
+
     void removeFromDatabase(const int index);
-    bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole);
     void setModsExistsState(const bool isExists);
-    void sortDatabase();
     inline void updateRow(const int index);
     inline void updateRow(const QModelIndex &index);
+
+    void reset(std::function<void()> actions);
 
 public slots:
     void enableMod(const QModelIndex &index);
@@ -66,12 +75,14 @@ private:
 
 inline void ModDatabaseModel::clear()
 {
-    beginResetModel(); m_database.clear(); endResetModel();
+    beginResetModel();
+    m_database.clear();
+    endResetModel();
 }
 
 inline int ModDatabaseModel::columnCount(const QModelIndex &/*parent*/) const
 {
-    return 2;
+    return 1;
 }
 
 inline int ModDatabaseModel::databaseSize() const
@@ -81,12 +92,12 @@ inline int ModDatabaseModel::databaseSize() const
 
 inline const QString &ModDatabaseModel::modFolderName(const int index) const
 {
-    return m_database.at(index).folderName;
+    return m_database[index].folderName;
 }
 
 inline const ModInfo &ModDatabaseModel::modInfo(const int index) const
 {
-    return m_database.at(index);
+    return m_database[index];
 }
 
 inline ModInfo &ModDatabaseModel::modInfoRef(const int index)
@@ -96,22 +107,22 @@ inline ModInfo &ModDatabaseModel::modInfoRef(const int index)
 
 inline bool ModDatabaseModel::modIsEnabled(const int index) const
 {
-    return m_database.at(index).enabled;
+    return m_database[index].enabled();
 }
 
 inline bool ModDatabaseModel::modIsExists(const int index) const
 {
-    return m_database.at(index).exists;
+    return m_database[index].exists();
 }
 
 inline const QString &ModDatabaseModel::modName(const int index) const
 {
-    return m_database.at(index).name;
+    return m_database[index].name;
 }
 
 inline const QString &ModDatabaseModel::modSteamName(const int index) const
 {
-    return m_database.at(index).steamName;
+    return m_database[index].steamName;
 }
 
 inline int ModDatabaseModel::rowCount(const QModelIndex &/*parent*/) const
