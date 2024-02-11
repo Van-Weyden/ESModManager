@@ -28,6 +28,7 @@ public slots:
     void saveSelectedModInfo();
     void show();
     void showSelectedModInfo();
+    void eraseDatabase();
 
 protected:
     void changeEvent(QEvent *event);

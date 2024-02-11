@@ -188,6 +188,13 @@ If unchecked, only installed mods are displayed.</string>
        </property>
       </spacer>
      </item>
+     <item>
+      <widget class="QPushButton" name="eraseDatabaseButton">
+       <property name="text">
+        <string>Erase internal mod database</string>
+       </property>
+      </widget>
+     </item>
     </layout>
    </item>
   </layout>

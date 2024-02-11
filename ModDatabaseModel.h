@@ -36,10 +36,8 @@ public:
     Qt::ItemFlags flags(const QModelIndex &index) const;
     QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
     void removeFromDatabase(const int index);
-    void setCompleteModNames(const bool enabled = true);
     bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole);
     void setModsExistsState(const bool isExists);
-    void setUsingSteamModNames(const bool use = true);
     void sortDatabase();
     inline void updateRow(const int index);
     inline void updateRow(const QModelIndex &index);
@@ -48,8 +46,8 @@ public slots:
     void enableMod(const QModelIndex &index);
     void disableMod(const QModelIndex &index);
 
-signals:
-    void modCheckStateChanged(const int rowIndex, const bool state);
+    void setCompleteModNames(const bool enabled = true);
+    void setUsingSteamModNames(const bool use = true);
 
 protected slots:
     void setCompleteModNames(const int mode);

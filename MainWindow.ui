@@ -6,267 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>974</width>
-    <height>495</height>
+    <width>644</width>
+    <height>613</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Everlasting Summer mod manager</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="1,2,0">
-    <item>
-     <layout class="QVBoxLayout" name="leftMainVerticalLayout">
-      <item>
-       <widget class="QLabel" name="gameFolderLabel">
-        <property name="text">
-         <string>Game folder:</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLineEdit" name="gameFolderLineEdit">
-        <property name="readOnly">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLabel" name="modsFolderLabel">
-        <property name="text">
-         <string>Mods folder:</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLineEdit" name="modsFolderLineEdit">
-        <property name="readOnly">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLabel" name="tempModsFolderLabel">
-        <property name="text">
-         <string>Temp mods folder:</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLineEdit" name="tempModsFolderLineEdit">
-        <property name="readOnly">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLabel" name="tipsLabel">
-        <property name="text">
-         <string>The options below have hover tips:</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="replaceOriginLauncherCheckBox">
-        <property name="toolTip">
-         <string>When you launch Everlasting Summer through Steam or shortcut, this program will launch first.</string>
-        </property>
-        <property name="text">
-         <string>Modify game files to launch this program before the game</string>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="moveModsBackCheckBox">
-        <property name="toolTip">
-         <string>WARNING: disabling this feature may hurt your Steam mods files due to them updates!</string>
-        </property>
-        <property name="text">
-         <string>Move mods back to mods folder after exiting the game</string>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="autoexitCheckBox">
-        <property name="toolTip">
-         <string>The program will still run in the background during the game but will be closed after exiting from game.</string>
-        </property>
-        <property name="text">
-         <string>Autoexit from this application</string>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="completeNamesCheckBox">
-        <property name="toolTip">
-         <string>If the mod name wasn't defined by one of the methods 
-(reading mod source files / request from Steam workshop), 
-the name obtained by the other method is displayed.</string>
-        </property>
-        <property name="text">
-         <string>Use other source of names if can't identify</string>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="useSteamModNamesCheckBox">
-        <property name="toolTip">
-         <string>If checked, display mod names received by requests to Steam Workshop.
-If unchecked, display mod names from their source files.</string>
-        </property>
-        <property name="text">
-         <string>Steam mod names instead of names from source files</string>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <layout class="QVBoxLayout" name="progressVerticalLayout">
-        <property name="leftMargin">
-         <number>0</number>
-        </property>
-        <property name="topMargin">
-         <number>0</number>
-        </property>
-        <item>
-         <widget class="QLabel" name="progressLabel">
-          <property name="text">
-           <string>Progress of requesting mod names from Steam:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QProgressBar" name="progressBar">
-          <property name="maximum">
-           <number>0</number>
-          </property>
-          <property name="value">
-           <number>-1</number>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
-          </property>
-          <property name="invertedAppearance">
-           <bool>false</bool>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <layout class="QHBoxLayout" name="databaseHorizontalLayout">
-        <property name="spacing">
-         <number>0</number>
-        </property>
-        <item>
-         <widget class="QPushButton" name="databaseEditorButton">
-          <property name="toolTip">
-           <string>Opens an editor of internal mods database in which you can set your own mod names</string>
-          </property>
-          <property name="text">
-           <string>Editor of internal mod database</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer name="databaseHorizontalSpacer">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item>
-         <widget class="QPushButton" name="eraseDatabaseButton">
-          <property name="toolTip">
-           <string>Erases all entries about the mod names &amp; their folders from the internal database. This will also erase the mod names you define.</string>
-          </property>
-          <property name="text">
-           <string>Erase internal mod database</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <layout class="QHBoxLayout" name="langLayout">
-        <item>
-         <widget class="QPushButton" name="engLangButton">
-          <property name="toolTip">
-           <string>Set English language</string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="icon">
-           <iconset>
-            <normaloff>images/Flag-United-States.ico</normaloff>images/Flag-United-States.ico</iconset>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="rusLangButton">
-          <property name="toolTip">
-           <string>Set Russian language</string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="icon">
-           <iconset>
-            <normaloff>images/Flag-Russia.ico</normaloff>images/Flag-Russia.ico</iconset>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer name="langHorizontalSpacer">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>0</width>
-            <height>0</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <spacer name="leftVerticalSpacer">
-        <property name="orientation">
-         <enum>Qt::Vertical</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>20</width>
-          <height>0</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-     </layout>
-    </item>
+   <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="2,0">
     <item>
      <layout class="QVBoxLayout" name="rightMainVerticalLayout">
       <item>
@@ -301,7 +49,10 @@ If unchecked, display mod names from their source files.</string>
              <set>QAbstractItemView::NoEditTriggers</set>
             </property>
             <property name="selectionMode">
-             <enum>QAbstractItemView::SingleSelection</enum>
+             <enum>QAbstractItemView::ExtendedSelection</enum>
+            </property>
+            <property name="selectionBehavior">
+             <enum>QAbstractItemView::SelectRows</enum>
             </property>
             <property name="wordWrap">
              <bool>true</bool>
@@ -337,7 +88,10 @@ If unchecked, display mod names from their source files.</string>
              <set>QAbstractItemView::NoEditTriggers</set>
             </property>
             <property name="selectionMode">
-             <enum>QAbstractItemView::SingleSelection</enum>
+             <enum>QAbstractItemView::ExtendedSelection</enum>
+            </property>
+            <property name="selectionBehavior">
+             <enum>QAbstractItemView::SelectRows</enum>
             </property>
             <property name="wordWrap">
              <bool>true</bool>
@@ -373,6 +127,39 @@ If unchecked, display mod names from their source files.</string>
        </layout>
       </item>
       <item>
+       <layout class="QVBoxLayout" name="progressVerticalLayout">
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="progressLabel">
+          <property name="text">
+           <string>Progress of requesting mod names from Steam:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QProgressBar" name="progressBar">
+          <property name="maximum">
+           <number>0</number>
+          </property>
+          <property name="value">
+           <number>-1</number>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+          <property name="invertedAppearance">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
        <layout class="QHBoxLayout" name="buttonsHorizontalLayout">
         <property name="spacing">
          <number>0</number>
@@ -380,6 +167,47 @@ If unchecked, display mod names from their source files.</string>
         <property name="sizeConstraint">
          <enum>QLayout::SetDefaultConstraint</enum>
         </property>
+        <item>
+         <widget class="QPushButton" name="rusLangButton">
+          <property name="toolTip">
+           <string>Set Russian language</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>images/Flag-Russia.ico</normaloff>images/Flag-Russia.ico</iconset>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="engLangButton">
+          <property name="toolTip">
+           <string>Set English language</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>images/Flag-United-States.ico</normaloff>images/Flag-United-States.ico</iconset>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="buttonsHorizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
         <item>
          <widget class="QPushButton" name="disableAllButton">
           <property name="sizePolicy">
@@ -399,19 +227,6 @@ If unchecked, display mod names from their source files.</string>
            <string>Enable all</string>
           </property>
          </widget>
-        </item>
-        <item>
-         <spacer name="buttonsHorizontalSpacer">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
         </item>
         <item>
          <widget class="QPushButton" name="refreshButton">
@@ -451,7 +266,7 @@ If unchecked, display mod names from their source files.</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>974</width>
+     <width>644</width>
      <height>26</height>
     </rect>
    </property>
@@ -459,11 +274,13 @@ If unchecked, display mod names from their source files.</string>
     <property name="title">
      <string>Options</string>
     </property>
-    <addaction name="actionGame_folder"/>
-    <addaction name="actionMods_folder"/>
-    <addaction name="actionTemp_mods_folder"/>
-    <addaction name="actionAdd_shortcut_to_desktop"/>
-    <addaction name="actionOpen_the_manager_folder"/>
+    <addaction name="actionOpenDatabaseEditor"/>
+    <addaction name="actionLaunchBeforeGame"/>
+    <addaction name="actionAutoexit"/>
+    <addaction name="actionUseSteamModNames"/>
+    <addaction name="actionCompleteModNames"/>
+    <addaction name="actionAddShortcutToDesktop"/>
+    <addaction name="actionOpenManagerFolder"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -475,21 +292,6 @@ If unchecked, display mod names from their source files.</string>
    <addaction name="menuOptions"/>
    <addaction name="menuHelp"/>
   </widget>
-  <action name="actionGame_folder">
-   <property name="text">
-    <string>Select game folder</string>
-   </property>
-  </action>
-  <action name="actionMods_folder">
-   <property name="text">
-    <string>Select mods folder</string>
-   </property>
-  </action>
-  <action name="actionTemp_mods_folder">
-   <property name="text">
-    <string>Select temp mods folder</string>
-   </property>
-  </action>
   <action name="actionAbout">
    <property name="text">
     <string>About...</string>
@@ -500,14 +302,63 @@ If unchecked, display mod names from their source files.</string>
     <string>Announcements</string>
    </property>
   </action>
-  <action name="actionAdd_shortcut_to_desktop">
+  <action name="actionAddShortcutToDesktop">
    <property name="text">
     <string>Add shortcut to desktop</string>
    </property>
   </action>
-  <action name="actionOpen_the_manager_folder">
+  <action name="actionOpenManagerFolder">
    <property name="text">
     <string>Open the manager folder</string>
+   </property>
+  </action>
+  <action name="actionLaunchBeforeGame">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Launch this program before the game</string>
+   </property>
+  </action>
+  <action name="actionAutoexit">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Autoexit after game launch</string>
+   </property>
+  </action>
+  <action name="actionUseSteamModNames">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Use other source of names if can't identify</string>
+   </property>
+  </action>
+  <action name="actionCompleteModNames">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Steam mod names instead of names from source files</string>
+   </property>
+  </action>
+  <action name="actionOpenDatabaseEditor">
+   <property name="text">
+    <string>Open the internal mod database editor</string>
    </property>
   </action>
  </widget>
@@ -519,18 +370,6 @@ If unchecked, display mod names from their source files.</string>
   <tabstop>refreshButton</tabstop>
   <tabstop>enableAllButton</tabstop>
   <tabstop>disableAllButton</tabstop>
-  <tabstop>replaceOriginLauncherCheckBox</tabstop>
-  <tabstop>moveModsBackCheckBox</tabstop>
-  <tabstop>autoexitCheckBox</tabstop>
-  <tabstop>completeNamesCheckBox</tabstop>
-  <tabstop>useSteamModNamesCheckBox</tabstop>
-  <tabstop>databaseEditorButton</tabstop>
-  <tabstop>eraseDatabaseButton</tabstop>
-  <tabstop>engLangButton</tabstop>
-  <tabstop>rusLangButton</tabstop>
-  <tabstop>gameFolderLineEdit</tabstop>
-  <tabstop>modsFolderLineEdit</tabstop>
-  <tabstop>tempModsFolderLineEdit</tabstop>
  </tabstops>
  <resources/>
  <connections/>

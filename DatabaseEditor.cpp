@@ -33,6 +33,8 @@ DatabaseEditor::DatabaseEditor(QWidget *parent) :
 
     connect(ui->databaseView->horizontalHeader(), SIGNAL(geometriesChanged()),
             ui->databaseView, SLOT(resizeRowsToContents()));
+
+    connect(ui->eraseDatabaseButton, SIGNAL(clicked()), this, SLOT(eraseDatabase()));
 }
 
 DatabaseEditor::~DatabaseEditor()
@@ -194,6 +196,11 @@ void DatabaseEditor::showSelectedModInfo()
         ui->modFolderNameLineEdit->clear();
         ui->steamModNameLineEdit->clear();
     }
+}
+
+void DatabaseEditor::eraseDatabase()
+{
+    m_modDatabaseModel->clear();
 }
 
 //protected:
