@@ -56,7 +56,7 @@ protected:
 
 private slots:
     void openManagerFolder();
-    bool openModFolder(const int modIndex);
+    bool openModFolder(const QModelIndex &index);
     void steamModNameProcessed();
 
 private:
@@ -84,7 +84,7 @@ private:
     QString m_gameFolderPath = "";
     QString m_modsFolderPath = "";
 
-    ModDatabaseModel *m_modDatabaseModel = nullptr;
+    ModDatabaseModel *m_model = nullptr;
     ModFilterProxyModel *m_enabledModsModel = nullptr;
     ModFilterProxyModel *m_disabledModsModel = nullptr;
     ModScanner *m_scanner = nullptr;

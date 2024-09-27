@@ -40,14 +40,13 @@ void SteamRequester::processModName(QNetworkReply *reply)
         steamModName = modData["title"].toString();
 
         for (int i = 0; i < m_modDatabaseModel->databaseSize(); ++i) {
-            if (m_modDatabaseModel->modFolderName(i) == modFolderName) {
+            QModelIndex modelIndex = m_modDatabaseModel->index(i);
+            ModInfo &modInfo = m_modDatabaseModel->modInfoRef(modelIndex);
+            if (modInfo.folderName == modFolderName) {
                 //During the processing of the request, the data could change, so check again
-                if (!steamModName.isEmpty() && !m_modDatabaseModel->isNameValid(m_modDatabaseModel->modSteamName(i))) {
-                    m_modDatabaseModel->modInfoRef(i).steamName = steamModName;
-                    emit m_modDatabaseModel->dataChanged(
-                                m_modDatabaseModel->index(i, 0),
-                                m_modDatabaseModel->index(i, 1)
-                    );
+                if (!steamModName.isEmpty() && !m_modDatabaseModel->isNameValid(modInfo.steamName)) {
+                    modInfo.steamName = steamModName;
+                    m_modDatabaseModel->updateRow(modelIndex);
                 }
                 break;
             }
@@ -77,21 +76,23 @@ void SteamRequester::requestModNames()
     QUrlQuery params;
     QNetworkRequest request(QUrl("https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/"));
     for (int i = 0; i < m_modDatabaseModel->databaseSize(); ++i) {
-        if (!m_modDatabaseModel->isNameValid(m_modDatabaseModel->modSteamName(i))) {
-            if (ModInfo::isSteamId(m_modDatabaseModel->modFolderName(i))) {
-                m_modDatabaseModel->modInfoRef(i).steamName = ModInfo::generateWaitingForSteamResponseStub();
-                emit m_modDatabaseModel->dataChanged(m_modDatabaseModel->index(i, 0), m_modDatabaseModel->index(i, 1));
+        QModelIndex modelIndex = m_modDatabaseModel->index(i);
+        ModInfo &modInfo = m_modDatabaseModel->modInfoRef(modelIndex);
+        if (!m_modDatabaseModel->isNameValid(modInfo.steamName)) {
+            if (ModInfo::isSteamId(modInfo.folderName)) {
+                modInfo.steamName = ModInfo::generateWaitingForSteamResponseStub();
+                m_modDatabaseModel->updateRow(modelIndex);
                 data.clear();
                 params.clear();
                 params.addQueryItem("itemcount", "1");
-                params.addQueryItem("publishedfileids[0]", m_modDatabaseModel->modFolderName(i));
+                params.addQueryItem("publishedfileids[0]", modInfo.folderName);
                 data.append(params.toString().toUtf8());
                 request.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("application/x-www-form-urlencoded"));
 
                 m_networkAccessManager->post(request, data);
             } else {
-                m_modDatabaseModel->modInfoRef(i).steamName = ModInfo::generateFailedToGetNameStub();
-                emit m_modDatabaseModel->dataChanged(m_modDatabaseModel->index(i, 0), m_modDatabaseModel->index(i, 1));
+                modInfo.steamName = ModInfo::generateFailedToGetNameStub();
+                m_modDatabaseModel->updateRow(modelIndex);
                 modNameProcessed();
             }
         } else {
@@ -107,9 +108,11 @@ void SteamRequester::modNameProcessed()
 
     if (!m_countOfRemainingMods) {
         for (int i = 0; i < m_modDatabaseModel->databaseSize(); ++i) {
-            if (m_modDatabaseModel->modSteamName(i).contains(ModInfo::generateWaitingForSteamResponseStub())) {
-                m_modDatabaseModel->modInfoRef(i).steamName = ModInfo::generateFailedToGetNameStub();
-                emit m_modDatabaseModel->dataChanged(m_modDatabaseModel->index(i, 0), m_modDatabaseModel->index(i, 1));
+            QModelIndex modelIndex = m_modDatabaseModel->index(i);
+            ModInfo &modInfo = m_modDatabaseModel->modInfoRef(modelIndex);
+            if (modInfo.steamName.contains(ModInfo::generateWaitingForSteamResponseStub())) {
+                modInfo.steamName = ModInfo::generateFailedToGetNameStub();
+                m_modDatabaseModel->updateRow(modelIndex);
             }
         }
         m_isRunning = false;

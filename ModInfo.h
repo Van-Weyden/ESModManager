@@ -1,6 +1,7 @@
 #ifndef MODINFO_H
 #define MODINFO_H
 
+#include <QMetaType>
 #include <QString>
 
 class QJsonObject;
@@ -45,7 +46,7 @@ private:
     bool m_marked = false;
     bool m_exists = true;
 };
-
+Q_DECLARE_METATYPE(ModInfo);
 
 
 inline bool ModInfo::marked() const

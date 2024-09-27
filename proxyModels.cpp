@@ -53,8 +53,8 @@ EnabledModsProxyModel::EnabledModsProxyModel(QObject *parent, QAbstractItemModel
 bool EnabledModsProxyModel::filterAccepts(const QModelIndex &sourceModelIndex) const
 {
     return ModFilterProxyModel::filterAccepts(sourceModelIndex) &&
-           sourceModel()->data(sourceModelIndex, ModDatabaseModel::ExistsModRole).toBool() &&
-           sourceModel()->data(sourceModelIndex, ModDatabaseModel::EnabledModRole).toBool();
+           sourceModel()->data(sourceModelIndex, ModDatabaseModel::ModRole::Exists).toBool() &&
+           sourceModel()->data(sourceModelIndex, ModDatabaseModel::ModRole::Enabled).toBool();
 }
 
 
@@ -66,6 +66,6 @@ DisabledModsProxyModel::DisabledModsProxyModel(QObject *parent, QAbstractItemMod
 bool DisabledModsProxyModel::filterAccepts(const QModelIndex &sourceModelIndex) const
 {
     return ModFilterProxyModel::filterAccepts(sourceModelIndex) &&
-           sourceModel()->data(sourceModelIndex, ModDatabaseModel::ExistsModRole).toBool() &&
-           !sourceModel()->data(sourceModelIndex, ModDatabaseModel::EnabledModRole).toBool();
+           sourceModel()->data(sourceModelIndex, ModDatabaseModel::ModRole::Exists).toBool() &&
+           !sourceModel()->data(sourceModelIndex, ModDatabaseModel::ModRole::Enabled).toBool();
 }

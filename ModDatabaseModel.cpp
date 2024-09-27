@@ -3,6 +3,7 @@
 #include <QCollator>
 #include <QColor>
 #include <QFont>
+#include <QIcon>
 #include <QThread>
 
 #include "RegExpPatterns.h"
@@ -99,16 +100,26 @@ QVariant ModDatabaseModel::data(const QModelIndex &index, int role) const
             }
         break;
 
-        case EnabledModRole:
+        case Qt::DecorationRole:
+            if (m_database[index.row()].locked()) {
+                return QIcon(":/images/ui_outline/lock.svg");
+            }
+        break;
+
+        case ModRole::Enabled:
             return m_database[index.row()].enabled();
         break;
 
-        case ExistsModRole:
+        case ModRole::Exists:
             return m_database[index.row()].exists();
         break;
 
-        case MarkedModRole:
+        case ModRole::Marked:
             return m_database[index.row()].marked();
+        break;
+
+        case ModRole::Locked:
+            return m_database[index.row()].locked();
         break;
 
         default:
@@ -136,10 +147,10 @@ QVariant ModDatabaseModel::headerData(int section, Qt::Orientation orientation, 
     return QVariant();
 }
 
-void ModDatabaseModel::removeFromDatabase(const int index)
+void ModDatabaseModel::removeFromDatabase(const QModelIndex &index)
 {
-    beginRemoveRows(QModelIndex(), index, index);
-    m_database.removeAt(index);
+    beginRemoveRows(QModelIndex(), index.row(), index.row());
+    m_database.removeAt(index.row());
     endRemoveRows();
 }
 
@@ -176,20 +187,25 @@ bool ModDatabaseModel::setData(const QModelIndex &index, const QVariant &value, 
             isDataChanged = true;
         break;
 
-        case EnabledModRole:
+        case ModRole::Enabled:
             isDataChanged = (m_database[index.row()].enabled() != value.toBool());
             m_database[index.row()].setEnabled(value.toBool());
             isDataChanged &= (m_database[index.row()].enabled() == value.toBool());
         break;
 
-        case ExistsModRole:
+        case ModRole::Exists:
             isDataChanged = (m_database[index.row()].exists() != value.toBool());
             m_database[index.row()].setExists(value.toBool());
         break;
 
-        case MarkedModRole:
+        case ModRole::Marked:
             isDataChanged = (m_database[index.row()].marked() != value.toBool());
             m_database[index.row()].setMarked(value.toBool());
+        break;
+
+        case ModRole::Locked:
+            isDataChanged = (m_database[index.row()].locked() != value.toBool());
+            m_database[index.row()].setLocked(value.toBool());
         break;
     }
 

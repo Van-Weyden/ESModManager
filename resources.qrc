@@ -1,9 +1,17 @@
-<!DOCTYPE RCC><RCC version="1.0">
-<qresource>
-    <file>images/Flag-Russia.ico</file>
-    <file>images/Flag-United-States.ico</file>
-    <file>images/icon.ico</file>
-    <file>lang/lang_ru.qm</file>
-    <file>lang/qtbase_ru.qm</file>
-</qresource>
+<RCC>
+    <qresource prefix="/">
+        <file>images/Flag-Russia.ico</file>
+        <file>images/Flag-United-States.ico</file>
+        <file>images/icon.ico</file>
+        <file>images/ui_outline/steam.svg</file>
+        <file>images/ui_outline/folder.svg</file>
+        <file>images/ui_outline/rename.svg</file>
+        <file>images/ui_outline/lock.svg</file>
+        <file>images/ui_outline/unlock.svg</file>
+        <file>images/ui_outline/checked-flag.svg</file>
+        <file>images/ui_outline/left-arrow.svg</file>
+        <file>images/ui_outline/right-arrow.svg</file>
+        <file>lang/lang_ru.qm</file>
+        <file>lang/qtbase_ru.qm</file>
+    </qresource>
 </RCC>

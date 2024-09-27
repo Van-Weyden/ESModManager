@@ -149,13 +149,13 @@ void ModScanner::scanMod(const QString &modFolderName, const QString &modFolderP
                          EnabledFlagValue enabledFlagValue)
 {
     bool isModNameValid;
-    int indexInDatabase = indexOfModWithUnknownNameInDatabase(
+    int row = indexOfModWithUnknownNameInDatabase(
                                 modFolderName, modFolderPath,
                                 database, oldDatabaseSize, &isModNameValid);
 
     if (isModNameValid) {
-        if (indexInDatabase != -1 && enabledFlagValue != EnabledFlagValue::NotOverride) {
-            database.modInfoRef(indexInDatabase).setEnabled(
+        if (row != -1 && enabledFlagValue != EnabledFlagValue::NotOverride) {
+            database.modInfoRef(database.index(row)).setEnabled(
                 enabledFlagValue == EnabledFlagValue::ForceTrue ? true : false
             );
         }
@@ -253,10 +253,10 @@ void ModScanner::scanMod(const QString &modFolderName, const QString &modFolderP
         }
     }
 
-    if (indexInDatabase == -1) {
+    if (row == -1) {
         database.add(modInfo);
     } else {
-        database.modInfoRef(indexInDatabase).name = modInfo.name;
+        database.modInfoRef(database.index(row)).name = modInfo.name;
     }
 }
 
@@ -287,15 +287,15 @@ int indexOfModWithUnknownNameInDatabase(const QString &modFolderName, const QStr
         return -1;
     }
 
-    for (int indexInDatabase = 0; indexInDatabase < oldDatabaseSize; ++indexInDatabase) {
-        if (modFolderName == database.modFolderName(indexInDatabase)) {
-            database.modInfoRef(indexInDatabase).setExists(true);
+    for (int row = 0; row < oldDatabaseSize; ++row) {
+        if (modFolderName == database.modFolderName(database.index(row))) {
+            database.modInfoRef(database.index(row)).setExists(true);
 
             if (isModNameValid) {
-                *isModNameValid = database.isNameValid(database.modName(indexInDatabase));
+                *isModNameValid = database.isNameValid(database.modName(database.index(row)));
             }
 
-            return indexInDatabase;
+            return row;
         }
     }
 

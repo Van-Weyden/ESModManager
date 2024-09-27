@@ -25,7 +25,6 @@ public:
 public slots:
     void filterModsDisplay(const QString &str);
     void removeSelectedMod();
-    void saveSelectedModInfo();
     void show();
     void showSelectedModInfo();
     void eraseDatabase();
@@ -35,17 +34,15 @@ protected:
 
 private slots:
     void adjustRow(const QModelIndex &index);
-    void openCurrentModFolder();
-    void openWorkshopPage();
     void setModsDisplayMode(const int mode);
 
 signals:
-    void openModFolder(const int modIndex);
+    void openModFolder(const QModelIndex &modIndex);
 
 private:
     Ui::DatabaseEditor *ui;
 
-    ModDatabaseModel *m_modDatabaseModel = nullptr;
+    ModDatabaseModel *m_model = nullptr;
 };
 
 #endif // DATABASEEDITOR_H

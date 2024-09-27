@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui network
+QT       += core gui network svg
 
 INCLUDEPATH += "framelesswindow"
 
@@ -32,6 +32,7 @@ SOURCES += \
         MainWindow.cpp \
         ModDatabaseModel.cpp \
         ModInfo.cpp \
+        ModInfoWidget.cpp \
         ModScanner.cpp \
         RegExpPatterns.cpp \
         SteamRequester.cpp \
@@ -45,6 +46,7 @@ HEADERS += \
         MainWindow.h \
         ModDatabaseModel.h \
         ModInfo.h \
+        ModInfoWidget.h \
         ModScanner.h \
         RegExpPatterns.h \
         SteamRequester.h \
@@ -53,7 +55,8 @@ HEADERS += \
 
 FORMS += \
         DatabaseEditor.ui \
-        MainWindow.ui
+        MainWindow.ui \
+        ModInfoWidget.ui
 
 RC_FILE = icon.rc
 

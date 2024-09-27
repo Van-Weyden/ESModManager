@@ -6,127 +6,309 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>644</width>
-    <height>613</height>
+    <width>667</width>
+    <height>611</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Everlasting Summer mod manager</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="2,0">
+   <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <layout class="QVBoxLayout" name="rightMainVerticalLayout">
-      <item>
-       <layout class="QHBoxLayout" name="modlistHorizontalLayout">
+     <layout class="QGridLayout" name="topGridLayout">
+      <property name="horizontalSpacing">
+       <number>2</number>
+      </property>
+      <item row="0" column="2">
+       <widget class="QLabel" name="disabledModsLabel">
+        <property name="text">
+         <string>Disabled mods:</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="enabledModsLabel">
+        <property name="text">
+         <string>Enabled mods:</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <layout class="QVBoxLayout" name="toolbarLayout" stretch="1,1">
         <property name="spacing">
+         <number>2</number>
+        </property>
+        <property name="leftMargin">
          <number>0</number>
         </property>
         <item>
-         <layout class="QVBoxLayout" name="enabledModsVerticalLayout">
+         <layout class="QVBoxLayout" name="toolbarTopVerticalLayout">
+          <property name="spacing">
+           <number>2</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
           <item>
-           <widget class="QLabel" name="enabledModsLabel">
-            <property name="text">
-             <string>Enabled mods:</string>
+           <widget class="QToolButton" name="setLockedToolButton">
+            <property name="toolTip">
+             <string>Lock selected mods</string>
             </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="resources.qrc">
+              <normaloff>:/images/ui_outline/lock.svg</normaloff>:/images/ui_outline/lock.svg</iconset>
+            </property>
+            <property name="arrowType">
+             <enum>Qt::NoArrow</enum>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QListView" name="enabledModsList">
-            <property name="focusPolicy">
-             <enum>Qt::NoFocus</enum>
+           <widget class="QToolButton" name="setUnlockedToolButton">
+            <property name="toolTip">
+             <string>Unlock selected mods</string>
             </property>
-            <property name="styleSheet">
-             <string notr="true"/>
+            <property name="text">
+             <string/>
             </property>
-            <property name="autoScroll">
-             <bool>false</bool>
+            <property name="icon">
+             <iconset resource="resources.qrc">
+              <normaloff>:/images/ui_outline/unlock.svg</normaloff>:/images/ui_outline/unlock.svg</iconset>
             </property>
-            <property name="editTriggers">
-             <set>QAbstractItemView::NoEditTriggers</set>
+            <property name="arrowType">
+             <enum>Qt::NoArrow</enum>
             </property>
-            <property name="selectionMode">
-             <enum>QAbstractItemView::ExtendedSelection</enum>
+           </widget>
+          </item>
+          <item>
+           <widget class="QToolButton" name="setMarkedToolButton">
+            <property name="toolTip">
+             <string>Toggle selected mods checkbox mark</string>
             </property>
-            <property name="selectionBehavior">
-             <enum>QAbstractItemView::SelectRows</enum>
+            <property name="text">
+             <string/>
             </property>
-            <property name="wordWrap">
-             <bool>true</bool>
+            <property name="icon">
+             <iconset resource="resources.qrc">
+              <normaloff>:/images/ui_outline/checked-flag.svg</normaloff>:/images/ui_outline/checked-flag.svg</iconset>
+            </property>
+            <property name="arrowType">
+             <enum>Qt::NoArrow</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QToolButton" name="renameToolButton">
+            <property name="toolTip">
+             <string>Rename last selected mod</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="resources.qrc">
+              <normaloff>:/images/ui_outline/rename.svg</normaloff>:/images/ui_outline/rename.svg</iconset>
+            </property>
+            <property name="arrowType">
+             <enum>Qt::NoArrow</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QToolButton" name="openFolderToolButton">
+            <property name="toolTip">
+             <string>Open the mod folder in the explorer</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="resources.qrc">
+              <normaloff>:/images/ui_outline/folder.svg</normaloff>:/images/ui_outline/folder.svg</iconset>
+            </property>
+            <property name="arrowType">
+             <enum>Qt::NoArrow</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QToolButton" name="openSteamPageToolButton">
+            <property name="toolTip">
+             <string>Open the mod page in the Steam Workshop</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="resources.qrc">
+              <normaloff>:/images/ui_outline/steam.svg</normaloff>:/images/ui_outline/steam.svg</iconset>
+            </property>
+            <property name="arrowType">
+             <enum>Qt::NoArrow</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="toolbarTopVerticalSpacer">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QToolButton" name="setDisabledToolButton">
+            <property name="toolTip">
+             <string>Disable selected unlocked mods</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="resources.qrc">
+              <normaloff>:/images/ui_outline/right-arrow.svg</normaloff>:/images/ui_outline/right-arrow.svg</iconset>
+            </property>
+            <property name="arrowType">
+             <enum>Qt::NoArrow</enum>
             </property>
            </widget>
           </item>
          </layout>
         </item>
         <item>
-         <layout class="QVBoxLayout" name="disabledModsVerticalLayout">
+         <layout class="QVBoxLayout" name="toolbarBottomVerticalLayout">
+          <property name="spacing">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
           <item>
-           <widget class="QLabel" name="disabledModsLabel">
-            <property name="text">
-             <string>Disabled mods:</string>
+           <widget class="QToolButton" name="setEnabledToolButton">
+            <property name="toolTip">
+             <string>Enable selected unlocked mods</string>
             </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="resources.qrc">
+              <normaloff>:/images/ui_outline/left-arrow.svg</normaloff>:/images/ui_outline/left-arrow.svg</iconset>
+            </property>
+            <property name="arrowType">
+             <enum>Qt::NoArrow</enum>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QListView" name="disabledModsList">
-            <property name="focusPolicy">
-             <enum>Qt::NoFocus</enum>
+           <spacer name="toolbarBottomVerticalSpacer">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
             </property>
-            <property name="styleSheet">
-             <string notr="true"/>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
             </property>
-            <property name="autoScroll">
-             <bool>false</bool>
-            </property>
-            <property name="editTriggers">
-             <set>QAbstractItemView::NoEditTriggers</set>
-            </property>
-            <property name="selectionMode">
-             <enum>QAbstractItemView::ExtendedSelection</enum>
-            </property>
-            <property name="selectionBehavior">
-             <enum>QAbstractItemView::SelectRows</enum>
-            </property>
-            <property name="wordWrap">
-             <bool>true</bool>
-            </property>
-           </widget>
+           </spacer>
           </item>
          </layout>
         </item>
        </layout>
       </item>
-      <item>
-       <layout class="QHBoxLayout" name="searchHorizontalLayout">
-        <property name="topMargin">
-         <number>0</number>
+      <item row="1" column="0">
+       <widget class="QTreeView" name="enabledModsList">
+        <property name="focusPolicy">
+         <enum>Qt::NoFocus</enum>
         </property>
-        <item>
-         <widget class="QLineEdit" name="searchLineEdit">
-          <property name="frame">
-           <bool>true</bool>
-          </property>
-          <property name="placeholderText">
-           <string>Enter mod name for search...</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="clearSearchPushButton">
-          <property name="text">
-           <string>Clear</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
+        <property name="styleSheet">
+         <string notr="true"/>
+        </property>
+        <property name="autoScroll">
+         <bool>false</bool>
+        </property>
+        <property name="editTriggers">
+         <set>QAbstractItemView::EditKeyPressed</set>
+        </property>
+        <property name="selectionMode">
+         <enum>QAbstractItemView::ExtendedSelection</enum>
+        </property>
+        <property name="selectionBehavior">
+         <enum>QAbstractItemView::SelectRows</enum>
+        </property>
+        <property name="rootIsDecorated">
+         <bool>false</bool>
+        </property>
+        <property name="animated">
+         <bool>true</bool>
+        </property>
+        <attribute name="headerVisible">
+         <bool>false</bool>
+        </attribute>
+       </widget>
       </item>
-      <item>
+      <item row="1" column="2">
+       <widget class="QTreeView" name="disabledModsList">
+        <property name="focusPolicy">
+         <enum>Qt::NoFocus</enum>
+        </property>
+        <property name="styleSheet">
+         <string notr="true"/>
+        </property>
+        <property name="autoScroll">
+         <bool>false</bool>
+        </property>
+        <property name="editTriggers">
+         <set>QAbstractItemView::NoEditTriggers</set>
+        </property>
+        <property name="selectionMode">
+         <enum>QAbstractItemView::ExtendedSelection</enum>
+        </property>
+        <property name="selectionBehavior">
+         <enum>QAbstractItemView::SelectRows</enum>
+        </property>
+        <property name="rootIsDecorated">
+         <bool>false</bool>
+        </property>
+        <property name="animated">
+         <bool>true</bool>
+        </property>
+        <property name="headerHidden">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QGridLayout" name="bottomGridLayout" columnstretch="0,0,1,0,0,0,0">
+      <property name="verticalSpacing">
+       <number>2</number>
+      </property>
+      <item row="0" column="6">
+       <widget class="QPushButton" name="clearSearchPushButton">
+        <property name="text">
+         <string>Clear</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0" colspan="7">
        <layout class="QVBoxLayout" name="progressVerticalLayout">
         <property name="leftMargin">
          <number>0</number>
@@ -159,105 +341,79 @@
         </item>
        </layout>
       </item>
-      <item>
-       <layout class="QHBoxLayout" name="buttonsHorizontalLayout">
-        <property name="spacing">
-         <number>0</number>
+      <item row="2" column="6">
+       <widget class="QPushButton" name="runButton">
+        <property name="text">
+         <string>Run game</string>
         </property>
-        <property name="sizeConstraint">
-         <enum>QLayout::SetDefaultConstraint</enum>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QPushButton" name="rusLangButton">
+        <property name="toolTip">
+         <string>Set Russian language</string>
         </property>
-        <item>
-         <widget class="QPushButton" name="rusLangButton">
-          <property name="toolTip">
-           <string>Set Russian language</string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="icon">
-           <iconset>
-            <normaloff>images/Flag-Russia.ico</normaloff>images/Flag-Russia.ico</iconset>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="engLangButton">
-          <property name="toolTip">
-           <string>Set English language</string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="icon">
-           <iconset>
-            <normaloff>images/Flag-United-States.ico</normaloff>images/Flag-United-States.ico</iconset>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer name="buttonsHorizontalSpacer">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item>
-         <widget class="QPushButton" name="disableAllButton">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string>Disable all</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="enableAllButton">
-          <property name="text">
-           <string>Enable all</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="refreshButton">
-          <property name="text">
-           <string>Refresh modlist</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="runButton">
-          <property name="text">
-           <string>Run game</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset>
+          <normaloff>images/Flag-Russia.ico</normaloff>images/Flag-Russia.ico</iconset>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QPushButton" name="engLangButton">
+        <property name="toolTip">
+         <string>Set English language</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset>
+          <normaloff>images/Flag-United-States.ico</normaloff>images/Flag-United-States.ico</iconset>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="5">
+       <widget class="QPushButton" name="refreshButton">
+        <property name="text">
+         <string>Refresh modlist</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="4">
+       <widget class="QPushButton" name="enableAllButton">
+        <property name="text">
+         <string>Enable all</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="3">
+       <widget class="QPushButton" name="disableAllButton">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>Disable all</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0" colspan="6">
+       <widget class="QLineEdit" name="searchLineEdit">
+        <property name="frame">
+         <bool>true</bool>
+        </property>
+        <property name="placeholderText">
+         <string>Enter mod name for search...</string>
+        </property>
+       </widget>
       </item>
      </layout>
-    </item>
-    <item>
-     <spacer name="mainHorizontalSpacer">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-      <property name="sizeHint" stdset="0">
-       <size>
-        <width>0</width>
-        <height>20</height>
-       </size>
-      </property>
-     </spacer>
     </item>
    </layout>
   </widget>
@@ -266,7 +422,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>644</width>
+     <width>667</width>
      <height>26</height>
     </rect>
    </property>
@@ -363,14 +519,8 @@
   </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <tabstops>
-  <tabstop>runButton</tabstop>
-  <tabstop>searchLineEdit</tabstop>
-  <tabstop>clearSearchPushButton</tabstop>
-  <tabstop>refreshButton</tabstop>
-  <tabstop>enableAllButton</tabstop>
-  <tabstop>disableAllButton</tabstop>
- </tabstops>
- <resources/>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
  <connections/>
 </ui>
