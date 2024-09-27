@@ -5,6 +5,7 @@
 #include <QDirIterator>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QItemEditorFactory>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -12,6 +13,8 @@
 #include <QProcess>
 #include <QProgressDialog>
 #include <QSettings>
+#include <QStyledItemDelegate>
+#include <QTimer>
 #include <QThread>
 #include <QTranslator>
 
@@ -71,6 +74,9 @@ MainWindow::MainWindow(QWidget *parent) :
     m_qtTranslator = new QTranslator();
     m_translator = new QTranslator();
 
+    m_itemContextMenu = new QMenu(this);
+    initActions();
+
     //connections:
 
     //Signals from form objects:
@@ -105,6 +111,13 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->disabledModsList, &QTreeView::doubleClicked, this, [this](const QModelIndex &i) {
         m_disabledModsModel->setData(i, true, ModDatabaseModel::ModRole::Enabled);
     });
+
+    ui->enabledModsList->setContextMenuPolicy(Qt::CustomContextMenu);
+    ui->disabledModsList->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(ui->enabledModsList, &QTreeView::customContextMenuRequested,
+            this, &MainWindow::showModContextMenu);
+    connect(ui->disabledModsList, &QTreeView::customContextMenuRequested,
+            this, &MainWindow::showModContextMenu);
 
     connect(ui->enabledModsList, &QTreeView::pressed, ui->disabledModsList, &QTreeView::clearSelection);
     connect(ui->disabledModsList, &QTreeView::pressed, ui->enabledModsList, &QTreeView::clearSelection);
@@ -434,7 +447,145 @@ void MainWindow::steamModNameProcessed()
     }
 }
 
+void MainWindow::showModContextMenu(const QPoint &pos)
+{
+    QTreeView *modList = qobject_cast<QTreeView *>(sender());
+    QSortFilterProxyModel *model = modList ? qobject_cast<QSortFilterProxyModel *>(modList->model()) : nullptr;
+    if (!modList || !model) {
+        return;
+    }
+
+    QModelIndex index = model->mapToSource(modList->indexAt(pos));
+    if (index.isValid()) {
+        setupItemContextMenu(m_model->modInfo(index));
+        m_itemContextMenu->exec(modList->viewport()->mapToGlobal(pos));
+    }
+}
+
+void MainWindow::performOnSelectedMods(std::function<bool(ModDatabaseModel *model, QModelIndex index)> action)
+{
+    QItemSelectionModel *selection = selectedMods();
+    ModFilterProxyModel *model = selection ? qobject_cast<ModFilterProxyModel *>(selection->model()) : nullptr;
+    if (!selection || !model) {
+        return;
+    }
+
+    QVector<QModelIndex> selectedIndexes;
+    for (auto index : selection->selectedIndexes()) {
+        selectedIndexes.append(model->mapToSource(index));
+    }
+
+    for (auto index : selectedIndexes) {
+        if (!action(m_model, index)) {
+            break;
+        }
+    }
+}
+
+
 //private:
+
+QItemSelectionModel *MainWindow::selectedMods() const
+{
+    if (ui->disabledModsList->selectionModel()->hasSelection()) {
+        return ui->enabledModsList->selectionModel()->hasSelection() ? nullptr : ui->disabledModsList->selectionModel();
+    } else {
+        return ui->enabledModsList->selectionModel()->hasSelection() ? ui->enabledModsList->selectionModel() : nullptr;
+    }
+}
+
+void MainWindow::initActions()
+{
+    m_setEnabledAction = new QAction(m_itemContextMenu);
+    m_setLockedAction = new QAction(tr("Lock"), m_itemContextMenu);
+    m_setUnlockedAction = new QAction(tr("Unlock"), m_itemContextMenu);
+    m_setMarkedAction = new QAction(tr("Toggle mark"), m_itemContextMenu);
+    m_setMarkedAction->setCheckable(true);
+    m_openFolderAction = new QAction(tr("Open folder in the explorer"), m_itemContextMenu);
+    m_openSteamPageAction = new QAction(tr("Open the Steam Workshop page"), m_itemContextMenu);
+    m_renameAction = new QAction(tr("Rename"), m_itemContextMenu);
+
+    m_itemContextMenu->addAction(m_setEnabledAction);
+    m_itemContextMenu->addAction(m_setLockedAction);
+    m_itemContextMenu->addAction(m_setUnlockedAction);
+    m_itemContextMenu->addAction(m_setMarkedAction);
+    m_itemContextMenu->addAction(m_openFolderAction);
+    m_itemContextMenu->addAction(m_openSteamPageAction);
+    m_itemContextMenu->addAction(m_renameAction);
+
+    connect(ui->setLockedToolButton, &QPushButton::clicked, m_setLockedAction, &QAction::trigger);
+    connect(ui->setUnlockedToolButton, &QPushButton::clicked, m_setUnlockedAction, &QAction::trigger);
+    connect(ui->setMarkedToolButton, &QPushButton::clicked, m_setMarkedAction, &QAction::trigger);
+    connect(ui->openFolderToolButton, &QPushButton::clicked, m_openFolderAction, &QAction::trigger);
+    connect(ui->openSteamPageToolButton, &QPushButton::clicked, m_openSteamPageAction, &QAction::trigger);
+    connect(ui->renameToolButton, &QPushButton::clicked, m_renameAction, &QAction::trigger);
+    connect(ui->setDisabledToolButton, &QPushButton::clicked, m_setEnabledAction, &QAction::trigger);
+    connect(ui->setEnabledToolButton, &QPushButton::clicked, m_setEnabledAction, &QAction::trigger);
+
+    connect(m_openSteamPageAction, &QAction::triggered, this, [this](bool /*enabled*/) {
+        performOnSelectedMods([this](ModDatabaseModel */*model*/, QModelIndex index) {
+            QDesktopServices::openUrl(QUrl(
+                "steam://url/CommunityFilePage/" + m_model->modFolderName(index)
+            ));
+            return false;
+        });
+    });
+
+    connect(m_openFolderAction, &QAction::triggered, this, [this]() {
+        performOnSelectedMods([this](ModDatabaseModel */*model*/, QModelIndex index) {
+            openModFolder(index);
+            return false;
+        });
+    });
+
+    connect(m_setLockedAction, &QAction::triggered, this, [this]() {
+        performOnSelectedMods([](ModDatabaseModel *model, QModelIndex index) {
+            model->setData(index, true, ModDatabaseModel::ModRole::Locked);
+            return true;
+        });
+    });
+
+    connect(m_setUnlockedAction, &QAction::triggered, this, [this]() {
+        performOnSelectedMods([](ModDatabaseModel *model, QModelIndex index) {
+            model->setData(index, false, ModDatabaseModel::ModRole::Locked);
+            return true;
+        });
+    });
+
+    connect(m_setMarkedAction, &QAction::triggered, this, [this]() {
+        bool marked = false;
+
+        //If at least one mod is marked, all should set marked
+        performOnSelectedMods([&marked](ModDatabaseModel *model, QModelIndex index) {
+            marked = !model->data(index, ModDatabaseModel::ModRole::Marked).toBool();
+            return !marked; //Stop search
+        });
+
+        performOnSelectedMods([&marked](ModDatabaseModel *model, QModelIndex index) {
+            model->setData(index, marked, ModDatabaseModel::ModRole::Marked);
+            return true;
+        });
+    });
+
+    connect(m_setEnabledAction, &QAction::triggered, this, [this]() {
+        performOnSelectedMods([](ModDatabaseModel *model, QModelIndex index) {
+            bool enabled = model->data(index, ModDatabaseModel::ModRole::Enabled).toBool();
+            model->setData(index, !enabled, ModDatabaseModel::ModRole::Enabled);
+            return true;
+        });
+    });
+}
+
+void MainWindow::setupItemContextMenu(const ModInfo &item) const
+{
+    m_setEnabledAction->setText(item.enabled() ? tr("Disable") : tr("Enable"));
+    m_setEnabledAction->setVisible(item.exists() && !item.locked());
+    m_setLockedAction->setVisible(item.exists() && !item.locked());
+    m_setUnlockedAction->setVisible(item.exists() && item.locked());
+    m_setMarkedAction->setVisible(item.exists());
+    m_setMarkedAction->setChecked(item.marked());
+    m_openFolderAction->setVisible(item.exists());
+}
 
 bool MainWindow::isGameFolderValid(const QString &folderPath)
 {

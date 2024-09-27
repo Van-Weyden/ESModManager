@@ -1,9 +1,12 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include <functional>
+
 #include <QMainWindow>
 #include <QString>
 
+class QItemSelectionModel;
 class QSettings;
 class QTranslator;
 
@@ -58,8 +61,18 @@ private slots:
     void openManagerFolder();
     bool openModFolder(const QModelIndex &index);
     void steamModNameProcessed();
+    void showModContextMenu(const QPoint &pos);
+
+    /**
+     * @brief Perform function 'action' on the each mod in the selection.
+     * Action may return false to stop mod processing.
+     */
+    void performOnSelectedMods(std::function<bool(ModDatabaseModel *model, QModelIndex index)> action);
 
 private:
+    QItemSelectionModel *selectedMods() const;
+    void initActions();
+    void setupItemContextMenu(const ModInfo &item) const;
     bool isGameFolderValid(const QString &folderPath);
     void checkAnnouncementPopup(const int loadedApplicationVersion);
 
@@ -88,6 +101,15 @@ private:
     ModFilterProxyModel *m_enabledModsModel = nullptr;
     ModFilterProxyModel *m_disabledModsModel = nullptr;
     ModScanner *m_scanner = nullptr;
+
+    QMenu *m_itemContextMenu = nullptr;
+    QAction *m_setEnabledAction = nullptr;
+    QAction *m_setLockedAction = nullptr;
+    QAction *m_setUnlockedAction = nullptr;
+    QAction *m_setMarkedAction = nullptr;
+    QAction *m_openFolderAction = nullptr;
+    QAction *m_renameAction = nullptr;
+    QAction *m_openSteamPageAction = nullptr;
 
     static constexpr const char *DefaultGameFolderPath =
         "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Everlasting Summer\\";
