@@ -212,8 +212,8 @@ void MainWindow::requestSteamModNames()
 void MainWindow::saveDatabase() const
 {
     QJsonArray mods;
-    for (int i = 0; i < m_model->databaseSize(); ++i) {
-        mods.append(m_model->modInfo(m_model->index(i)).toJsonObject());
+    for (const ModInfo &modInfo : qAsConst(m_model->modList())) {
+        mods.append(modInfo.toJsonObject());
     }
     QJsonDocument database(mods);
     rewriteFileIfDataIsDifferent("mods_database.json", database.toJson());
@@ -248,8 +248,8 @@ void MainWindow::disableAllMods()
 {
     ui->searchLineEdit->clear();
     m_model->reset([this]() {
-        for (int i = 0; i < m_model->databaseSize(); ++i) {
-            m_model->modInfoRef(m_model->index(i)).setEnabled(false);
+        for (ModInfo &modInfo : m_model->modListRef()) {
+            modInfo.setEnabled(false);
         }
     });
 }
@@ -258,8 +258,8 @@ void MainWindow::enableAllMods()
 {
     ui->searchLineEdit->clear();
     m_model->reset([this]() {
-        for (int i = 0; i < m_model->databaseSize(); ++i) {
-            m_model->modInfoRef(m_model->index(i)).setEnabled(true);
+        for (ModInfo &modInfo : m_model->modListRef()) {
+            modInfo.setEnabled(true);
         }
     });
 }
@@ -468,13 +468,9 @@ void MainWindow::performOnSelectedMods(std::function<bool(ModDatabaseModel *mode
         return;
     }
 
-    QVector<QModelIndex> selectedIndexes;
-    for (auto index : selection->selectedIndexes()) {
-        selectedIndexes.append(model->mapToSource(index));
-    }
-
+    const QModelIndexList &selectedIndexes = selection->selectedIndexes();
     for (auto index : selectedIndexes) {
-        if (!action(m_model, index)) {
+        if (!action(m_model, model->mapToSource(index))) {
             break;
         }
     }
@@ -621,9 +617,7 @@ void MainWindow::checkAnnouncementPopup(const int loadedApplicationVersion)
 void MainWindow::updateDisabledModsFile()
 {
     QString disabledMods;
-    int databaseSize = m_model->databaseSize();
-    for (int i = 0; i < databaseSize; ++i) {
-        const auto &modInfo = m_model->modInfo(m_model->index(i));
+    for (const ModInfo &modInfo : qAsConst(m_model->modList())) {
         if (modInfo.exists() && !modInfo.enabled()) {
             disabledMods.append(modInfo.folderName + "\n");
         }

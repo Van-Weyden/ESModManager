@@ -55,7 +55,7 @@ void DatabaseEditor::hideAllRows()
     ui->searchLineEdit->clear();
     ui->searchLineEdit->blockSignals(false);
 
-    int rowCount = m_model->databaseSize();
+    int rowCount = m_model->size();
     for (int rowIndex = 0; rowIndex < rowCount; ++rowIndex)
         ui->databaseView->setRowHidden(rowIndex, true);
 }
@@ -98,7 +98,7 @@ void DatabaseEditor::setModsDisplay(const bool modlistOnly)
         QApplication::processEvents();
     }
 
-    int databaseSize = m_model->databaseSize();
+    int databaseSize = m_model->size();
     if (modlistOnly) {
         for (int row = 0; row < databaseSize; ++row) {
             if (m_model->modIsExists(m_model->index(row))) {
@@ -120,7 +120,7 @@ void DatabaseEditor::filterModsDisplay(const QString &str)
         return;
     }
 
-    int rowCount = m_model->databaseSize();
+    int rowCount = m_model->size();
     for (int row = 0; row < rowCount; ++row) {
         if (ui->showAllModsCheckBox->isChecked() || m_model->modIsExists(m_model->index(row))) {
             ui->databaseView->setRowHidden(row, false);
@@ -179,7 +179,7 @@ void DatabaseEditor::changeEvent(QEvent *event)
 
 void DatabaseEditor::adjustRow(const QModelIndex &index)
 {
-    if (index.isValid() && index.row() < m_model->databaseSize()) {
+    if (index.isValid() && index.row() < m_model->size()) {
         ui->databaseView->resizeRowToContents(index.row());
     }
 }

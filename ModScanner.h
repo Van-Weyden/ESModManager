@@ -10,7 +10,7 @@ class ModScanner : public QObject
     Q_OBJECT
 
 public:
-    enum EnabledFlagValue
+    enum EnabledFlagInitValue
     {
         NotOverride,
         ForceTrue,
@@ -18,17 +18,26 @@ public:
     };
 
     explicit ModScanner(QObject *parent = nullptr);
-    void scanMods(const QString &modsFolderPath, ModDatabaseModel &database,
-                  const EnabledFlagValue enabledFlagValue = NotOverride);
+    void scanMods(const QString &modsFolderPath, ModDatabaseModel &model,
+                  const EnabledFlagInitValue enabledFlag = NotOverride);
 
 signals:
     void modScanned(int countOfScannedMods);
 
 private:
-    void scanMod(const QString &modFolderName, const QString &modFolderPath,
-                 ModDatabaseModel &database, const int oldDatabaseSize,
-                 const EnabledFlagValue enabledFlagValue = NotOverride);
+    struct ScanData
+    {
+        const QString &modFolderName;
+        const QString &modFolderPath;
+        ModDatabaseModel &model;
+        const int oldModelSize;
+    };
 
+private:
+    void scanMod(ScanData data, const EnabledFlagInitValue enabledFlagValue);
+    int indexOfModWithUnknownNameInDatabase(ScanData& data, bool *isModNameValid);
+
+private:
     QRegExp m_initRegExp;
     QRegExp m_modInitRegExp;
     QRegExp m_filterInitRegExp;

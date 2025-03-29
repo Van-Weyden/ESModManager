@@ -40,7 +40,7 @@ void SteamRequester::processModName(QNetworkReply *reply)
         modFolderName = modData["publishedfileid"].toString();
         steamModName = modData["title"].toString();
 
-        for (int i = 0; i < m_modDatabaseModel->databaseSize(); ++i) {
+        for (int i = 0; i < m_modDatabaseModel->size(); ++i) {
             QModelIndex modelIndex = m_modDatabaseModel->index(i);
             ModInfo &modInfo = m_modDatabaseModel->modInfoRef(modelIndex);
             if (modInfo.folderName == modFolderName) {
@@ -72,11 +72,11 @@ void SteamRequester::requestModNames()
     }
 
     m_isRunning = true;
-    m_countOfRemainingMods = m_modDatabaseModel->databaseSize();
+    m_countOfRemainingMods = m_modDatabaseModel->size();
     QByteArray data;
     QUrlQuery params;
     QNetworkRequest request(QUrl("https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/"));
-    for (int i = 0; i < m_modDatabaseModel->databaseSize(); ++i) {
+    for (int i = 0; i < m_modDatabaseModel->size(); ++i) {
         QModelIndex modelIndex = m_modDatabaseModel->index(i);
         ModInfo &modInfo = m_modDatabaseModel->modInfoRef(modelIndex);
         if (!m_modDatabaseModel->isNameValid(modInfo.steamName)) {
@@ -108,7 +108,7 @@ void SteamRequester::modNameProcessed()
     --m_countOfRemainingMods;
 
     if (!m_countOfRemainingMods) {
-        for (int i = 0; i < m_modDatabaseModel->databaseSize(); ++i) {
+        for (int i = 0; i < m_modDatabaseModel->size(); ++i) {
             QModelIndex modelIndex = m_modDatabaseModel->index(i);
             ModInfo &modInfo = m_modDatabaseModel->modInfoRef(modelIndex);
             if (modInfo.steamName.contains(ModInfo::generateWaitingForSteamResponseStub())) {

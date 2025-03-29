@@ -75,7 +75,7 @@ void ModInfoWidget::setIndex(const QModelIndex &index)
         return;
     }
 
-    m_modIndex = QModelIndex();
+    m_modIndex = QModelIndex(); // Disables mod info updates on the UI update
     const ModInfo &info = m_model->modInfo(index);
     ui->openModFolderPushButton->setEnabled(info.exists());
     ui->modNameLineEdit->setText(info.name);

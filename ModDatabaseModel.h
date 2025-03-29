@@ -25,11 +25,14 @@ public:
     ModDatabaseModel();
     ~ModDatabaseModel() = default;
 
+    inline QVector<ModInfo> &modListRef();
+    inline const QVector<ModInfo> &modList() const;
+
     bool isNameValid(const QString &name) const;
 
     void add(const ModInfo &modInfo);
     inline void clear();
-    inline int databaseSize() const;
+    inline int size() const;
     inline const QString &modFolderName(const QModelIndex &index) const;
     inline const ModInfo &modInfo(const QModelIndex &index) const;
     inline ModInfo &modInfoRef(const QModelIndex &index);
@@ -52,7 +55,7 @@ public:
     void setModsExistsState(const bool isExists);
     inline void updateRow(const QModelIndex &index);
 
-    void reset(std::function<void()> actions);
+    void reset(std::function<void ()> actions);
 
 public slots:
     void enableMod(const QModelIndex &index);
@@ -72,6 +75,16 @@ private:
 
 //public:
 
+inline QVector<ModInfo> &ModDatabaseModel::modListRef()
+{
+    return m_database;
+}
+
+inline const QVector<ModInfo> &ModDatabaseModel::modList() const
+{
+    return m_database;
+}
+
 inline void ModDatabaseModel::clear()
 {
     beginResetModel();
@@ -84,7 +97,7 @@ inline int ModDatabaseModel::columnCount(const QModelIndex &/*parent*/) const
     return 1;
 }
 
-inline int ModDatabaseModel::databaseSize() const
+inline int ModDatabaseModel::size() const
 {
     return m_database.size();
 }

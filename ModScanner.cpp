@@ -7,7 +7,15 @@
 
 #include "ModScanner.h"
 
-QString renPyInitRegExp(const char *tag, const QString &dictionaryKeyInBracketsPattern);
+static QString renPyInitRegExp(const char *tag, const QString &dictionaryKeyInBracketsPattern)
+{
+    return RegExpPatterns::zeroOrOneOccurences(RegExpPatterns::escapedSymbol("$"))
+        + RegExpPatterns::whitespace
+        + tag + RegExpPatterns::whitespace
+        + dictionaryKeyInBracketsPattern + RegExpPatterns::whitespace
+        + "=[^\"']*"
+    ;
+}
 
 ModScanner::ModScanner(QObject *parent) :
     QObject(parent)
@@ -119,18 +127,18 @@ ModScanner::ModScanner(QObject *parent) :
     );
 }
 
-void ModScanner::scanMods(const QString &modsFolderPath, ModDatabaseModel &database,
-                          const EnabledFlagValue enabledFlagValue)
+void ModScanner::scanMods(const QString &modsFolderPath, ModDatabaseModel &model,
+                          const EnabledFlagInitValue enabledFlag)
 {
-    database.reset([&]() {
-        database.setModsExistsState(false);
+    model.reset([&]() {
+        model.setModsExistsState(false);
         int countOfScannedMods = 0;
-        int oldDatabaseSize = database.databaseSize();
+        int oldModelSize = model.size();
         QStringList modsFolders = QDir(modsFolderPath).entryList(QDir::Dirs | QDir::NoDotAndDotDot);
 
         while (!modsFolders.isEmpty()) {
             QString modFolderName = modsFolders.takeFirst();
-            scanMod(modFolderName, modsFolderPath + modFolderName, database, oldDatabaseSize, enabledFlagValue);
+            scanMod({modFolderName, modsFolderPath + modFolderName, model, oldModelSize}, enabledFlag);
             emit modScanned(++countOfScannedMods);
             QApplication::processEvents();
         }
@@ -141,22 +149,15 @@ void ModScanner::scanMods(const QString &modsFolderPath, ModDatabaseModel &datab
 
 //private:
 
-int indexOfModWithUnknownNameInDatabase(const QString &modFolderName, const QString &modFolderPath,
-                                        ModDatabaseModel &database, const int oldDatabaseSize, bool *isModNameValid);
-
-void ModScanner::scanMod(const QString &modFolderName, const QString &modFolderPath,
-                         ModDatabaseModel &database, const int oldDatabaseSize,
-                         EnabledFlagValue enabledFlagValue)
+void ModScanner::scanMod(ScanData data, const EnabledFlagInitValue enabledFlagValue)
 {
     bool isModNameValid;
-    int row = indexOfModWithUnknownNameInDatabase(
-                                modFolderName, modFolderPath,
-                                database, oldDatabaseSize, &isModNameValid);
+    int row = indexOfModWithUnknownNameInDatabase(data, &isModNameValid);
 
     if (isModNameValid) {
-        if (row != -1 && enabledFlagValue != EnabledFlagValue::NotOverride) {
-            database.modInfoRef(database.index(row)).setEnabled(
-                enabledFlagValue == EnabledFlagValue::ForceTrue ? true : false
+        if (row != -1 && enabledFlagValue != EnabledFlagInitValue::NotOverride) {
+            data.model.modInfoRef(data.model.index(row)).setEnabled(
+                enabledFlagValue == EnabledFlagInitValue::ForceTrue ? true : false
             );
         }
 
@@ -164,27 +165,24 @@ void ModScanner::scanMod(const QString &modFolderName, const QString &modFolderP
     }
 
     ModInfo modInfo;
-    modInfo.folderName = modFolderName;
+    modInfo.folderName = data.modFolderName;
 
-    if (enabledFlagValue != EnabledFlagValue::NotOverride) {
-        modInfo.setEnabled(enabledFlagValue == EnabledFlagValue::ForceTrue ? true : false);
+    if (enabledFlagValue != EnabledFlagInitValue::NotOverride) {
+        modInfo.setEnabled(enabledFlagValue == EnabledFlagInitValue::ForceTrue ? true : false);
     }
 
-    QMap<QString, QString> initMap;
-    QFile file;
-    QString outOf;
     QString initKey;
-    QString initValue;
     QString prioryModName;
     QString prioryModNameKey;
-    QDir modDir(modFolderPath);
-    bool isModTagsFounded = false;
+    QMap<QString, QString> initMap;
 
+    bool isModTagsFounded = false;    
+    QDir modDir(data.modFolderPath);
     QDirIterator it(modDir.path(), {"*.rpy"}, QDir::Files, QDirIterator::Subdirectories);
     while (it.hasNext()) {
-        file.setFileName(it.next());
+        QFile file(it.next());
         file.open(QFile::ReadOnly);
-        //'QFile::canReadLine()' may return false in some cases, so check the end of the file with 'QFile::atEnd()'
+        //'QFile::canReadLine' may return false in some cases, so check the end of the file with 'QFile::atEnd'
         while (!file.atEnd()) {
             QString line = file.readLine();
 
@@ -200,7 +198,7 @@ void ModScanner::scanMod(const QString &modFolderName, const QString &modFolderP
                 initKey.remove(m_allFromBeginToQuoteRegExp);
                 initKey.remove(m_allFromQuoteToEndRegExp);
 
-                initValue = line;
+                QString initValue = line;
                 initValue.remove(m_initRegExp);
                 initValue.remove(m_allFromBeginToQuoteRegExp);
                 initValue.remove(m_allFromQuoteToEndRegExp);
@@ -223,7 +221,6 @@ void ModScanner::scanMod(const QString &modFolderName, const QString &modFolderP
                 }
             }
         }
-        isModTagsFounded = false;
         file.close();
     }
 
@@ -232,7 +229,7 @@ void ModScanner::scanMod(const QString &modFolderName, const QString &modFolderP
     }
 
     modInfo.name.clear();
-    outOf = '/' + QString::number(initMap.count()) + "]: ";
+    QString outOf = '/' + QString::number(initMap.count()) + "]: ";
 
     if (initMap.isEmpty()) {
         modInfo.name = ModInfo::generateFailedToGetNameStub();
@@ -254,32 +251,18 @@ void ModScanner::scanMod(const QString &modFolderName, const QString &modFolderP
     }
 
     if (row == -1) {
-        database.add(modInfo);
+        data.model.add(modInfo);
     } else {
-        database.modInfoRef(database.index(row)).name = modInfo.name;
+        data.model.modInfoRef(data.model.index(row)).name = modInfo.name;
     }
 }
 
-
-
-//non-members of class ModScanner:
-
-QString renPyInitRegExp(const char *tag, const QString &dictionaryKeyInBracketsPattern)
-{
-    return RegExpPatterns::zeroOrOneOccurences(RegExpPatterns::escapedSymbol("$"))
-            + RegExpPatterns::whitespace
-            + tag + RegExpPatterns::whitespace
-            + dictionaryKeyInBracketsPattern + RegExpPatterns::whitespace
-            + "=[^\"']*";
-}
-
-int indexOfModWithUnknownNameInDatabase(const QString &modFolderName, const QString &modFolderPath,
-                                        ModDatabaseModel &database, const int oldDatabaseSize, bool *isModNameValid)
+int ModScanner::indexOfModWithUnknownNameInDatabase(ScanData &data, bool *isModNameValid)
 {
     QString managerPath = QCoreApplication::applicationDirPath().replace('/', '\\');
 
     // Self check
-    if (managerPath.contains(modFolderPath)) {
+    if (managerPath.contains(data.modFolderPath)) {
         if (isModNameValid) {
             *isModNameValid = true;
         }
@@ -287,12 +270,12 @@ int indexOfModWithUnknownNameInDatabase(const QString &modFolderName, const QStr
         return -1;
     }
 
-    for (int row = 0; row < oldDatabaseSize; ++row) {
-        if (modFolderName == database.modFolderName(database.index(row))) {
-            database.modInfoRef(database.index(row)).setExists(true);
+    for (int row = 0; row < data.oldModelSize; ++row) {
+        if (data.modFolderName == data.model.modFolderName(data.model.index(row))) {
+            data.model.modInfoRef(data.model.index(row)).setExists(true);
 
             if (isModNameValid) {
-                *isModNameValid = database.isNameValid(database.modName(database.index(row)));
+                *isModNameValid = data.model.isNameValid(data.model.modName(data.model.index(row)));
             }
 
             return row;
