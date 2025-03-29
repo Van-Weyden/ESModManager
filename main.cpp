@@ -1,5 +1,7 @@
 #include <QApplication>
 #include <QDebug>
+#include <QMessageBox>
+#include <QSharedMemory>
 
 #include "Logger.h"
 #include "MainWindow.h"
@@ -14,13 +16,18 @@ int main(int argc, char *argv[])
 
     QApplication app(argc, argv);
 
-    MainWindow mw;
-
-    if (mw.isEnabled()) {
-        mw.show();
-    } else {
-        return 0;
+    QSharedMemory guard("everlasting-summer-mod-manager-single-app-guard");
+    if (!guard.create(1, QSharedMemory::ReadWrite)) {
+        QMessageBox::critical(
+            nullptr, QObject::tr("Mod manager is running"),
+            QObject::tr("Mod manager is already running!"),
+            QMessageBox::StandardButton::Ok, QMessageBox::StandardButton::NoButton
+        );
+        return -2;
     }
+
+    MainWindow mw;
+    mw.show();
 
     return app.exec();
 }

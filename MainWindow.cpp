@@ -161,12 +161,10 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
-    if (isEnabled()) {
-        saveSettings();
+    saveSettings();
 
         m_model->sort(1);
         saveDatabase();
-    }
 
     QApplication::removeTranslator(m_translator);
     QApplication::removeTranslator(m_qtTranslator);
