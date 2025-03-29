@@ -361,3 +361,5 @@ MigrationBackup/
 FodyWeavers.xsd
 
 *.bak
+
+builds/
