@@ -11,7 +11,7 @@ ModInfoWidget::ModInfoWidget(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    connect(ui->modNameLineEdit, &QLineEdit::editingFinished, [this]() {
+    connect(ui->modNameLineEdit, &QLineEdit::editingFinished, this, [this]() {
         if (!m_model || !m_modIndex.isValid()) {
             return;
         }
@@ -22,7 +22,7 @@ ModInfoWidget::ModInfoWidget(QWidget *parent) :
         }
     });
 
-    connect(ui->lockedCheckBox, &QCheckBox::clicked, [this]() {
+    connect(ui->lockedCheckBox, &QCheckBox::clicked, this, [this]() {
         if (!m_model || !m_modIndex.isValid()) {
             return;
         }
@@ -33,7 +33,7 @@ ModInfoWidget::ModInfoWidget(QWidget *parent) :
         }
     });
 
-    connect(ui->markedCheckBox, &QCheckBox::clicked, [this]() {
+    connect(ui->markedCheckBox, &QCheckBox::clicked, this, [this]() {
         if (!m_model || !m_modIndex.isValid()) {
             return;
         }
@@ -44,14 +44,14 @@ ModInfoWidget::ModInfoWidget(QWidget *parent) :
         }
     });
 
-    connect(ui->openModFolderPushButton, &QPushButton::clicked, [this]() {
+    connect(ui->openModFolderPushButton, &QPushButton::clicked, this, [this]() {
         if (!m_model || !m_modIndex.isValid()) {
             return;
         }
         emit openFolder(m_modIndex);
     });
 
-    connect(ui->openWorkshopPushButton, &QPushButton::clicked, [this]() {
+    connect(ui->openWorkshopPushButton, &QPushButton::clicked, this, [this]() {
         if (!m_model || !m_modIndex.isValid()) {
             return;
         }

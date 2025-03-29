@@ -61,10 +61,6 @@ public slots:
     void setCompleteModNames(const bool enabled = true);
     void setUsingSteamModNames(const bool use = true);
 
-protected slots:
-    void setCompleteModNames(const int mode);
-    void setUsingSteamModNames(const int mode);
-
 private:
     QVector<ModInfo> m_database;
 

@@ -67,10 +67,9 @@ void DatabaseEditor::setModel(ModDatabaseModel *model, const int columnIndex)
     }
 
     if (m_model != nullptr) {
-        disconnect(ui->databaseView->selectionModel(), SIGNAL(currentChanged(QModelIndex, QModelIndex)),
-                this, SLOT(showSelectedModInfo()));
-        disconnect(m_model, SIGNAL(dataChanged(QModelIndex, QModelIndex, QVector<int>)),
-                this, SLOT(adjustRow(QModelIndex)));
+        disconnect(ui->databaseView->selectionModel(), &QItemSelectionModel::currentChanged,
+                   this, &DatabaseEditor::showSelectedModInfo);
+        disconnect(m_model, &ModDatabaseModel::dataChanged, this, &DatabaseEditor::adjustRow);
     }
 
     m_model = model;
@@ -83,10 +82,9 @@ void DatabaseEditor::setModel(ModDatabaseModel *model, const int columnIndex)
     ui->databaseView->horizontalHeader()->setSectionResizeMode(columnIndex, QHeaderView::Stretch);
 
     setModsDisplay(!ui->showAllModsCheckBox->isChecked());
-    connect(ui->databaseView->selectionModel(), SIGNAL(currentChanged(QModelIndex, QModelIndex)),
-            this, SLOT(showSelectedModInfo()));
-    connect(m_model, SIGNAL(dataChanged(QModelIndex, QModelIndex)),
-            this, SLOT(adjustRow(QModelIndex)));
+    connect(ui->databaseView->selectionModel(), &QItemSelectionModel::currentChanged,
+               this, &DatabaseEditor::showSelectedModInfo);
+    connect(m_model, &ModDatabaseModel::dataChanged, this, &DatabaseEditor::adjustRow);
 }
 
 void DatabaseEditor::setModsDisplay(const bool modlistOnly)

@@ -20,7 +20,8 @@ SteamRequester::SteamRequester(ModDatabaseModel *modDatabaseModel)
 {
     m_modDatabaseModel = modDatabaseModel;
     m_networkAccessManager = new QNetworkAccessManager(this);
-    connect(m_networkAccessManager, SIGNAL(finished(QNetworkReply *)), this, SLOT(processModName(QNetworkReply *)));
+    connect(m_networkAccessManager, &QNetworkAccessManager::finished,
+            this, &SteamRequester::processModName);
 }
 
 //public slots:

@@ -44,9 +44,10 @@ MainWindow::MainWindow(QWidget *parent) :
     m_model = new ModDatabaseModel();
     m_steamRequester = new SteamRequester(m_model);
     m_thread = new QThread;
-    connect(m_thread, SIGNAL(started()), m_steamRequester, SLOT(requestModNames()));
-    connect(m_steamRequester, SIGNAL(modProcessed()), this, SLOT(steamModNameProcessed()), Qt::BlockingQueuedConnection);
-    connect(m_steamRequester, SIGNAL(finished()), m_thread, SLOT(quit()));
+    connect(m_thread, &QThread::started, m_steamRequester, &SteamRequester::requestModNames);
+    connect(m_steamRequester, &SteamRequester::modProcessed,
+            this, &MainWindow::steamModNameProcessed, Qt::BlockingQueuedConnection);
+    connect(m_steamRequester, &SteamRequester::finished, m_thread, &QThread::quit);
     m_steamRequester->moveToThread(m_thread);
 
     m_scanner = new ModScanner(this);
@@ -80,29 +81,27 @@ MainWindow::MainWindow(QWidget *parent) :
     //connections:
 
     //Signals from form objects:
-    connect(ui->actionAddShortcutToDesktop, SIGNAL(triggered()), this, SLOT(addShortcutToDesktop()));
-    connect(ui->actionOpenManagerFolder, SIGNAL(triggered()), this, SLOT(openManagerFolder()));
-    connect(ui->actionAbout, SIGNAL(triggered()), this, SLOT(showAboutInfo()));
-    connect(ui->actionAnnouncements, SIGNAL(triggered()), this, SLOT(showAnnouncementMessageBox()));
+    connect(ui->actionAddShortcutToDesktop, &QAction::triggered, this, &MainWindow::addShortcutToDesktop);
+    connect(ui->actionOpenManagerFolder, &QAction::triggered, this, &MainWindow::openManagerFolder);
+    connect(ui->actionAbout, &QAction::triggered, this, &MainWindow::showAboutInfo);
+    connect(ui->actionAnnouncements, &QAction::triggered, this, &MainWindow::showAnnouncementMessageBox);
 
-    connect(ui->actionCompleteModNames, SIGNAL(toggled(bool)),
-            m_model, SLOT(setCompleteModNames(bool)));
-    connect(ui->actionUseSteamModNames, SIGNAL(toggled(bool)),
-            m_model, SLOT(setUsingSteamModNames(bool)));
+    connect(ui->actionCompleteModNames, &QAction::toggled, m_model, &ModDatabaseModel::setCompleteModNames);
+    connect(ui->actionUseSteamModNames, &QAction::toggled, m_model, &ModDatabaseModel::setUsingSteamModNames);
 
-    connect(ui->actionOpenDatabaseEditor, SIGNAL(triggered()), m_databaseEditor, SLOT(show()));
+    connect(ui->actionOpenDatabaseEditor, &QAction::triggered, m_databaseEditor, &DatabaseEditor::show);
 
-    connect(ui->engLangButton, SIGNAL(clicked()), this, SLOT(setEnglishLanguage()));
-    connect(ui->rusLangButton, SIGNAL(clicked()), this, SLOT(setRussianLanguage()));
+    connect(ui->engLangButton, &QPushButton::clicked, this, &MainWindow::setEnglishLanguage);
+    connect(ui->rusLangButton, &QPushButton::clicked, this, &MainWindow::setRussianLanguage);
 
-    connect(ui->disableAllButton, SIGNAL(clicked()), this, SLOT(disableAllMods()));
-    connect(ui->enableAllButton, SIGNAL(clicked()), this, SLOT(enableAllMods()));
-    connect(ui->refreshButton, SIGNAL(clicked()), this, SLOT(refreshModlist()));
-    connect(ui->runButton, SIGNAL(clicked()), this, SLOT(runGame()));
+    connect(ui->disableAllButton, &QPushButton::clicked, this, &MainWindow::disableAllMods);
+    connect(ui->enableAllButton, &QPushButton::clicked, this, &MainWindow::enableAllMods);
+    connect(ui->refreshButton, &QPushButton::clicked, this, &MainWindow::refreshModlist);
+    connect(ui->runButton, &QPushButton::clicked, this, &MainWindow::runGame);
 
-    connect(ui->clearSearchPushButton, SIGNAL(clicked()), ui->searchLineEdit, SLOT(clear()));
-    connect(ui->searchLineEdit, SIGNAL(textChanged(const QString &)), m_enabledModsModel, SLOT(setFilter(const QString &)));
-    connect(ui->searchLineEdit, SIGNAL(textChanged(const QString &)), m_disabledModsModel, SLOT(setFilter(const QString &)));
+    connect(ui->clearSearchPushButton, &QPushButton::clicked, ui->searchLineEdit, &QLineEdit::clear);
+    connect(ui->searchLineEdit, &QLineEdit::textChanged, m_enabledModsModel, &ModFilterProxyModel::setFilter);
+    connect(ui->searchLineEdit, &QLineEdit::textChanged, m_disabledModsModel, &ModFilterProxyModel::setFilter);
 
     connect(ui->enabledModsList, &QTreeView::doubleClicked, this, [this](const QModelIndex &i) {
         m_enabledModsModel->setData(i, false, ModDatabaseModel::ModRole::Enabled);
@@ -123,10 +122,9 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->disabledModsList, &QTreeView::pressed, ui->enabledModsList, &QTreeView::clearSelection);
 
     //Other signals:
-    connect(m_steamRequester, SIGNAL(finished()), ui->progressLabel, SLOT(hide()));
-    connect(m_steamRequester, SIGNAL(finished()), ui->progressBar, SLOT(hide()));
-    connect(m_databaseEditor, SIGNAL(openModFolder(const QModelIndex &)),
-            this, SLOT(openModFolder(const QModelIndex &)));
+    connect(m_steamRequester, &SteamRequester::finished, ui->progressLabel, &QLabel::hide);
+    connect(m_steamRequester, &SteamRequester::finished, ui->progressBar, &QLabel::hide);
+    connect(m_databaseEditor, &DatabaseEditor::openModFolder, this, &MainWindow::openModFolder);
 
     //this->adjustSize();
 
@@ -286,7 +284,7 @@ void MainWindow::refreshModlist()
     int modsCount = QDir(m_modsFolderPath).entryList(QDir::Dirs|QDir::NoDotAndDotDot).count();
     QProgressDialog progressDialog(tr("Mod Manager: scanning installed mods..."), "", 0, modsCount);
     progressDialog.setCancelButton(nullptr);
-    connect(m_scanner, SIGNAL(modScanned(int)), &progressDialog, SLOT(setValue(int)));
+    connect(m_scanner, &ModScanner::modScanned, &progressDialog, &QProgressDialog::setValue);
     progressDialog.show();
 
     ui->progressBar->setMaximum(modsCount);

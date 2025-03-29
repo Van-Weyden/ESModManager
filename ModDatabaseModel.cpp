@@ -289,23 +289,3 @@ void ModDatabaseModel::disableMod(const QModelIndex &index)
         emit dataChanged(index, index);
     }
 }
-
-//protected slots:
-
-void ModDatabaseModel::setCompleteModNames(const int mode)
-{
-    if (mode == Qt::CheckState::Checked) {
-        setCompleteModNames(true);
-    } else if (mode == Qt::CheckState::Unchecked) {
-        setCompleteModNames(false);
-    }
-}
-
-void ModDatabaseModel::setUsingSteamModNames(const int mode)
-{
-    if (mode == Qt::CheckState::Checked) {
-        setUsingSteamModNames(true);
-    } else if (mode == Qt::CheckState::Unchecked) {
-        setUsingSteamModNames(false);
-    }
-}
