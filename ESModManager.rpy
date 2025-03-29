@@ -59,19 +59,22 @@ init -999 python:
                     imgsModsMenu_polyMods.append(self.label)
                 except:
                     pass
+                    
+        def isAutoexitDisabled(self):
+            self.managerSettings = open(self.managerDirPath + self.managerSettingsFullFileName, "r")
+            for self.line in self.managerSettings:
+                if (self.line.startswith("bAutoexit=")):
+                    #If the autoexit is disabled, the manager will be reopened automatically after closing the game.
+                    return self.line.startswith("bAutoexit=false")
+            return True
         
         def onClickedInGameMenu(self):
             if (self.canUse):
                 esmm_processChecker = esmm_subprocess.Popen([self.processCheckerFullPath, self.managerFileName])
 
                 if (esmm_processChecker.wait()):
-                    self.managerSettings = open(self.managerBinDirPath + self.managerSettingsFullFileName, "r")
-                    for self.line in self.managerSettings:
-                        if (self.line.startswith("bAutoexit=")):
-                            #If the autoexit is disabled, the manager will be reopened automatically after closing the game.
-                            if (not self.line.startswith("bAutoexit=false")):
-                                self.runWaitingLauncher(self.managerFileName)
-                            break;
+                    if (self.isAutoexitDisabled()):
+                        self.runWaitingLauncher(self.managerFileName)
                 else:
                     self.runWaitingLauncher(self.gameFileName)
 

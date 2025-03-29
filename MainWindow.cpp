@@ -76,7 +76,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     m_databaseEditor = new DatabaseEditor();
 
-    m_settings = new QSettings(QString("settings.ini"), QSettings::IniFormat, this);
+    m_settings = new QSettings(SettingsFilePath, QSettings::IniFormat, this);
     m_qtTranslator = new QTranslator();
     m_translator = new QTranslator();
 
@@ -162,9 +162,15 @@ MainWindow::MainWindow(QWidget *parent) :
 MainWindow::~MainWindow()
 {
     saveSettings();
+    updateDisabledModsFile();
 
-        m_model->sort(1);
-        saveDatabase();
+    m_model->sort(1);
+    saveDatabase();
+
+    if (ui->actionLaunchBeforeGame->isChecked()) {
+        QFile file(DisableAutolaunchFilePath);
+        file.remove();
+    }
 
     QApplication::removeTranslator(m_translator);
     QApplication::removeTranslator(m_qtTranslator);
@@ -194,7 +200,7 @@ void MainWindow::clearSearchField()
 
 void MainWindow::loadDatabase()
 {
-    QFile file(modDatabaseFileName());
+    QFile file(ModDatabaseFilePath);
     if (file.exists()) {
         QJsonDocument database;
         //QJsonParseError err;
@@ -224,7 +230,7 @@ void MainWindow::saveDatabase() const
         mods.append(modInfo.toJsonObject());
     }
     QJsonDocument database(mods);
-    rewriteFileIfDataIsDifferent("mods_database.json", database.toJson());
+    rewriteFileIfDataIsDifferent(ModDatabaseFilePath, database.toJson());
 }
 
 bool MainWindow::setLanguage(const QString &lang)
@@ -348,6 +354,7 @@ void MainWindow::runGame()
     //We must ensure that autoexit flag is up to date because it will be read by our .rpy script
     m_settings->setValue("General/bAutoexit", ui->actionAutoexit->isChecked());
     m_settings->sync();
+    rewriteFileIfDataIsDifferent(DisableAutolaunchFilePath, "");
 
     gameLauncher->start();
 }
@@ -370,8 +377,7 @@ void MainWindow::showAboutInfo()
         " <a href='https://vk.com/svet_mag'>" + tr("Alexey Golikov") + "</a>"
         "<br><br>" +
         tr("This program is used to 'fix' conflicts of mods and speed up the launch of the game. "
-           "Before launching the game, all unselected mods are moved to another folder, "
-           "so the game engine will not load them.") +
+           "It allows to disable mods so the game engine will not load them.") +
         "<br><br>" + rkkOrionMessage()
     );
     messageAbout.setInformativeText(
@@ -402,13 +408,10 @@ void MainWindow::showShortcutAddMessageBox()
                              QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No,
                              nullptr, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
     messageAbout.setText(
-        tr("This manager modifies the game files in such a way that when the game is started via Steam, "
-           "the manager will be launched first.\n\n"
-           "However, due to periodic checks of the game files integrity by Steam, "
-           "the original files can be restored. In this case, the manager will also start before the game, "
+        tr("Due to updates of the game, current mod load system might be broken."
+           "In this case, the manager will also start, "
            "but only if the game can load all installed mods.\n\n In other words, "
-           "if there are too many mods, and Steam will restore the original game launcher, "
-           "the manager will need to be launched manually from its folder.\n\n"
+           "if there are too many mods, the manager will need to be launched manually from its folder.\n\n"
            "You can now add a shortcut to the desktop to make it easier to launch the manager in such situations.")
     );
     messageAbout.setInformativeText(tr("Do you want to add a manager shortcut to your desktop?"));
@@ -634,7 +637,7 @@ void MainWindow::updateDisabledModsFile()
             disabledMods.append(modInfo.folderName + "\n");
         }
     }
-    rewriteFileIfDataIsDifferent("disabled_mods.txt", disabledMods.toUtf8());
+    rewriteFileIfDataIsDifferent(DisabledModsFilePath, disabledMods.toUtf8());
 }
 
 void MainWindow::readSettings()

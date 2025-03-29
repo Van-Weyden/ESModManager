@@ -88,7 +88,6 @@ private:
 
     static QString addExecutableExtension(const QString &fileName);         //inline
     static QString managerFileName(const bool addExtension = true);         //inline
-    static QString modDatabaseFileName();                                   //inline
 
 private:
     Ui::MainWindow *ui = nullptr;
@@ -121,9 +120,12 @@ private:
 
     static constexpr const char *DefaultGameFolderPath =
         "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Everlasting Summer\\";
-    static constexpr const char *ManagerFileName        = "ESModManager";
-    static constexpr const char *ExecutableExtension    = ".exe";
-
+    static constexpr const char *ManagerFileName           = "ESModManager";
+    static constexpr const char *SettingsFilePath          = "../settings.ini";
+    static constexpr const char *ModDatabaseFilePath       = "../mods_database.json";
+    static constexpr const char *DisabledModsFilePath      = "../disabled_mods.txt";
+    static constexpr const char *DisableAutolaunchFilePath = "../disable_autolaunch";
+    static constexpr const char *ExecutableExtension       = ".exe";
 
     static const bool Is64BitOs;
     QString m_gameFileName;
@@ -163,11 +165,6 @@ inline QString MainWindow::addExecutableExtension(const QString &fileName)
 inline QString MainWindow::managerFileName(const bool addExtension)
 {
     return (addExtension ? addExecutableExtension(ManagerFileName) : ManagerFileName);
-}
-
-inline QString MainWindow::modDatabaseFileName()
-{
-    return "mods_database.json";
 }
 
 #endif // MAINWINDOW_H
