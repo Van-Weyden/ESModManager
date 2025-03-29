@@ -83,6 +83,14 @@ private:
     void applyBackwardCompatibilityFixes(const int loadedApplicationVersion);
     QString rkkOrionMessage();
 
+    QString gameFileName(const bool addExtension = true) const;             //inline
+    QString gameFilePath() const;                                           //inline
+
+    static QString addExecutableExtension(const QString &fileName);         //inline
+    static QString managerFileName(const bool addExtension = true);         //inline
+    static QString modDatabaseFileName();                                   //inline
+
+private:
     Ui::MainWindow *ui = nullptr;
     DatabaseEditor *m_databaseEditor = nullptr;
 
@@ -113,19 +121,12 @@ private:
 
     static constexpr const char *DefaultGameFolderPath =
         "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Everlasting Summer\\";
+    static constexpr const char *ManagerFileName        = "ESModManager";
     static constexpr const char *ExecutableExtension    = ".exe";
 
-    static constexpr const char *ManagerFileName        = "ESModManager";
 
     static const bool Is64BitOs;
     QString m_gameFileName;
-
-    static QString addExecutableExtension(const QString &fileName);         //inline
-
-    static QString managerFileName(const bool addExtension = true);         //inline
-    static QString modDatabaseFileName();                                   //inline
-    QString gameFileName(const bool addExtension = true) const;             //inline
-    QString gameFilePath() const;                       //inline
 };
 
 
@@ -144,6 +145,16 @@ inline void MainWindow::setRussianLanguage()
 
 //private:
 
+inline QString MainWindow::gameFileName(const bool addExtension) const
+{
+    return (addExtension ? addExecutableExtension(m_gameFileName) : m_gameFileName);
+}
+
+inline QString MainWindow::gameFilePath() const
+{
+    return m_gameFolderPath + gameFileName();
+}
+
 inline QString MainWindow::addExecutableExtension(const QString &fileName)
 {
     return (fileName.endsWith(ExecutableExtension) ? fileName : fileName + ExecutableExtension);
@@ -157,16 +168,6 @@ inline QString MainWindow::managerFileName(const bool addExtension)
 inline QString MainWindow::modDatabaseFileName()
 {
     return "mods_database.json";
-}
-
-inline QString MainWindow::gameFileName(const bool addExtension) const
-{
-    return (addExtension ? addExecutableExtension(m_gameFileName) : m_gameFileName);
-}
-
-inline QString MainWindow::gameFilePath() const
-{
-    return m_gameFolderPath + gameFileName();
 }
 
 #endif // MAINWINDOW_H
