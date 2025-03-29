@@ -18,23 +18,28 @@ public:
     };
 
     explicit ModScanner(QObject *parent = nullptr);
-    void scanMods(const QString &modsFolderPath, ModDatabaseModel &model,
-                  const EnabledFlagInitValue enabledFlag = NotOverride);
+
+    void setModsFolderPath(const QString &modsFolderPath);
+    void setModel(ModDatabaseModel *model);
+    void setEnabledFlag(EnabledFlagInitValue enabledFlag);
+
+public slots:
+    void scanMods();
 
 signals:
     void modScanned(int countOfScannedMods);
+    void modsScanned();
 
 private:
     struct ScanData
     {
         const QString &modFolderName;
         const QString &modFolderPath;
-        ModDatabaseModel &model;
         const int oldModelSize;
     };
 
 private:
-    void scanMod(ScanData data, const EnabledFlagInitValue enabledFlagValue);
+    void scanMod(ScanData data);
     int indexOfModWithUnknownNameInDatabase(ScanData& data, bool *isModNameValid);
 
 private:
@@ -49,6 +54,11 @@ private:
     QRegExp m_pythonCommentRegExp;
     QRegExp m_allFromBeginToQuoteRegExp;
     QRegExp m_allFromQuoteToEndRegExp;
+
+    bool m_isRunning = false;
+    QString m_modsFolderPath;
+    ModDatabaseModel *m_model = nullptr;
+    EnabledFlagInitValue m_enabledFlag = NotOverride;
 };
 
 #endif // MODSCANNER_H

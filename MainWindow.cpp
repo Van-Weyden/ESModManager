@@ -43,14 +43,19 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     m_model = new ModDatabaseModel();
     m_steamRequester = new SteamRequester(m_model);
-    m_thread = new QThread;
-    connect(m_thread, &QThread::started, m_steamRequester, &SteamRequester::requestModNames);
+    m_requesterThread = new QThread;
+    connect(m_requesterThread, &QThread::started, m_steamRequester, &SteamRequester::requestModNames);
     connect(m_steamRequester, &SteamRequester::modProcessed,
             this, &MainWindow::steamModNameProcessed, Qt::BlockingQueuedConnection);
-    connect(m_steamRequester, &SteamRequester::finished, m_thread, &QThread::quit);
-    m_steamRequester->moveToThread(m_thread);
+    connect(m_steamRequester, &SteamRequester::finished, m_requesterThread, &QThread::quit);
+    m_steamRequester->moveToThread(m_requesterThread);
 
-    m_scanner = new ModScanner(this);
+    m_scanner = new ModScanner;
+    m_scanner->setModel(m_model);
+    m_scannerThread = new QThread;
+    connect(m_scannerThread, &QThread::started, m_scanner, &ModScanner::scanMods);
+    connect(m_scanner, &ModScanner::modsScanned, m_scannerThread, &QThread::quit);
+    m_scanner->moveToThread(m_scannerThread);
 
     ui->setupUi(this);
 
@@ -165,14 +170,19 @@ MainWindow::~MainWindow()
 
     QApplication::removeTranslator(m_translator);
     QApplication::removeTranslator(m_qtTranslator);
+
+    m_requesterThread->requestInterruption();
+    m_scannerThread->requestInterruption();
+    m_requesterThread->deleteLater();
+    m_scannerThread->deleteLater();
     m_steamRequester->deleteLater();
-    m_thread->deleteLater();
+    m_scanner->deleteLater();
+
     delete m_translator;
     delete m_qtTranslator;
     delete m_settings;
     delete m_model;
     delete m_databaseEditor;
-    delete m_scanner;
 
     delete ui;
 }
@@ -205,7 +215,7 @@ void MainWindow::loadDatabase()
 void MainWindow::requestSteamModNames()
 {
     if (!m_steamRequester->isRunning()) {
-        m_thread->start();
+        m_requesterThread->start();
     }
 }
 
@@ -217,12 +227,6 @@ void MainWindow::saveDatabase() const
     }
     QJsonDocument database(mods);
     rewriteFileIfDataIsDifferent("mods_database.json", database.toJson());
-}
-
-void MainWindow::scanMods()
-{
-    m_scanner->scanMods(m_modsFolderPath, *m_model);
-    m_model->sort();
 }
 
 bool MainWindow::setLanguage(const QString &lang)
@@ -285,12 +289,16 @@ void MainWindow::refreshModlist()
     QProgressDialog progressDialog(tr("Mod Manager: scanning installed mods..."), "", 0, modsCount);
     progressDialog.setCancelButton(nullptr);
     connect(m_scanner, &ModScanner::modScanned, &progressDialog, &QProgressDialog::setValue);
-    progressDialog.show();
+    connect(m_scanner, &ModScanner::modsScanned, &progressDialog, &QProgressDialog::accept);
 
     ui->progressBar->setMaximum(modsCount);
     ui->progressBar->setValue(0);
 
-    scanMods();
+    m_scanner->setModsFolderPath(m_modsFolderPath);
+    m_scannerThread->start();
+    progressDialog.exec();
+
+    m_model->sort();
 
     ui->progressLabel->show();
     ui->progressBar->show();

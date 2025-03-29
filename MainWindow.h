@@ -34,7 +34,6 @@ public:
     void loadDatabase();
     void requestSteamModNames();
     void saveDatabase() const;
-    void scanMods();
 
     bool setLanguage(const QString &lang);
 
@@ -87,7 +86,8 @@ private:
     Ui::MainWindow *ui = nullptr;
     DatabaseEditor *m_databaseEditor = nullptr;
 
-    QThread *m_thread = nullptr;
+    QThread *m_requesterThread = nullptr;
+    QThread *m_scannerThread = nullptr;
     SteamRequester *m_steamRequester = nullptr;
     QSettings *m_settings = nullptr;
     QTranslator *m_qtTranslator = nullptr;

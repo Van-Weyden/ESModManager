@@ -127,37 +127,56 @@ ModScanner::ModScanner(QObject *parent) :
     );
 }
 
-void ModScanner::scanMods(const QString &modsFolderPath, ModDatabaseModel &model,
-                          const EnabledFlagInitValue enabledFlag)
+void ModScanner::setModsFolderPath(const QString &modsFolderPath)
 {
-    model.reset([&]() {
-        model.setModsExistsState(false);
+    m_modsFolderPath = modsFolderPath;
+}
+
+void ModScanner::setModel(ModDatabaseModel *model)
+{
+    m_model = model;
+}
+
+void ModScanner::setEnabledFlag(EnabledFlagInitValue enabledFlag)
+{
+    m_enabledFlag = enabledFlag;
+}
+
+void ModScanner::scanMods()
+{
+    if (m_isRunning || !m_model || m_modsFolderPath.isEmpty()) {
+        return;
+    }
+    m_isRunning = true;
+    m_model->reset([&]() {
+        m_model->setModsExistsState(false);
         int countOfScannedMods = 0;
-        int oldModelSize = model.size();
-        QStringList modsFolders = QDir(modsFolderPath).entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+        int oldModelSize = m_model->size();
+        QStringList modsFolders = QDir(m_modsFolderPath).entryList(QDir::Dirs | QDir::NoDotAndDotDot);
 
         while (!modsFolders.isEmpty()) {
             QString modFolderName = modsFolders.takeFirst();
-            scanMod({modFolderName, modsFolderPath + modFolderName, model, oldModelSize}, enabledFlag);
+            scanMod({modFolderName, m_modsFolderPath + modFolderName, oldModelSize});
             emit modScanned(++countOfScannedMods);
-            QApplication::processEvents();
         }
     });
+    m_isRunning = false;
+    emit modsScanned();
 }
 
 
 
 //private:
 
-void ModScanner::scanMod(ScanData data, const EnabledFlagInitValue enabledFlagValue)
+void ModScanner::scanMod(ScanData data)
 {
     bool isModNameValid;
     int row = indexOfModWithUnknownNameInDatabase(data, &isModNameValid);
 
     if (isModNameValid) {
-        if (row != -1 && enabledFlagValue != EnabledFlagInitValue::NotOverride) {
-            data.model.modInfoRef(data.model.index(row)).setEnabled(
-                enabledFlagValue == EnabledFlagInitValue::ForceTrue ? true : false
+        if (row != -1 && m_enabledFlag != EnabledFlagInitValue::NotOverride) {
+            m_model->modInfoRef(m_model->index(row)).setEnabled(
+                m_enabledFlag == EnabledFlagInitValue::ForceTrue ? true : false
             );
         }
 
@@ -167,8 +186,8 @@ void ModScanner::scanMod(ScanData data, const EnabledFlagInitValue enabledFlagVa
     ModInfo modInfo;
     modInfo.folderName = data.modFolderName;
 
-    if (enabledFlagValue != EnabledFlagInitValue::NotOverride) {
-        modInfo.setEnabled(enabledFlagValue == EnabledFlagInitValue::ForceTrue ? true : false);
+    if (m_enabledFlag != EnabledFlagInitValue::NotOverride) {
+        modInfo.setEnabled(m_enabledFlag == EnabledFlagInitValue::ForceTrue ? true : false);
     }
 
     QString initKey;
@@ -251,9 +270,9 @@ void ModScanner::scanMod(ScanData data, const EnabledFlagInitValue enabledFlagVa
     }
 
     if (row == -1) {
-        data.model.add(modInfo);
+        m_model->add(modInfo);
     } else {
-        data.model.modInfoRef(data.model.index(row)).name = modInfo.name;
+        m_model->modInfoRef(m_model->index(row)).name = modInfo.name;
     }
 }
 
@@ -271,11 +290,11 @@ int ModScanner::indexOfModWithUnknownNameInDatabase(ScanData &data, bool *isModN
     }
 
     for (int row = 0; row < data.oldModelSize; ++row) {
-        if (data.modFolderName == data.model.modFolderName(data.model.index(row))) {
-            data.model.modInfoRef(data.model.index(row)).setExists(true);
+        if (data.modFolderName == m_model->modFolderName(m_model->index(row))) {
+            m_model->modInfoRef(m_model->index(row)).setExists(true);
 
             if (isModNameValid) {
-                *isModNameValid = data.model.isNameValid(data.model.modName(data.model.index(row)));
+                *isModNameValid = m_model->isNameValid(m_model->modName(m_model->index(row)));
             }
 
             return row;
