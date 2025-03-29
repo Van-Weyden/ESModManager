@@ -324,26 +324,32 @@ void MainWindow::runGame()
         return;
     }
 
+    ui->runButton->setEnabled(false);
+
     if (m_databaseEditor->isVisible()) {
         m_databaseEditor->close();
     }
 
     updateDisabledModsFile();
 
-    QProcess gameLauncher;
-    gameLauncher.setWorkingDirectory(QDir(m_gameFolderPath).absolutePath());
-    gameLauncher.setProgram(QFileInfo(gameFilePath()).absoluteFilePath());
+    QProcess *gameLauncher = new QProcess();
+    gameLauncher->setWorkingDirectory(QDir(m_gameFolderPath).absolutePath());
+    gameLauncher->setProgram(QFileInfo(gameFilePath()).absoluteFilePath());
+    connect(gameLauncher, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, [this](){
+        if (ui->actionAutoexit->isChecked()) {
+            QApplication::exit();
+        } else {
+            ui->runButton->setEnabled(true);
+        }
+    });
+    connect(gameLauncher, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+            gameLauncher, &QProcess::deleteLater);
 
     //We must ensure that autoexit flag is up to date because it will be read by our .rpy script
     m_settings->setValue("General/bAutoexit", ui->actionAutoexit->isChecked());
     m_settings->sync();
 
-    gameLauncher.start();
-    gameLauncher.waitForStarted(-1);
-
-    if (ui->actionAutoexit->isChecked()) {
-        QApplication::exit();
-    }
+    gameLauncher->start();
 }
 
 void MainWindow::showAboutInfo()
