@@ -31,6 +31,7 @@ signals:
 
 private:
     void modNameProcessed();
+    void onFinished(const QString &failedStub);
 
     QNetworkAccessManager *m_networkAccessManager = nullptr;
     ModDatabaseModel *m_modDatabaseModel = nullptr;

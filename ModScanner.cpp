@@ -1,6 +1,7 @@
 #include <QApplication>
 #include <QDebug>
 #include <QDirIterator>
+#include <QThread>
 
 #include "ModDatabaseModel.h"
 #include "RegExpPatterns.h"
@@ -150,17 +151,22 @@ void ModScanner::scanMods()
     m_isRunning = true;
     m_model->reset([&]() {
         m_model->setModsExistsState(false);
-        int countOfScannedMods = 0;
+        m_countOfScannedMods = 0;
         int oldModelSize = m_model->size();
         QStringList modsFolders = QDir(m_modsFolderPath).entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+        QList<QModelIndex> modsWithUnknownName;
 
         while (!modsFolders.isEmpty()) {
             QString modFolderName = modsFolders.takeFirst();
-            scanMod({modFolderName, m_modsFolderPath + modFolderName, oldModelSize});
-            emit modScanned(++countOfScannedMods);
+            registerMod({modFolderName, m_modsFolderPath + modFolderName, oldModelSize}, modsWithUnknownName);
+        }
+
+        while (!modsWithUnknownName.isEmpty() && !QThread::currentThread()->isInterruptionRequested()) {
+            tryResolveName(m_model->modInfoRef(modsWithUnknownName.takeFirst()));
         }
     });
     m_isRunning = false;
+
     emit modsScanned();
 }
 
@@ -168,9 +174,9 @@ void ModScanner::scanMods()
 
 //private:
 
-void ModScanner::scanMod(ScanData data)
+void ModScanner::registerMod(ScanData data, QList<QModelIndex> &modsWithUnknownName)
 {
-    bool isModNameValid;
+    bool isModNameValid = false;
     int row = indexOfModWithUnknownNameInDatabase(data, &isModNameValid);
 
     if (isModNameValid) {
@@ -180,29 +186,42 @@ void ModScanner::scanMod(ScanData data)
             );
         }
 
+        // emits for invalid names will be sent from the 'tryResolveName' method
+        emit modScanned(++m_countOfScannedMods);
         return;
     }
 
     ModInfo modInfo;
+    modInfo.name = ModInfo::generateUnknownNameStub();
     modInfo.folderName = data.modFolderName;
 
     if (m_enabledFlag != EnabledFlagInitValue::NotOverride) {
         modInfo.setEnabled(m_enabledFlag == EnabledFlagInitValue::ForceTrue ? true : false);
     }
 
+    if (row == -1) {
+        row = m_model->size();
+        m_model->add(modInfo);
+    }
+
+    modsWithUnknownName.append(m_model->index(row));
+}
+
+void ModScanner::tryResolveName(ModInfo &modInfo)
+{
     QString initKey;
     QString prioryModName;
     QString prioryModNameKey;
     QMap<QString, QString> initMap;
 
-    bool isModTagsFounded = false;    
-    QDir modDir(data.modFolderPath);
+    bool isModTagsFounded = false;
+    QDir modDir(m_modsFolderPath + modInfo.folderName);
     QDirIterator it(modDir.path(), {"*.rpy"}, QDir::Files, QDirIterator::Subdirectories);
-    while (it.hasNext()) {
+    while (it.hasNext() && !QThread::currentThread()->isInterruptionRequested()) {
         QFile file(it.next());
         file.open(QFile::ReadOnly);
         //'QFile::canReadLine' may return false in some cases, so check the end of the file with 'QFile::atEnd'
-        while (!file.atEnd()) {
+        while (!file.atEnd() && !QThread::currentThread()->isInterruptionRequested()) {
             QString line = file.readLine();
 
             if (m_pythonCommentRegExp.indexIn(line) > -1 && !m_pythonCommentRegExp.cap(17).isEmpty()) {
@@ -243,6 +262,11 @@ void ModScanner::scanMod(ScanData data)
         file.close();
     }
 
+    if (QThread::currentThread()->isInterruptionRequested())
+    {
+        return;
+    }
+
     if (!prioryModName.isEmpty()) {
         initMap[prioryModNameKey] = prioryModName;
     }
@@ -269,11 +293,7 @@ void ModScanner::scanMod(ScanData data)
         }
     }
 
-    if (row == -1) {
-        m_model->add(modInfo);
-    } else {
-        m_model->modInfoRef(m_model->index(row)).name = modInfo.name;
-    }
+    emit modScanned(++m_countOfScannedMods);
 }
 
 int ModScanner::indexOfModWithUnknownNameInDatabase(ScanData &data, bool *isModNameValid)

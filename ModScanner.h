@@ -4,6 +4,7 @@
 #include <QObject>
 
 class ModDatabaseModel;
+class ModInfo;
 
 class ModScanner : public QObject
 {
@@ -39,7 +40,8 @@ private:
     };
 
 private:
-    void scanMod(ScanData data);
+    void registerMod(ScanData data, QList<QModelIndex> &mods);
+    void tryResolveName(ModInfo &modInfo);
     int indexOfModWithUnknownNameInDatabase(ScanData& data, bool *isModNameValid);
 
 private:
@@ -56,6 +58,7 @@ private:
     QRegExp m_allFromQuoteToEndRegExp;
 
     bool m_isRunning = false;
+    int m_countOfScannedMods;
     QString m_modsFolderPath;
     ModDatabaseModel *m_model = nullptr;
     EnabledFlagInitValue m_enabledFlag = NotOverride;

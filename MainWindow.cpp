@@ -176,10 +176,13 @@ MainWindow::~MainWindow()
     QApplication::removeTranslator(m_qtTranslator);
 
     m_requesterThread->requestInterruption();
-    m_scannerThread->requestInterruption();
+    m_requesterThread->quit();
     m_requesterThread->deleteLater();
-    m_scannerThread->deleteLater();
     m_steamRequester->deleteLater();
+
+    m_scannerThread->requestInterruption();
+    m_scannerThread->quit();
+    m_scannerThread->deleteLater();
     m_scanner->deleteLater();
 
     delete m_translator;
@@ -294,6 +297,10 @@ void MainWindow::refreshModlist()
     progressDialog.setCancelButton(nullptr);
     connect(m_scanner, &ModScanner::modScanned, &progressDialog, &QProgressDialog::setValue);
     connect(m_scanner, &ModScanner::modsScanned, &progressDialog, &QProgressDialog::accept);
+    connect(&progressDialog, &QProgressDialog::canceled, m_scannerThread, [this](){
+        m_scannerThread->requestInterruption();
+        m_scannerThread->quit();
+    });
 
     ui->progressBar->setMaximum(modsCount);
     ui->progressBar->setValue(0);
