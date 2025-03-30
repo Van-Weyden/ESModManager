@@ -773,7 +773,31 @@ void MainWindow::applyBackwardCompatibilityFixes(const int loadedApplicationVers
         return;
     }
 
-    //FIXME: move mods from default temp folder
+    if (loadedApplicationVersion < applicationVersion(2, 0, 0)) {
+        QString tempModsFolderPath = m_gameFolderPath + "mods (temp)\\";
+        QDir tempModsFolder(tempModsFolderPath);
+
+        if (tempModsFolder.exists()) {
+            QDirIterator it(tempModsFolder.path(), QDir::Dirs);
+            while (it.hasNext()) {
+                QFileInfo modFolder(it.next());
+                QDir().rename(
+                    modFolder.path(),
+                    m_modsFolderPath + modFolder.baseName()
+                );
+            }
+            QDir().remove(tempModsFolderPath);
+        }
+
+        if (!tempModsFolderPath.isEmpty()) {
+            for (const ModInfo &modInfo : qAsConst(m_model->modList())) {
+                QDir dir;
+                if (modInfo.exists() && dir.exists(tempModsFolderPath + modInfo.folderName)) {
+
+                }
+            }
+        }
+    }
 }
 
 QString MainWindow::rkkOrionMessage()
