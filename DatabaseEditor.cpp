@@ -14,26 +14,16 @@ DatabaseEditor::DatabaseEditor(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    connect(ui->modInfo, &ModInfoWidget::openFolder,
-            this, &DatabaseEditor::openModFolder);
+    connect(ui->modInfo, &ModInfoWidget::openFolder, this, &DatabaseEditor::openModFolder);
+    connect(ui->removeModPushButton, &QPushButton::clicked, this, &DatabaseEditor::removeSelectedMod);
 
-    connect(ui->removeModPushButton, &QPushButton::clicked,
-            this, &DatabaseEditor::removeSelectedMod);
-
-    connect(ui->clearSearchPushButton, &QPushButton::clicked,
-            ui->searchLineEdit, &QLineEdit::clear);
-
-    connect(ui->searchLineEdit, &QLineEdit::textChanged,
-            this, &DatabaseEditor::filterModsDisplay);
-
-    connect(ui->showAllModsCheckBox, &QCheckBox::stateChanged,
-            this, &DatabaseEditor::setModsDisplayMode);
+    connect(ui->searchLineEdit, &QLineEdit::textChanged, this, &DatabaseEditor::filterModsDisplay);
+    connect(ui->clearSearchPushButton, &QPushButton::clicked, ui->searchLineEdit, &QLineEdit::clear);
+    connect(ui->eraseDatabaseButton, &QPushButton::clicked, this, &DatabaseEditor::eraseDatabase);
+    connect(ui->showAllModsCheckBox, &QCheckBox::stateChanged, this, &DatabaseEditor::setModsDisplayMode);
 
     connect(ui->databaseView->horizontalHeader(), &QHeaderView::geometriesChanged,
             ui->databaseView, &QTableView::resizeRowsToContents);
-
-    connect(ui->eraseDatabaseButton, &QPushButton::clicked,
-            this, &DatabaseEditor::eraseDatabase);
 }
 
 DatabaseEditor::~DatabaseEditor()
@@ -48,16 +38,18 @@ void DatabaseEditor::checkModsDisplay()
 
 void DatabaseEditor::hideAllRows()
 {
-    if (m_model == nullptr)
+    if (m_model == nullptr) {
         return;
+    }
 
     ui->searchLineEdit->blockSignals(true);
     ui->searchLineEdit->clear();
     ui->searchLineEdit->blockSignals(false);
 
     int rowCount = m_model->size();
-    for (int rowIndex = 0; rowIndex < rowCount; ++rowIndex)
+    for (int rowIndex = 0; rowIndex < rowCount; ++rowIndex) {
         ui->databaseView->setRowHidden(rowIndex, true);
+    }
 }
 
 void DatabaseEditor::setModel(ModDatabaseModel *model, const int columnIndex)
@@ -83,7 +75,7 @@ void DatabaseEditor::setModel(ModDatabaseModel *model, const int columnIndex)
 
     setModsDisplay(!ui->showAllModsCheckBox->isChecked());
     connect(ui->databaseView->selectionModel(), &QItemSelectionModel::currentChanged,
-               this, &DatabaseEditor::showSelectedModInfo);
+            this, &DatabaseEditor::showSelectedModInfo);
     connect(m_model, &ModDatabaseModel::dataChanged, this, &DatabaseEditor::adjustRow);
 }
 
@@ -135,8 +127,9 @@ void DatabaseEditor::filterModsDisplay(const QString &str)
 void DatabaseEditor::removeSelectedMod()
 {
     QModelIndex modIndex = ui->databaseView->selectionModel()->currentIndex();
-    if (!modIndex.isValid())
+    if (!modIndex.isValid()) {
         return;
+    }
 
     m_model->removeFromDatabase(modIndex);
 }
