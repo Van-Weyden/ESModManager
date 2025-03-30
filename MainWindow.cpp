@@ -543,14 +543,14 @@ void MainWindow::initActions()
             QDesktopServices::openUrl(QUrl(
                 "steam://url/CommunityFilePage/" + m_model->modFolderName(index)
             ));
-            return false;
+            return false; // Can't open several pages via Steam client
         });
     });
 
     connect(m_openFolderAction, &QAction::triggered, this, [this]() {
         performOnSelectedMods([this](ModDatabaseModel */*model*/, QModelIndex index) {
             openModFolder(index);
-            return false;
+            return true;
         });
     });
 
