@@ -78,6 +78,8 @@ QVariant ModDatabaseModel::data(const QModelIndex &index, int role) const
     }
 
     switch (role) {
+        case Qt::EditRole:
+            Q_FALLTHROUGH();
         case Qt::DisplayRole:
             return displayedModName(m_database[index.row()]);
         break;
@@ -131,7 +133,7 @@ QVariant ModDatabaseModel::data(const QModelIndex &index, int role) const
 
 Qt::ItemFlags ModDatabaseModel::flags(const QModelIndex &index) const
 {
-    return QAbstractItemModel::flags(index) | Qt::ItemIsUserCheckable;
+    return QAbstractItemModel::flags(index) | Qt::ItemIsUserCheckable | Qt::ItemIsEditable;
 }
 
 QVariant ModDatabaseModel::headerData(int section, Qt::Orientation orientation, int role) const
@@ -173,7 +175,7 @@ bool ModDatabaseModel::setData(const QModelIndex &index, const QVariant &value, 
     bool isDataChanged = false;
 
     switch (role) {
-        case Qt::DisplayRole:
+        case Qt::EditRole:
             if (m_useSteamModNames) {
                 m_database[index.row()].steamName = value.toString();
             } else {

@@ -4,11 +4,12 @@
 #include <functional>
 
 #include <QMainWindow>
+#include <QModelIndex>
 #include <QString>
 
-class QItemSelectionModel;
 class QSettings;
 class QTranslator;
+class QTreeView;
 
 class DatabaseEditor;
 class ModDatabaseModel;
@@ -69,7 +70,8 @@ private slots:
     void performOnSelectedMods(std::function<bool(ModDatabaseModel *model, QModelIndex index)> action);
 
 private:
-    QItemSelectionModel *selectedMods() const;
+    QTreeView *selectedView() const;
+    void closeViewEditor();
     void initActions();
     void setupItemContextMenu(const ModInfo &item) const;
     bool isGameFolderValid(const QString &folderPath);
@@ -96,6 +98,7 @@ private:
     QThread *m_requesterThread = nullptr;
     QThread *m_scannerThread = nullptr;
     SteamRequester *m_steamRequester = nullptr;
+    ModScanner *m_scanner = nullptr;
     QSettings *m_settings = nullptr;
     QTranslator *m_qtTranslator = nullptr;
     QTranslator *m_translator = nullptr;
@@ -107,7 +110,7 @@ private:
     ModDatabaseModel *m_model = nullptr;
     ModFilterProxyModel *m_enabledModsModel = nullptr;
     ModFilterProxyModel *m_disabledModsModel = nullptr;
-    ModScanner *m_scanner = nullptr;
+    QPair<QTreeView*, QModelIndex> m_viewEditorData = {nullptr, QModelIndex()};
 
     QMenu *m_itemContextMenu = nullptr;
     QAction *m_setEnabledAction = nullptr;

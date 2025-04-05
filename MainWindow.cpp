@@ -13,7 +13,6 @@
 #include <QProcess>
 #include <QProgressDialog>
 #include <QSettings>
-#include <QStyledItemDelegate>
 #include <QTimer>
 #include <QThread>
 #include <QTranslator>
@@ -123,8 +122,14 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->disabledModsList, &QTreeView::customContextMenuRequested,
             this, &MainWindow::showModContextMenu);
 
-    connect(ui->enabledModsList, &QTreeView::pressed, ui->disabledModsList, &QTreeView::clearSelection);
-    connect(ui->disabledModsList, &QTreeView::pressed, ui->enabledModsList, &QTreeView::clearSelection);
+    connect(ui->enabledModsList, &QTreeView::pressed, this, [this](){
+        ui->disabledModsList->clearSelection();
+        closeViewEditor();
+    });
+    connect(ui->disabledModsList, &QTreeView::pressed, this, [this](){
+        ui->enabledModsList->clearSelection();
+        closeViewEditor();
+    });
 
     //Other signals:
     connect(m_steamRequester, &SteamRequester::finished, ui->progressLabel, &QLabel::hide);
@@ -484,13 +489,13 @@ void MainWindow::showModContextMenu(const QPoint &pos)
 
 void MainWindow::performOnSelectedMods(std::function<bool(ModDatabaseModel *model, QModelIndex index)> action)
 {
-    QItemSelectionModel *selection = selectedMods();
-    ModFilterProxyModel *model = selection ? qobject_cast<ModFilterProxyModel *>(selection->model()) : nullptr;
-    if (!selection || !model) {
+    QTreeView *view = selectedView();
+    ModFilterProxyModel *model = view ? qobject_cast<ModFilterProxyModel *>(view->model()) : nullptr;
+    if (!view || !model) {
         return;
     }
 
-    const QModelIndexList &selectedIndexes = selection->selectedIndexes();
+    const QModelIndexList &selectedIndexes = view->selectionModel()->selectedIndexes();
     for (auto index : selectedIndexes) {
         if (!action(m_model, model->mapToSource(index))) {
             break;
@@ -501,12 +506,20 @@ void MainWindow::performOnSelectedMods(std::function<bool(ModDatabaseModel *mode
 
 //private:
 
-QItemSelectionModel *MainWindow::selectedMods() const
+QTreeView *MainWindow::selectedView() const
 {
     if (ui->disabledModsList->selectionModel()->hasSelection()) {
-        return ui->enabledModsList->selectionModel()->hasSelection() ? nullptr : ui->disabledModsList->selectionModel();
+        return ui->enabledModsList->selectionModel()->hasSelection() ? nullptr : ui->disabledModsList;
     } else {
-        return ui->enabledModsList->selectionModel()->hasSelection() ? ui->enabledModsList->selectionModel() : nullptr;
+        return ui->enabledModsList->selectionModel()->hasSelection() ? ui->enabledModsList : nullptr;
+    }
+}
+
+void MainWindow::closeViewEditor()
+{
+    if (m_viewEditorData.first) {
+        m_viewEditorData.first->closePersistentEditor(m_viewEditorData.second);
+        m_viewEditorData = {nullptr, QModelIndex()};
     }
 }
 
@@ -552,6 +565,20 @@ void MainWindow::initActions()
             openModFolder(index);
             return true;
         });
+    });
+
+    connect(m_renameAction, &QAction::triggered, this, [this]() {
+        QTreeView *view = selectedView();
+        if (!view) {
+            return;
+        }
+
+        const QModelIndexList &selectedIndexes = view->selectionModel()->selectedIndexes();
+        if (selectedIndexes.size() > 0) {
+            view->setCurrentIndex(selectedIndexes.first());
+            view->edit(selectedIndexes.first());
+            m_viewEditorData = {view, selectedIndexes.first()};
+        }
     });
 
     connect(m_setLockedAction, &QAction::triggered, this, [this]() {
