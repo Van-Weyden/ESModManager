@@ -252,15 +252,24 @@
         <property name="selectionBehavior">
          <enum>QAbstractItemView::SelectRows</enum>
         </property>
+        <property name="textElideMode">
+         <enum>Qt::ElideNone</enum>
+        </property>
+        <property name="indentation">
+         <number>0</number>
+        </property>
         <property name="rootIsDecorated">
          <bool>false</bool>
         </property>
         <property name="animated">
          <bool>true</bool>
         </property>
-        <attribute name="headerVisible">
-         <bool>false</bool>
-        </attribute>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+        <property name="headerHidden">
+         <bool>true</bool>
+        </property>
        </widget>
       </item>
       <item row="1" column="2">
@@ -283,10 +292,19 @@
         <property name="selectionBehavior">
          <enum>QAbstractItemView::SelectRows</enum>
         </property>
+        <property name="textElideMode">
+         <enum>Qt::ElideNone</enum>
+        </property>
+        <property name="indentation">
+         <number>0</number>
+        </property>
         <property name="rootIsDecorated">
          <bool>false</bool>
         </property>
         <property name="animated">
+         <bool>true</bool>
+        </property>
+        <property name="wordWrap">
          <bool>true</bool>
         </property>
         <property name="headerHidden">

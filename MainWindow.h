@@ -15,6 +15,7 @@ class DatabaseEditor;
 class ModDatabaseModel;
 class ModFilterProxyModel;
 class ModInfo;
+class ModNameDelegate;
 class ModScanner;
 class SteamRequester;
 
@@ -110,6 +111,7 @@ private:
     ModDatabaseModel *m_model = nullptr;
     ModFilterProxyModel *m_enabledModsModel = nullptr;
     ModFilterProxyModel *m_disabledModsModel = nullptr;
+    ModNameDelegate* m_modNameDelegate = nullptr;
     QPair<QTreeView*, QModelIndex> m_viewEditorData = {nullptr, QModelIndex()};
 
     QMenu *m_itemContextMenu = nullptr;

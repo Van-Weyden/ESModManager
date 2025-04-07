@@ -57,6 +57,9 @@ public:
 
     void reset(std::function<void ()> actions);
 
+    bool submit() override;
+    void revert() override;
+
 public slots:
     void enableMod(const QModelIndex &index);
     void disableMod(const QModelIndex &index);
@@ -66,6 +69,7 @@ public slots:
 
 private:
     QVector<ModInfo> m_database;
+    QMap<QModelIndex, QString> m_editingName;
 
     bool m_completeModNames;
     bool m_useSteamModNames;

@@ -79,6 +79,9 @@ QVariant ModDatabaseModel::data(const QModelIndex &index, int role) const
 
     switch (role) {
         case Qt::EditRole:
+            if (m_editingName.contains(index)) {
+                return m_editingName[index];
+            }
             Q_FALLTHROUGH();
         case Qt::DisplayRole:
             return displayedModName(m_database[index.row()]);
@@ -176,11 +179,7 @@ bool ModDatabaseModel::setData(const QModelIndex &index, const QVariant &value, 
 
     switch (role) {
         case Qt::EditRole:
-            if (m_useSteamModNames) {
-                m_database[index.row()].steamName = value.toString();
-            } else {
-                m_database[index.row()].name = value.toString();
-            }
+            m_editingName[index] = value.toString();
             isDataChanged = true;
         break;
 
@@ -262,6 +261,30 @@ void ModDatabaseModel::reset(std::function<void()> actions)
     beginResetModel();
     actions();
     endResetModel();
+}
+
+bool ModDatabaseModel::submit()
+{
+    if (m_editingName.isEmpty()) {
+        return false;
+    }
+
+    const auto& keys = m_editingName.keys();
+    for (const QModelIndex& index : keys) {
+        if (m_useSteamModNames) {
+            m_database[index.row()].steamName = m_editingName[index];
+        } else {
+            m_database[index.row()].name = m_editingName[index];
+        }
+    }
+    m_editingName.clear();
+
+    return true;
+}
+
+void ModDatabaseModel::revert()
+{
+    m_editingName.clear();
 }
 
 void ModDatabaseModel::setUsingSteamModNames(const bool use)

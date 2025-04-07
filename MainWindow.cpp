@@ -20,6 +20,7 @@
 #include "applicationVersion.h"
 #include "DatabaseEditor.h"
 #include "ModDatabaseModel.h"
+#include "ModNameDelegate.h"
 #include "ModScanner.h"
 #include "proxyModels.h"
 #include "SteamRequester.h"
@@ -61,13 +62,19 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->engLangButton->setIcon(QIcon(":/images/Flag-United-States.ico"));
     ui->rusLangButton->setIcon(QIcon(":/images/Flag-Russia.ico"));
 
+    m_modNameDelegate = new ModNameDelegate(this);
+    ui->enabledModsList->setItemDelegate(m_modNameDelegate);
+    ui->disabledModsList->setItemDelegate(m_modNameDelegate);
+
+    connect(ui->enabledModsList->header(), &QHeaderView::sectionResized,
+            ui->enabledModsList, &QTreeView::doItemsLayout);
+    connect(ui->disabledModsList->header(), &QHeaderView::sectionResized,
+            ui->disabledModsList, &QTreeView::doItemsLayout);
+
     m_enabledModsModel = new EnabledModsProxyModel(this, m_model);
     m_disabledModsModel = new DisabledModsProxyModel(this, m_model);
 
-    ui->enabledModsList->setStyleSheet("QTreeView::item:!selected:!hover { border-bottom: 1px solid #E5E5E5; }");
     ui->enabledModsList->setModel(m_enabledModsModel);
-
-    ui->disabledModsList->setStyleSheet("QTreeView::item:!selected:!hover { border-bottom: 1px solid #E5E5E5; }");
     ui->disabledModsList->setModel(m_disabledModsModel);
 
     ui->progressLabel->hide();
@@ -518,7 +525,10 @@ QTreeView *MainWindow::selectedView() const
 void MainWindow::closeViewEditor()
 {
     if (m_viewEditorData.first) {
-        m_viewEditorData.first->closePersistentEditor(m_viewEditorData.second);
+        emit m_modNameDelegate->closeEditor(
+            m_viewEditorData.first->indexWidget(m_viewEditorData.second),
+            QAbstractItemDelegate::SubmitModelCache
+        );
         m_viewEditorData = {nullptr, QModelIndex()};
     }
 }

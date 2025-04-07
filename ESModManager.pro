@@ -33,6 +33,8 @@ SOURCES += \
         ModDatabaseModel.cpp \
         ModInfo.cpp \
         ModInfoWidget.cpp \
+        ModNameDelegate.cpp \
+        ModNameEditor.cpp \
         ModScanner.cpp \
         RegExpPatterns.cpp \
         SteamRequester.cpp \
@@ -47,6 +49,8 @@ HEADERS += \
         ModDatabaseModel.h \
         ModInfo.h \
         ModInfoWidget.h \
+        ModNameDelegate.h \
+        ModNameEditor.h \
         ModScanner.h \
         RegExpPatterns.h \
         SteamRequester.h \
