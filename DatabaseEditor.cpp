@@ -1,7 +1,7 @@
 #include <QDesktopServices>
 #include <QUrl>
 
-#include "ModDatabaseModel.h"
+#include "mvc/ModDatabaseModel.h"
 
 #include "DatabaseEditor.h"
 #include "ui_DatabaseEditor.h"

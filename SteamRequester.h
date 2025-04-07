@@ -1,5 +1,4 @@
-#ifndef STEAMWEBAPI_H
-#define STEAMWEBAPI_H
+#pragma once
 
 #include <QObject>
 
@@ -48,5 +47,3 @@ inline bool SteamRequester::isRunning() const
 {
     return m_isRunning;
 }
-
-#endif // STEAMWEBAPI_H

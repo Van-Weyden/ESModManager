@@ -1,5 +1,4 @@
-#ifndef APPLICATIONVERSION_H
-#define APPLICATIONVERSION_H
+#pragma once
 
 class QString;
 
@@ -30,5 +29,3 @@ constexpr int microApplicationVersion(int version)
 
 QString applicationVersionToString(const int version = currentApplicationVersion(), const char separator = '.');
 int applicationVersionFromString(const QString &version, const char separator = '.');
-
-#endif // APPLICATIONVERSION_H

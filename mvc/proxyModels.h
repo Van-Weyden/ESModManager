@@ -1,5 +1,4 @@
-#ifndef PROXYMODELS_H
-#define PROXYMODELS_H
+#pragma once
 
 #include <QSortFilterProxyModel>
 
@@ -33,5 +32,3 @@ public:
     DisabledModsProxyModel(QObject *parent = nullptr, QAbstractItemModel *model = nullptr);
     bool filterAccepts(const QModelIndex &sourceModelIndex) const override;
 };
-
-#endif // PROXYMODELS_H

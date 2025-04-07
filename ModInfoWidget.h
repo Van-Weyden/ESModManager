@@ -2,7 +2,7 @@
 
 #include <QWidget>
 
-#include "ModDatabaseModel.h"
+#include "mvc/ModDatabaseModel.h"
 
 namespace Ui {
 class ModInfoWidget;

@@ -1,5 +1,4 @@
-#ifndef MODSCANNER_H
-#define MODSCANNER_H
+#pragma once
 
 #include <QObject>
 
@@ -63,5 +62,3 @@ private:
     ModDatabaseModel *m_model = nullptr;
     EnabledFlagInitValue m_enabledFlag = NotOverride;
 };
-
-#endif // MODSCANNER_H

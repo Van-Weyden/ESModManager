@@ -6,7 +6,7 @@
 #include <QIcon>
 #include <QThread>
 
-#include "RegExpPatterns.h"
+#include "utils/RegExpPatterns.h"
 #include "SteamRequester.h"
 
 #include "ModDatabaseModel.h"

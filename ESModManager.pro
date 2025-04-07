@@ -30,32 +30,32 @@ SOURCES += \
         DatabaseEditor.cpp \
         Logger.cpp \
         MainWindow.cpp \
-        ModDatabaseModel.cpp \
         ModInfo.cpp \
         ModInfoWidget.cpp \
-        ModNameDelegate.cpp \
-        ModNameEditor.cpp \
         ModScanner.cpp \
-        RegExpPatterns.cpp \
         SteamRequester.cpp \
-        applicationVersion.cpp \
         main.cpp \
-        proxyModels.cpp
+        mvc/ModDatabaseModel.cpp \
+        mvc/ModNameDelegate.cpp \
+        mvc/ModNameEditor.cpp \
+        mvc/proxyModels.cpp \
+        utils/RegExpPatterns.cpp \
+        utils/applicationVersion.cpp
 
 HEADERS += \
         DatabaseEditor.h \
         Logger.h \
         MainWindow.h \
-        ModDatabaseModel.h \
         ModInfo.h \
         ModInfoWidget.h \
-        ModNameDelegate.h \
-        ModNameEditor.h \
         ModScanner.h \
-        RegExpPatterns.h \
         SteamRequester.h \
-        applicationVersion.h \
-        proxyModels.h
+        mvc/ModDatabaseModel.h \
+        mvc/ModNameDelegate.h \
+        mvc/ModNameEditor.h \
+        mvc/proxyModels.h \
+        utils/RegExpPatterns.h \
+        utils/applicationVersion.h
 
 FORMS += \
         DatabaseEditor.ui \

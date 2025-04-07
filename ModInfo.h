@@ -1,5 +1,4 @@
-#ifndef MODINFO_H
-#define MODINFO_H
+#pragma once
 
 #include <QMetaType>
 #include <QString>
@@ -78,5 +77,3 @@ inline bool ModInfo::locked() const
 {
     return m_locked;
 }
-
-#endif // MODINFO_H

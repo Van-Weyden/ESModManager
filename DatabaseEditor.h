@@ -1,5 +1,4 @@
-#ifndef DATABASEEDITOR_H
-#define DATABASEEDITOR_H
+#pragma once
 
 #include <QWidget>
 
@@ -44,5 +43,3 @@ private:
 
     ModDatabaseModel *m_model = nullptr;
 };
-
-#endif // DATABASEEDITOR_H

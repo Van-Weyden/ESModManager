@@ -1,5 +1,4 @@
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#pragma once
 
 #include <functional>
 
@@ -171,5 +170,3 @@ inline QString MainWindow::managerFileName(const bool addExtension)
 {
     return (addExtension ? addExecutableExtension(ManagerFileName) : ManagerFileName);
 }
-
-#endif // MAINWINDOW_H

@@ -3,8 +3,8 @@
 #include <QDirIterator>
 #include <QThread>
 
-#include "ModDatabaseModel.h"
-#include "RegExpPatterns.h"
+#include "mvc/ModDatabaseModel.h"
+#include "utils/RegExpPatterns.h"
 
 #include "ModScanner.h"
 

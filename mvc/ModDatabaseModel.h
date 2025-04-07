@@ -1,5 +1,4 @@
-#ifndef MODSDATABASEMODEL_H
-#define MODSDATABASEMODEL_H
+#pragma once
 
 #include <QAbstractListModel>
 
@@ -150,5 +149,3 @@ inline void ModDatabaseModel::updateRow(const QModelIndex &index)
 {
     emit dataChanged(index, index);
 }
-
-#endif // MODSDATABASEMODEL_H

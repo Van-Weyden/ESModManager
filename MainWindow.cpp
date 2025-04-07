@@ -17,12 +17,13 @@
 #include <QThread>
 #include <QTranslator>
 
-#include "applicationVersion.h"
+#include "mvc/ModDatabaseModel.h"
+#include "mvc/ModNameDelegate.h"
+#include "mvc/proxyModels.h"
+#include "utils/applicationVersion.h"
+
 #include "DatabaseEditor.h"
-#include "ModDatabaseModel.h"
-#include "ModNameDelegate.h"
 #include "ModScanner.h"
-#include "proxyModels.h"
 #include "SteamRequester.h"
 
 #include "MainWindow.h"

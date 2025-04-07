@@ -11,7 +11,7 @@
 #include <QTimer>
 #include <QUrlQuery>
 
-#include "ModDatabaseModel.h"
+#include "mvc/ModDatabaseModel.h"
 
 #include "SteamRequester.h"
 

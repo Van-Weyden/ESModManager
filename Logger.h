@@ -1,5 +1,4 @@
-#ifndef LOGGER_H
-#define LOGGER_H
+#pragma once
 
 #include <QtGlobal>
 
@@ -37,5 +36,3 @@ private:
     QFile *m_criticalLogFile;
     QFile *m_fatalLogFile;
 };
-
-#endif // LOGGER_H
