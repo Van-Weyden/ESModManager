@@ -83,7 +83,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     m_databaseEditor = new DatabaseEditor();
 
-    m_settings = new QSettings(SettingsFilePath, QSettings::IniFormat, this);
+    m_settings = new QSettings(settingsFilePath(), QSettings::IniFormat, this);
     m_qtTranslator = new QTranslator();
     m_translator = new QTranslator();
 
@@ -181,7 +181,7 @@ MainWindow::~MainWindow()
     saveDatabase();
 
     if (ui->actionLaunchBeforeGame->isChecked()) {
-        QFile file(DisableAutolaunchFilePath);
+        QFile file(disableAutolaunchFilePath());
         file.remove();
     }
 
@@ -216,7 +216,7 @@ void MainWindow::clearSearchField()
 
 void MainWindow::loadDatabase()
 {
-    QFile file(ModDatabaseFilePath);
+    QFile file(modDatabaseFilePath());
     if (file.exists()) {
         QJsonDocument database;
         //QJsonParseError err;
@@ -246,7 +246,7 @@ void MainWindow::saveDatabase() const
         mods.append(modInfo.toJsonObject());
     }
     QJsonDocument database(mods);
-    rewriteFileIfDataIsDifferent(ModDatabaseFilePath, database.toJson());
+    rewriteFileIfDataIsDifferent(modDatabaseFilePath(), database.toJson());
 }
 
 bool MainWindow::setLanguage(const QString &lang)
@@ -374,7 +374,7 @@ void MainWindow::runGame()
     //We must ensure that autoexit flag is up to date because it will be read by our .rpy script
     m_settings->setValue("General/bAutoexit", ui->actionAutoexit->isChecked());
     m_settings->sync();
-    rewriteFileIfDataIsDifferent(DisableAutolaunchFilePath, "");
+    rewriteFileIfDataIsDifferent(disableAutolaunchFilePath(), "");
 
     gameLauncher->start();
 }
@@ -682,7 +682,7 @@ void MainWindow::updateDisabledModsFile()
             disabledMods.append(modInfo.folderName + "\n");
         }
     }
-    rewriteFileIfDataIsDifferent(DisabledModsFilePath, disabledMods.toUtf8());
+    rewriteFileIfDataIsDifferent(disabledModsFilePath(), disabledMods.toUtf8());
 }
 
 void MainWindow::readSettings()

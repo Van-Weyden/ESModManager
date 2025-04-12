@@ -91,6 +91,11 @@ private:
     static QString addExecutableExtension(const QString &fileName);         //inline
     static QString managerFileName(const bool addExtension = true);         //inline
 
+    static QString settingsFilePath();          //inline
+    static QString modDatabaseFilePath();       //inline
+    static QString disabledModsFilePath();      //inline
+    static QString disableAutolaunchFilePath(); //inline
+
 private:
     Ui::MainWindow *ui = nullptr;
     DatabaseEditor *m_databaseEditor = nullptr;
@@ -125,10 +130,11 @@ private:
     static constexpr const char *DefaultGameFolderPath =
         "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Everlasting Summer\\";
     static constexpr const char *ManagerFileName           = "ESModManager";
-    static constexpr const char *SettingsFilePath          = "../settings.ini";
-    static constexpr const char *ModDatabaseFilePath       = "../mods_database.json";
-    static constexpr const char *DisabledModsFilePath      = "../disabled_mods.txt";
-    static constexpr const char *DisableAutolaunchFilePath = "../disable_autolaunch";
+    static constexpr const char *FilesFolderPath           = "../../";
+    static constexpr const char *SettingsFileName          = "settings.ini";
+    static constexpr const char *ModDatabaseFileName       = "mods_database.json";
+    static constexpr const char *DisabledModsFileName      = "disabled_mods.txt";
+    static constexpr const char *DisableAutolaunchFileName = "disable_autolaunch";
     static constexpr const char *ExecutableExtension       = ".exe";
 
     static const bool Is64BitOs;
@@ -169,4 +175,24 @@ inline QString MainWindow::addExecutableExtension(const QString &fileName)
 inline QString MainWindow::managerFileName(const bool addExtension)
 {
     return (addExtension ? addExecutableExtension(ManagerFileName) : ManagerFileName);
+}
+
+inline QString MainWindow::settingsFilePath()
+{
+    return QString(FilesFolderPath) + SettingsFileName;
+}
+
+inline QString MainWindow::modDatabaseFilePath()
+{
+    return QString(FilesFolderPath) + ModDatabaseFileName;
+}
+
+inline QString MainWindow::disabledModsFilePath()
+{
+    return QString(FilesFolderPath) + DisabledModsFileName;
+}
+
+inline QString MainWindow::disableAutolaunchFilePath()
+{
+    return QString(FilesFolderPath) + DisableAutolaunchFileName;
 }
