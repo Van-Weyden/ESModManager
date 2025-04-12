@@ -83,6 +83,13 @@ MainWindow::MainWindow(QWidget *parent) :
 
     m_databaseEditor = new DatabaseEditor();
 
+    if (!QFileInfo::exists(settingsFilePath()) && QFileInfo::exists(QString("../") + SettingsFileName))
+    {
+        /// Move files from the old folder for the backward compatibility
+        QFile::rename(QString("../") + SettingsFileName, settingsFilePath());
+        QFile::rename(QString("../") + ModDatabaseFileName, modDatabaseFilePath());
+    }
+
     m_settings = new QSettings(settingsFilePath(), QSettings::IniFormat, this);
     m_qtTranslator = new QTranslator();
     m_translator = new QTranslator();
@@ -811,8 +818,55 @@ void MainWindow::applyBackwardCompatibilityFixes(const int loadedApplicationVers
         return;
     }
 
+    QString tempModsFolderPath = m_gameFolderPath + "mods (temp)\\";
+    if (m_settings->contains("General/sTempModsFolder")) {
+        QVariant value = m_settings->value("General/sTempModsFolder");
+        if (value != QVariant()) {
+            tempModsFolderPath = value.toString();
+        }
+    }
+
+    if (loadedApplicationVersion < applicationVersion(1, 1, 9)) {
+        ///Fix bug from old versions when game folder path contained "Everlasting Summer.exe"
+        m_gameFolderPath.remove("Everlasting Summer.exe");
+        m_modsFolderPath.remove("Everlasting Summer.exe");
+        tempModsFolderPath.remove("Everlasting Summer.exe");
+
+        ///Conversion from old version of DB
+        {
+            QFile file("mods_database.dat");
+
+            if (file.exists()) {
+                QJsonDocument database;
+                QJsonArray mods;
+                QJsonObject mod;
+                ModInfo modInfo;
+
+                file.open(QFile::ReadOnly);
+                do {
+                    mod["Name"] = QString(file.readLine()).remove(QRegExp("[\\n\\r]"));
+                    if (!file.canReadLine()) {
+                        break;
+                    }
+
+                    mod["Folder name"] = QString(file.readLine()).remove(QRegExp("[\\n\\r]"));
+                    if (!file.canReadLine()) {
+                        break;
+                    }
+
+                    mod["Is enabled"] = bool(QString(file.readLine()).remove(QRegExp("[\\n\\r]")).toInt());
+                    mods.append(mod);
+                } while (file.canReadLine());
+                file.close();
+                file.remove();
+
+                database.setArray(mods);
+                rewriteFileIfDataIsDifferent(modDatabaseFilePath(), database.toJson());
+            }
+        }
+    }
+
     if (loadedApplicationVersion < applicationVersion(2, 0, 0)) {
-        QString tempModsFolderPath = m_gameFolderPath + "mods (temp)\\";
         QDir tempModsFolder(tempModsFolderPath);
 
         if (tempModsFolder.exists()) {
@@ -824,14 +878,32 @@ void MainWindow::applyBackwardCompatibilityFixes(const int loadedApplicationVers
                     m_modsFolderPath + modFolder.baseName()
                 );
             }
-            QDir().remove(tempModsFolderPath);
-        }
 
-        if (!tempModsFolderPath.isEmpty()) {
-            for (const ModInfo &modInfo : qAsConst(m_model->modList())) {
-                QDir dir;
-                if (modInfo.exists() && dir.exists(tempModsFolderPath + modInfo.folderName)) {
+            if (!QDir().remove(tempModsFolderPath)) {
+                QMessageBox warningMessage(
+                    QMessageBox::Warning, tr("Unmoved mods"),
+                    tr("Failed to move back some of mods from the temp folder.\n"
+                       "Probably Steam re-download some of disabled mods.") + "\n\n" +
+                    tr("You can move these folders manually from the folder:") + "\n\n" +
+                    tempModsFolderPath + "\n\n" + tr("to the mods folder:") + "\n\n" + m_modsFolderPath + "\n\n" +
+                    tr("with the files replacement or just delete the temp mod folder if you don't need it."),
+                    QMessageBox::StandardButton::Ok | QMessageBox::StandardButton::Open,
+                    this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint
+                );
 
+                warningMessage.button(QMessageBox::StandardButton::Open)->setText(
+                    tr("Open mods folder and temp folder in explorer")
+                );
+                warningMessage.setDefaultButton(QMessageBox::StandardButton::Ok);
+                auto pressedButton = QMessageBox::StandardButton(warningMessage.exec());
+
+                while (pressedButton == QMessageBox::StandardButton::Open) {
+                    warningMessage.show(); //Must call show() before openUrl(), or exec() will not work properly
+
+                    QDesktopServices::openUrl(QUrl("file:///" + tempModsFolderPath));
+                    QDesktopServices::openUrl(QUrl("file:///" + m_modsFolderPath));
+
+                    pressedButton = QMessageBox::StandardButton(warningMessage.exec());
                 }
             }
         }
