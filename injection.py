@@ -1,5 +1,6 @@
     # ESModManager injection begin
     try:
+        esmm_dir = ""
         for dir in renpy.config.searchpath:
             if dir.endswith("/1826799366"):
                 esmm_dir = dir

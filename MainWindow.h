@@ -6,7 +6,9 @@
 #include <QModelIndex>
 #include <QString>
 
+class QItemSelection;
 class QSettings;
+class QSortFilterProxyModel;
 class QTranslator;
 class QTreeView;
 
@@ -67,13 +69,20 @@ private slots:
      * @brief Perform function 'action' on the each mod in the selection.
      * Action may return false to stop mod processing.
      */
-    void performOnSelectedMods(std::function<bool(ModDatabaseModel *model, QModelIndex index)> action);
+    void performOnSelectedMods(std::function<bool(QModelIndex index, QModelIndex proxyIndex)> action);
+
+    /**
+     * @brief Perform function 'action' on the each mod in the selection.
+     */
+    void performOnSelectedMods(std::function<void(QModelIndexList)> action);
 
 private:
     QTreeView *selectedView() const;
+    QItemSelection selection(QTreeView *view) const;
+    ModFilterProxyModel* proxyModel(QTreeView *view) const;
     void closeViewEditor();
     void initActions();
-    void setupItemContextMenu(const ModInfo &item) const;
+    void setupItemContextMenu(QSortFilterProxyModel *model, QModelIndex index) const;
     bool isGameFolderValid(const QString &folderPath);
     void checkAnnouncementPopup(const int loadedApplicationVersion);
 
@@ -119,10 +128,11 @@ private:
     QPair<QTreeView*, QModelIndex> m_viewEditorData = {nullptr, QModelIndex()};
 
     QMenu *m_itemContextMenu = nullptr;
-    QAction *m_setEnabledAction = nullptr;
+    QAction *m_enableAction = nullptr;
+    QAction *m_disableAction = nullptr;
     QAction *m_setLockedAction = nullptr;
     QAction *m_setUnlockedAction = nullptr;
-    QAction *m_setMarkedAction = nullptr;
+    QAction *m_toggleFavoritesAction = nullptr;
     QAction *m_openFolderAction = nullptr;
     QAction *m_renameAction = nullptr;
     QAction *m_openSteamPageAction = nullptr;

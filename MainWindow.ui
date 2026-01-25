@@ -91,7 +91,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QToolButton" name="setMarkedToolButton">
+           <widget class="QToolButton" name="toggleFavoritesToolButton">
             <property name="toolTip">
              <string>Toggle selected mods checkbox mark</string>
             </property>
@@ -100,7 +100,13 @@
             </property>
             <property name="icon">
              <iconset resource="resources.qrc">
-              <normaloff>:/images/ui_outline/checked-flag.svg</normaloff>:/images/ui_outline/checked-flag.svg</iconset>
+              <normaloff>:/images/ui_outline/favorite.svg</normaloff>:/images/ui_outline/favorite.svg</iconset>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
+            <property name="checked">
+             <bool>false</bool>
             </property>
             <property name="arrowType">
              <enum>Qt::NoArrow</enum>
@@ -233,7 +239,7 @@
        </layout>
       </item>
       <item row="1" column="0">
-       <widget class="QTreeView" name="enabledModsList">
+       <widget class="AutoExpandTreeView" name="enabledModsView">
         <property name="focusPolicy">
          <enum>Qt::NoFocus</enum>
         </property>
@@ -255,8 +261,11 @@
         <property name="textElideMode">
          <enum>Qt::ElideNone</enum>
         </property>
+        <property name="autoExpandDelay">
+         <number>1000</number>
+        </property>
         <property name="indentation">
-         <number>0</number>
+         <number>20</number>
         </property>
         <property name="rootIsDecorated">
          <bool>false</bool>
@@ -273,7 +282,7 @@
        </widget>
       </item>
       <item row="1" column="2">
-       <widget class="QTreeView" name="disabledModsList">
+       <widget class="AutoExpandTreeView" name="disabledModsView">
         <property name="focusPolicy">
          <enum>Qt::NoFocus</enum>
         </property>
@@ -295,8 +304,11 @@
         <property name="textElideMode">
          <enum>Qt::ElideNone</enum>
         </property>
+        <property name="autoExpandDelay">
+         <number>1000</number>
+        </property>
         <property name="indentation">
-         <number>0</number>
+         <number>20</number>
         </property>
         <property name="rootIsDecorated">
          <bool>false</bool>
@@ -441,7 +453,7 @@
      <x>0</x>
      <y>0</y>
      <width>667</width>
-     <height>26</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuOptions">
@@ -537,6 +549,13 @@
   </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>AutoExpandTreeView</class>
+   <extends>QTreeView</extends>
+   <header location="global">mvc/AutoExpandTreeView.h</header>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="resources.qrc"/>
  </resources>

@@ -2,6 +2,7 @@
 
 #include <QCollator>
 #include <QColor>
+#include <QDebug>
 #include <QFont>
 #include <QIcon>
 #include <QThread>
@@ -18,57 +19,284 @@ ModDatabaseModel::ModDatabaseModel()
     m_completeModNames = true;
     m_useSteamModNames = true;
 
-    qRegisterMetaType<QVector<int>>("QVector<int>");
-}
+    m_collections.append(new ModCollection(tr("Favorites")));
+    m_collections.append(new ModCollection(tr("Uncategorized")));
 
-bool ModDatabaseModel::isNameValid(const QString &name) const
-{
-    return !(
-        name.isEmpty() ||
-        name.contains(ModInfo::generateUnknownNameStub()) ||
-        name.contains(ModInfo::generateFailedToGetNameStub()) ||
-        name.contains(ModInfo::generateWaitingForSteamResponseStub()) ||
-        QRegExp(RegExpPatterns::whitespace).exactMatch(name)
-    );
+    qRegisterMetaType<QVector<int>>("QVector<int>");
 }
 
 void ModDatabaseModel::add(const ModInfo &modInfo)
 {
-    beginInsertRows(QModelIndex(), m_database.size(), m_database.size());
-    m_database.append(modInfo);
-    if (m_database.last().steamName.isEmpty()) {
-        m_database.last().steamName = ModInfo::generateFailedToGetNameStub();
+    ModCollection *collection = uncategorizedCollection();
+    auto it = std::upper_bound(collection->mods().begin(), collection->mods().end(), &modInfo, ModCollection::comparator());
+    int index = it - collection->mods().begin();
+
+    beginInsertRows(collectionIndex(collection), index, index);
+    m_database.append(new ModInfo(modInfo));
+    if (m_database.last()->steamName.isEmpty()) {
+        m_database.last()->steamName = ModInfo::generateFailedToGetNameStub();
         //m_database.last().steamName = ModInfo::generateWaitingForSteamResponseStub();
     }
-
+    collection->insertMod(index, m_database.last());
     endInsertRows();
 }
 
-QString ModDatabaseModel::displayedModName(const ModInfo &modInfo) const
+void ModDatabaseModel::clear()
 {
-    if (m_completeModNames) {
-        bool isModNameValid = isNameValid(modInfo.name);
-        bool isSteamModNameValid = isNameValid(modInfo.steamName);
-        if (m_useSteamModNames) {
-            if (isSteamModNameValid || !isModNameValid) {
-                return modInfo.steamName;
-            } else {
-                return modInfo.name;
-            }
-        } else {
-            if (isModNameValid || !isSteamModNameValid) {
-                return modInfo.name;
-            } else {
-                return modInfo.steamName;
-            }
+    beginResetModel();
+    qDeleteAll(m_database);
+    m_database.clear();
+    for (ModCollection *collection : qAsConst(m_collections)) {
+        collection->clear();
+    }
+    endResetModel();
+}
+
+bool ModDatabaseModel::isFavorite(const QModelIndex &index) const
+{
+    return index.isValid() ? collectionPtr(index) == favoriteCollection() : false;
+}
+
+bool ModDatabaseModel::isUncategorized(const QModelIndex &index) const
+{
+    return index.isValid() ? collectionPtr(index) == uncategorizedCollection() : false;
+}
+
+void ModDatabaseModel::addFavorite(QModelIndexList indexes, Qt::CheckState enabledFilter)
+{
+    addToCollection(indexes, collectionIndex(favoriteCollection()), enabledFilter);
+}
+
+void ModDatabaseModel::removeFavorite(QModelIndexList indexes, Qt::CheckState enabledFilter)
+{
+    removeFromCollection(indexes, collectionIndex(favoriteCollection()), enabledFilter);
+}
+
+void ModDatabaseModel::addToCollection(
+        const QModelIndex &index,
+        const QModelIndex &collectionIndex,
+        Qt::CheckState enabledFilter
+)
+{
+    if (!index.isValid() || !collectionIndex.isValid() || !isCollection(collectionIndex)) {
+        return;
+    }
+
+    QVector<ModInfo *> mods;
+
+    if (isCollection(index)) {
+        switch (enabledFilter) {
+            case Qt::Checked:
+                mods.append(collectionPtr(index)->enabledMods());
+            break;
+
+            case Qt::Unchecked:
+                mods.append(collectionPtr(index)->disabledMods());
+            break;
+
+            case Qt::PartiallyChecked:
+                mods.append(collectionPtr(index)->mods());
+            break;
         }
     } else {
-        if (m_useSteamModNames) {
-            return modInfo.steamName;
+        mods.append(modInfoPtr(index));
+    }
+
+    addToCollection(std::move(mods), collectionIndex);
+}
+
+void ModDatabaseModel::removeFromCollection(
+        const QModelIndex &index,
+        const QModelIndex &collectionIndex,
+        Qt::CheckState enabledFilter
+)
+{
+    if (!index.isValid() || !collectionIndex.isValid() || !isCollection(collectionIndex)) {
+        return;
+    }
+
+    QVector<ModInfo *> mods;
+
+    if (isCollection(index)) {
+        switch (enabledFilter) {
+            case Qt::Checked:
+                mods.append(collectionPtr(index)->enabledMods());
+            break;
+
+            case Qt::Unchecked:
+                mods.append(collectionPtr(index)->disabledMods());
+            break;
+
+            case Qt::PartiallyChecked:
+                mods.append(collectionPtr(index)->mods());
+            break;
+        }
+    } else {
+        mods.append(modInfoPtr(index));
+    }
+
+    removeFromCollection(std::move(mods), collectionIndex);
+}
+
+void ModDatabaseModel::addToCollection(
+        QModelIndexList indexes,
+        const QModelIndex &collectionIndex,
+        Qt::CheckState enabledFilter
+)
+{
+    if (!collectionIndex.isValid() || !isCollection(collectionIndex)) {
+        return;
+    }
+
+    QVector<ModInfo *> mods;
+
+    for (const QModelIndex &index : indexes) {
+        if (!index.isValid()) {
+            continue;
+        }
+
+        if (isCollection(index)) {
+            switch (enabledFilter) {
+                case Qt::Checked:
+                    mods.append(collectionPtr(index)->enabledMods());
+                break;
+
+                case Qt::Unchecked:
+                    mods.append(collectionPtr(index)->disabledMods());
+                break;
+
+                case Qt::PartiallyChecked:
+                    mods.append(collectionPtr(index)->mods());
+                break;
+            }
         } else {
-            return modInfo.name;
+            mods.append(modInfoPtr(index));
         }
     }
+
+    ModCollection::sort(mods);
+    mods.erase(std::unique(mods.begin(), mods.end()), mods.end());
+    addToCollection(std::move(mods), collectionIndex);
+}
+
+void ModDatabaseModel::removeFromCollection(
+        QModelIndexList indexes,
+        const QModelIndex &collectionIndex,
+        Qt::CheckState enabledFilter
+)
+{
+    if (!collectionIndex.isValid() || !isCollection(collectionIndex)) {
+        return;
+    }
+
+    QVector<ModInfo *> mods;
+
+    for (const QModelIndex &index : indexes) {
+        if (!index.isValid()) {
+            continue;
+        }
+
+        if (isCollection(index)) {
+            switch (enabledFilter) {
+                case Qt::Checked:
+                    mods.append(collectionPtr(index)->enabledMods());
+                break;
+
+                case Qt::Unchecked:
+                    mods.append(collectionPtr(index)->disabledMods());
+                break;
+
+                case Qt::PartiallyChecked:
+                    mods.append(collectionPtr(index)->mods());
+                break;
+            }
+        } else {
+            mods.append(modInfoPtr(index));
+        }
+    }
+
+    ModCollection::sort(mods);
+    mods.erase(std::unique(mods.begin(), mods.end()), mods.end());
+    removeFromCollection(std::move(mods), collectionIndex);
+}
+
+void ModDatabaseModel::setSteamName(const QString &modFolder, const QString &name)
+{
+    if (name.isEmpty()) {
+        return;
+    }
+
+    auto it = std::find_if(
+        m_database.begin(),
+        m_database.end(),
+        [&modFolder](ModInfo *mod) {
+            return mod->folderName == modFolder;
+        }
+    );
+
+    ModInfo* mod = it == m_database.end() ? nullptr : *it;
+
+    // Should also skip if name is already set
+    if (!mod || ModInfo::isNameValid(mod->steamName)) {
+        return;
+    }
+
+    mod->steamName = name;
+    for (ModCollection *collection : qAsConst(mod->collections())) {
+        int oldIndex = collection->modIndex(mod);
+        auto it = std::upper_bound(collection->mods().begin(), collection->mods().end(), mod, ModCollection::comparator());
+        int newIndex = it - collection->mods().begin();
+        if (newIndex > oldIndex) {
+            --newIndex;
+        }
+
+        if (oldIndex != newIndex) {
+            QModelIndex parentIndex = collectionIndex(collection);
+
+            beginMoveRows(parentIndex, oldIndex, oldIndex, parentIndex, newIndex);
+            collection->removeMod(oldIndex, false);
+            collection->insertMod(newIndex, mod, false);
+            endMoveRows();
+        }
+    }
+}
+
+bool ModDatabaseModel::isCollection(const QModelIndex &index) const
+{
+    Q_ASSERT(index.isValid());
+    return !index.internalPointer();
+}
+
+QModelIndex ModDatabaseModel::collectionIndex(const QModelIndex &index) const
+{
+    return index.parent().isValid() ? index.parent() : index;
+}
+
+int ModDatabaseModel::rowCount(const QModelIndex &parent) const
+{
+    if (!parent.isValid()) {
+        return m_collections.size();
+    }
+
+    return isCollection(parent) ? collectionPtr(parent)->size() : 0;
+}
+
+QModelIndex	ModDatabaseModel::index(int row, int column, const QModelIndex &parent) const
+{
+    if (!hasIndex(row, column, parent)) {
+        return QModelIndex();
+    }
+
+    return createIndex(row, column, collectionPtr(parent));
+}
+
+QModelIndex	ModDatabaseModel::parent(const QModelIndex &index) const
+{
+    if (!index.isValid() || isCollection(index)) {
+        return QModelIndex();
+    }
+
+    return collectionIndex(collectionPtr(index), index.column());
 }
 
 QVariant ModDatabaseModel::data(const QModelIndex &index, int role) const
@@ -84,21 +312,17 @@ QVariant ModDatabaseModel::data(const QModelIndex &index, int role) const
             }
             Q_FALLTHROUGH();
         case Qt::DisplayRole:
-            return displayedModName(m_database[index.row()]);
+            return itemPtr(index)->displayedName();
         break;
 
         case Qt::ForegroundRole:
-            if (!m_database[index.row()].exists()) {
+            if (itemPtr(index)->exists() == Qt::Unchecked) {
                 return QColor(Qt::gray);
             }
         break;
 
-        case Qt::CheckStateRole:
-            return (m_database[index.row()].marked() ? Qt::Checked : Qt::Unchecked);
-        break;
-
         case Qt::FontRole:
-            if (m_database[index.row()].locked()) {
+            if (itemPtr(index)->locked() == Qt::Checked) {
                 QFont font;
                 font.setBold(true);
                 return font;
@@ -106,25 +330,29 @@ QVariant ModDatabaseModel::data(const QModelIndex &index, int role) const
         break;
 
         case Qt::DecorationRole:
-            if (m_database[index.row()].locked()) {
+            if (itemPtr(index)->locked() == Qt::Checked) {
                 return QIcon(":/images/ui_outline/lock.svg");
             }
         break;
 
-        case ModRole::Enabled:
-            return m_database[index.row()].enabled();
+        case Role::Type:
+            return itemPtr(index)->type();
         break;
 
-        case ModRole::Exists:
-            return m_database[index.row()].exists();
+        case Role::Enabled:
+            return itemPtr(index)->enabled();
         break;
 
-        case ModRole::Marked:
-            return m_database[index.row()].marked();
+        case Role::Exists:
+            return itemPtr(index)->exists();
         break;
 
-        case ModRole::Locked:
-            return m_database[index.row()].locked();
+        case Role::Locked:
+            return itemPtr(index)->locked();
+        break;
+
+        case Role::Expanded:
+            return collectionPtr(index)->expanded();
         break;
 
         default:
@@ -136,7 +364,7 @@ QVariant ModDatabaseModel::data(const QModelIndex &index, int role) const
 
 Qt::ItemFlags ModDatabaseModel::flags(const QModelIndex &index) const
 {
-    return QAbstractItemModel::flags(index) | Qt::ItemIsUserCheckable | Qt::ItemIsEditable;
+    return QAbstractItemModel::flags(index) | Qt::ItemIsEditable;
 }
 
 QVariant ModDatabaseModel::headerData(int section, Qt::Orientation orientation, int role) const
@@ -152,21 +380,9 @@ QVariant ModDatabaseModel::headerData(int section, Qt::Orientation orientation, 
     return QVariant();
 }
 
-void ModDatabaseModel::removeFromDatabase(const QModelIndex &index)
+void ModDatabaseModel::removeItem(QModelIndex index)
 {
-    beginRemoveRows(QModelIndex(), index.row(), index.row());
-    m_database.removeAt(index.row());
-    endRemoveRows();
-}
-
-void ModDatabaseModel::setCompleteModNames(const bool enabled)
-{
-    if (m_completeModNames == enabled) {
-        return;
-    }
-
-    m_completeModNames = enabled;
-    emit dataChanged(index(0), index(m_database.size() - 1));
+    removeRows(index.row(), 1, index.parent());
 }
 
 bool ModDatabaseModel::setData(const QModelIndex &index, const QVariant &value, int role)
@@ -176,64 +392,114 @@ bool ModDatabaseModel::setData(const QModelIndex &index, const QVariant &value, 
     }
 
     bool isDataChanged = false;
+    ModCollection *collection = collectionPtr(index);
 
+    if (isCollection(index)) {
+        if (role == Role::Expanded) {
+            isDataChanged = collection->setExpanded(value.toBool());
+            if (isDataChanged) {
+                emit dataChanged(index, index, {role});
+            }
+        } else for (int i = 0; i < collection->size(); ++i) {
+            isDataChanged |= setData(modInfoIndex(index, i), value, role);
+        }
+
+        return isDataChanged;
+    }
+
+    ModInfo *item = modInfoPtr(index);
+    bool isChangingState = (role >= Role::Enabled && role <= Role::Locked);
+    Qt::CheckState newState = isChangingState ? value.value<Qt::CheckState>() : Qt::Checked;
+    Q_ASSERT(newState != Qt::PartiallyChecked);
+
+    QVector<QPair<ModCollection *, Qt::CheckState>> collectionsData;
     switch (role) {
         case Qt::EditRole:
             m_editingName[index] = value.toString();
             isDataChanged = true;
         break;
 
-        case Qt::CheckStateRole:
-            m_database[index.row()].setMarked(Qt::CheckState(value.toInt()) == Qt::Checked);
-            isDataChanged = true;
+        case Role::Enabled:
+            if (item->enabled() != newState) {
+                for (const auto &collection : qAsConst(item->collections())) {
+                    collectionsData.append({collection, collection->enabled()});
+                }
+                isDataChanged = item->setEnabled(newState == Qt::Checked);
+                if (isDataChanged) {
+                    for (auto it = collectionsData.begin(); it != collectionsData.end();) {
+                        if (it->first->enabled() == it->second) {
+                            it = collectionsData.erase(it);
+                        } else {
+                            ++it;
+                        }
+                    }
+                }
+            }
         break;
 
-        case ModRole::Enabled:
-            isDataChanged = (m_database[index.row()].enabled() != value.toBool());
-            m_database[index.row()].setEnabled(value.toBool());
-            isDataChanged &= (m_database[index.row()].enabled() == value.toBool());
+        case Role::Exists:
+            if (item->exists() != newState) {
+                for (const auto &collection : qAsConst(item->collections())) {
+                    collectionsData.append({collection, collection->exists()});
+                }
+                isDataChanged = item->setExists(newState == Qt::Checked);
+                if (isDataChanged) {
+                    for (auto it = collectionsData.begin(); it != collectionsData.end();) {
+                        if (it->first->exists() == it->second) {
+                            it = collectionsData.erase(it);
+                        } else {
+                            ++it;
+                        }
+                    }
+                }
+            }
         break;
 
-        case ModRole::Exists:
-            isDataChanged = (m_database[index.row()].exists() != value.toBool());
-            m_database[index.row()].setExists(value.toBool());
+        case Role::Locked:
+            if (item->locked() != newState) {
+                for (const auto &collection : qAsConst(item->collections())) {
+                    collectionsData.append({collection, collection->locked()});
+                }
+                isDataChanged = item->setLocked(newState == Qt::Checked);
+                if (isDataChanged) {
+                    for (auto it = collectionsData.begin(); it != collectionsData.end();) {
+                        if (it->first->locked() == it->second) {
+                            it = collectionsData.erase(it);
+                        } else {
+                            ++it;
+                        }
+                    }
+                }
+            }
         break;
 
-        case ModRole::Marked:
-            isDataChanged = (m_database[index.row()].marked() != value.toBool());
-            m_database[index.row()].setMarked(value.toBool());
-        break;
-
-        case ModRole::Locked:
-            isDataChanged = (m_database[index.row()].locked() != value.toBool());
-            m_database[index.row()].setLocked(value.toBool());
+        default:
         break;
     }
 
-    if (isDataChanged) {
-        emit dataChanged(index, index, QVector<int>(role));
+    if (!isDataChanged) {
+        return false;
     }
 
-    return isDataChanged;
+    emit dataChanged(index, index, {role});
+    for (const auto &collection : qAsConst(collectionsData)) {
+        const QModelIndex &collectionIndex = this->collectionIndex(collection.first);
+        emit dataChanged(collectionIndex, collectionIndex, {role});
+    }
+
+    return true;
 }
 
 void ModDatabaseModel::sort(int column, Qt::SortOrder order)
 {
-    QCollator collator;
-    collator.setNumericMode(true);
-    std::function<bool(const ModInfo &i, const ModInfo &j)> comparator;
-
+    ModCollection::SortType sortType;
     switch (column) {
-        case 0: //By display name
-            comparator = [this, &collator](const ModInfo &i, const ModInfo &j) {
-                return collator(displayedModName(i), displayedModName(j));
-            };
+        case 0:
+            sortType = ModCollection::SortType::ByDisplayedName;
         break;
 
-        case 1: //By folder name
-            comparator = [&collator](const ModInfo &i, const ModInfo &j) {
-                return collator(i.folderName, j.folderName);
-            };
+        case 1:
+            sortType = ModCollection::SortType::ByFolderName;
         break;
 
         default:
@@ -241,18 +507,56 @@ void ModDatabaseModel::sort(int column, Qt::SortOrder order)
     }
 
     beginResetModel();
-    std::sort(m_database.begin(), m_database.end(),
-        [&comparator, order](const ModInfo &i, const ModInfo &j) {
-            return ((i.exists() ^ j.exists()) ? i.exists() : comparator(i, j) ^ (order == Qt::DescendingOrder));
-        }
-    );
+    ModCollection::setSortSettings(sortType, order);
+    for (ModCollection *collection : qAsConst(m_collections))
+    {
+        collection->sort();
+    }
     endResetModel();
+}
+
+bool ModDatabaseModel::removeRows(int row, int count, const QModelIndex &parent)
+{
+    if (!count) {
+        return false;
+    }
+
+    for (const int end = row + count; row < end; ++row) {
+        QModelIndex entry = index(row, 0, parent);
+        if (isCollection(entry)) {
+            beginRemoveRows(entry.parent(), entry.row(), entry.row());
+            delete m_collections.takeAt(entry.row());
+            endRemoveRows();
+        } else {
+            ModInfo *modInfo = modInfoPtr(entry);
+            for (int i = 0; i < m_collections.size(); ++i) {
+                entry = index(m_collections[i]->modIndex(modInfo), 0, index(i));
+                if (entry.isValid()) {
+                    beginRemoveRows(entry.parent(), entry.row(), entry.row());
+                    m_collections[i]->removeMod(entry.row());
+                    endRemoveRows();
+                }
+            }
+            m_database.removeOne(modInfo);
+            delete modInfo;
+        }
+    }
+
+    return true;
 }
 
 void ModDatabaseModel::setModsExistsState(const bool isExists)
 {
     for (int i = 0; i < m_database.size(); ++i) {
-        m_database[i].setExists(isExists);
+        m_database[i]->setExists(isExists);
+    }
+}
+
+void ModDatabaseModel::onModInfoUpdated(int index, const QVector<int> &roles)
+{
+    for (const auto& collection : qAsConst(m_database[index]->collections())) {
+        const QModelIndex &row = modInfoIndex(collection, index);
+        emit dataChanged(row, row, roles);
     }
 }
 
@@ -269,13 +573,9 @@ bool ModDatabaseModel::submit()
         return false;
     }
 
-    const auto& keys = m_editingName.keys();
-    for (const QModelIndex& index : keys) {
-        if (m_useSteamModNames) {
-            m_database[index.row()].steamName = m_editingName[index];
-        } else {
-            m_database[index.row()].name = m_editingName[index];
-        }
+    const QList<QModelIndex> &keys = m_editingName.keys();
+    for (const QModelIndex &index : keys) {
+        itemRef(index).setName(m_editingName[index]);
     }
     m_editingName.clear();
 
@@ -285,6 +585,18 @@ bool ModDatabaseModel::submit()
 void ModDatabaseModel::revert()
 {
     m_editingName.clear();
+}
+
+//public slots:
+
+void ModDatabaseModel::setCompleteModNames(const bool enabled)
+{
+    if (m_completeModNames == enabled) {
+        return;
+    }
+
+    m_completeModNames = enabled;
+    emit dataChanged(index(0), index(m_database.size() - 1));
 }
 
 void ModDatabaseModel::setUsingSteamModNames(const bool use)
@@ -297,20 +609,232 @@ void ModDatabaseModel::setUsingSteamModNames(const bool use)
     emit dataChanged(index(0), index(m_database.size() - 1));
 }
 
-//public slots:
+//private:
 
-void ModDatabaseModel::enableMod(const QModelIndex &index)
+QModelIndex ModDatabaseModel::collectionIndex(ModCollection *collection, int column) const
 {
-    if (m_database[index.row()].canEnable()) {
-        m_database[index.row()].setEnabled(true);
-        emit dataChanged(index, index);
+    return index(m_collections.indexOf(collection), column);
+}
+
+QModelIndex	ModDatabaseModel::modInfoIndex(const QModelIndex &collectionIndex, int modIndex) const
+{
+    return index(modIndex, 0, collectionIndex);
+}
+
+QModelIndex	ModDatabaseModel::modInfoIndex(ModCollection *collection, ModInfo *modInfo) const
+{
+    return modInfoIndex(collection, collection->modIndex(modInfo));
+}
+
+QModelIndex	ModDatabaseModel::modInfoIndex(ModCollection *collection, int modIndex) const
+{
+    return index(modIndex, 0, collectionIndex(collection));
+}
+
+QModelIndex	ModDatabaseModel::modInfoIndex(int collectionIndex, int modIndex) const
+{
+    return modInfoIndex(index(collectionIndex), modIndex);
+}
+
+AbstractModDatabaseItem *ModDatabaseModel::itemPtr(const QModelIndex &index) const
+{
+    AbstractModDatabaseItem *item = nullptr;
+    ModCollection *collection = collectionPtr(index);
+    if (isCollection(index)) {
+        item = collection;
+    } else {
+        item = collection->mods()[index.row()];
+    }
+
+    Q_ASSERT_X(
+        item,
+        "itemPtr",
+        QString("can't get item info by %1 index (%2, %3); parent (%4, %5) is %6")
+                .arg(index.isValid() ? "valid" : "invalid")
+                .arg(index.row())
+                .arg(index.column())
+                .arg(index.parent().isValid() ? "valid" : "invalid")
+                .arg(index.parent().row())
+                .arg(index.parent().column()).toUtf8()
+    );
+
+    return item;
+}
+
+ModInfo *ModDatabaseModel::modInfoPtr(const QModelIndex &index) const
+{
+    if (!index.isValid()) {
+        return nullptr;
+    }
+
+    if (isCollection(index))
+    {
+        Q_ASSERT_X(!isCollection(index), "modPtr", "can't get mod by category index");
+
+    }
+
+    Q_ASSERT_X(!isCollection(index), "modPtr", "can't get mod by category index");
+    return collectionPtr(index)->mods()[index.row()];
+}
+
+ModCollection *ModDatabaseModel::collectionPtr(const QModelIndex &index) const
+{
+    if (!index.isValid()) {
+        return nullptr;
+    }
+
+    if (isCollection(index)) {
+        return m_collections[index.row()];
+    } else {
+        return static_cast<ModCollection *>(index.internalPointer());
     }
 }
 
-void ModDatabaseModel::disableMod(const QModelIndex &index)
+void ModDatabaseModel::addToCollection(QVector<ModInfo *> mods, const QModelIndex &collectionIndex)
 {
-    if (m_database[index.row()].canDisable()) {
-        m_database[index.row()].setEnabled(false);
-        emit dataChanged(index, index);
+    ModCollection *collection = collectionPtr(collectionIndex);
+    for (int i = 0; i < mods.size(); ++i) {
+        if (collection->contains(mods[i])) {
+            mods.removeAt(i);
+            --i;
+        }
     }
+
+    if (mods.isEmpty()) {
+        return;
+    }
+
+
+    addToCollection(mods, collection);
+
+    ModCollection *uncategorized = uncategorizedCollection();
+    if (collection != uncategorized)
+    {
+        for (int i = 0; i < mods.size(); ++i) {
+            if (!mods[i]->collections().contains(uncategorized)) {
+                mods.removeAt(i);
+                --i;
+            }
+        }
+
+        if (!mods.isEmpty()) {
+            removeFromCollection(mods, uncategorized);
+        }
+    }
+}
+
+void ModDatabaseModel::removeFromCollection(QVector<ModInfo *> mods, const QModelIndex &collectionIndex)
+{
+    ModCollection *collection = collectionPtr(collectionIndex);
+    for (int i = 0; i < mods.size(); ++i) {
+        if (!collection->contains(mods[i])) {
+            mods.removeAt(i);
+            --i;
+        }
+    }
+
+    if (mods.isEmpty()) {
+        return;
+    }
+
+    removeFromCollection(mods, collection);
+
+    ModCollection *uncategorized = uncategorizedCollection();
+    if (collection != uncategorized)
+    {
+        for (int i = 0; i < mods.size(); ++i) {
+            if (!mods[i]->collections().isEmpty()) {
+                mods.removeAt(i);
+                --i;
+            }
+        }
+
+        if (!mods.isEmpty()) {
+            addToCollection(mods, uncategorized);
+        }
+    }
+}
+
+void ModDatabaseModel::addToCollection(const QVector<ModInfo *> &mods, ModCollection *collection)
+{
+    QVector<QPair<int, int>> rowRanges;
+    QPair<int, int> range = {-1, -1};
+    QVector<ModInfo *> collectionMods = collection->mods();
+    for (ModInfo *mod : mods) {
+        auto it = std::upper_bound(collectionMods.begin(), collectionMods.end(), mod, ModCollection::comparator());
+        int index = it - collectionMods.begin();
+        collectionMods.insert(index, mod);
+
+        if (range.first == -1) {
+            range.first = index;
+            range.second = index;
+        } else if (index == range.second + 1) {
+            range.second = index;
+        } else {
+            rowRanges.append(range);
+            range.first = index;
+            range.second = index;
+        }
+    }
+
+    if (range.first != -1) {
+        rowRanges.append(range);
+    }
+
+    int i = 0;
+    QModelIndex parentIndex = collectionIndex(collection);
+    for (const auto &range : rowRanges) {
+        beginInsertRows(parentIndex, range.first, range.second);
+        for (int row = range.first; row <= range.second; ++row) {
+            collection->insertMod(row, mods[i]);
+            ++i;
+        }
+        endInsertRows();
+    }
+    emit dataChanged(parentIndex, parentIndex, {Qt::DisplayRole});
+}
+
+void ModDatabaseModel::removeFromCollection(const QVector<ModInfo *> &mods, ModCollection *collection)
+{
+    QVector<QPair<int, int>> rowRanges;
+    QPair<int, int> range = {-1, -1};
+    for (ModInfo *mod : mods) {
+        int index = collection->modIndex(mod);
+        Q_ASSERT_X(index >= 0, "removeFromCollection", "collection doesn't contain mod");
+
+        if (range.first == -1) {
+            range.first = index;
+            range.second = index;
+        } else if (index == range.second + 1) {
+            range.second = index;
+        } else {
+            rowRanges.prepend(range);
+            range.first = index;
+            range.second = index;
+        }
+    }
+
+    if (range.first != -1) {
+        rowRanges.prepend(range);
+    }
+
+    QModelIndex parentIndex = collectionIndex(collection);
+    for (const auto &range : rowRanges) {
+        beginRemoveRows(parentIndex, range.first, range.second);
+        for (int row = range.second; row >= range.first; --row) {
+            collection->removeMod(row);
+        }
+        endRemoveRows();
+    }
+    emit dataChanged(parentIndex, parentIndex, {Qt::DisplayRole});
+}
+
+ModCollection *ModDatabaseModel::favoriteCollection() const
+{
+    return m_collections.first();
+}
+
+ModCollection *ModDatabaseModel::uncategorizedCollection() const
+{
+    return m_collections.last();
 }

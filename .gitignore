@@ -363,3 +363,5 @@ FodyWeavers.xsd
 *.bak
 
 builds/
+
+images/ui_outline/

@@ -63,33 +63,46 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->engLangButton->setIcon(QIcon(":/images/Flag-United-States.ico"));
     ui->rusLangButton->setIcon(QIcon(":/images/Flag-Russia.ico"));
 
-    m_modNameDelegate = new ModNameDelegate(this);
-    ui->enabledModsList->setItemDelegate(m_modNameDelegate);
-    ui->disabledModsList->setItemDelegate(m_modNameDelegate);
-
-    connect(ui->enabledModsList->header(), &QHeaderView::sectionResized,
-            ui->enabledModsList, &QTreeView::doItemsLayout);
-    connect(ui->disabledModsList->header(), &QHeaderView::sectionResized,
-            ui->disabledModsList, &QTreeView::doItemsLayout);
+    connect(ui->enabledModsView->header(), &QHeaderView::sectionResized,
+            ui->enabledModsView, &QTreeView::doItemsLayout);
+    connect(ui->disabledModsView->header(), &QHeaderView::sectionResized,
+            ui->disabledModsView, &QTreeView::doItemsLayout);
 
     m_enabledModsModel = new EnabledModsProxyModel(this, m_model);
     m_disabledModsModel = new DisabledModsProxyModel(this, m_model);
 
-    ui->enabledModsList->setModel(m_enabledModsModel);
-    ui->disabledModsList->setModel(m_disabledModsModel);
+    ui->enabledModsView->setModel(m_enabledModsModel);
+    ui->disabledModsView->setModel(m_disabledModsModel);
+
+    m_modNameDelegate = new ModNameDelegate(this);
+    ui->enabledModsView->setItemDelegate(m_modNameDelegate);
+    ui->disabledModsView->setItemDelegate(m_modNameDelegate);
 
     ui->progressLabel->hide();
     ui->progressBar->hide();
 
     m_databaseEditor = new DatabaseEditor();
 
+#if 1
     if (!QFileInfo::exists(settingsFilePath()) && QFileInfo::exists(QString("../") + SettingsFileName))
     {
         /// Move files from the old folder for the backward compatibility
         QFile::rename(QString("../") + SettingsFileName, settingsFilePath());
         QFile::rename(QString("../") + ModDatabaseFileName, modDatabaseFilePath());
     }
-
+#else
+    //FIXME: remove
+    QFile::remove(settingsFilePath());
+    QFile::remove(modDatabaseFilePath());
+    if (!QFileInfo::exists(settingsFilePath()) && QFileInfo::exists(QString("../") + SettingsFileName))
+    {
+        /// Move files from the old folder for the backward compatibility
+        QFile::copy(QString("../") + SettingsFileName, settingsFilePath());
+        QFile::copy(QString("../") + ModDatabaseFileName, modDatabaseFilePath());
+    }
+#endif
+    qDebug() << settingsFilePath();
+    qDebug() << QDir(settingsFilePath()).absolutePath();
     m_settings = new QSettings(settingsFilePath(), QSettings::IniFormat, this);
     m_qtTranslator = new QTranslator();
     m_translator = new QTranslator();
@@ -119,30 +132,39 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->runButton, &QPushButton::clicked, this, &MainWindow::runGame);
 
     connect(ui->clearSearchPushButton, &QPushButton::clicked, ui->searchLineEdit, &QLineEdit::clear);
-    connect(ui->searchLineEdit, &QLineEdit::textChanged, m_enabledModsModel, &ModFilterProxyModel::setFilter);
+//    connect(ui->searchLineEdit, &QLineEdit::textChanged, m_enabledModsModel, &ModFilterProxyModel::setFilter);
     connect(ui->searchLineEdit, &QLineEdit::textChanged, m_disabledModsModel, &ModFilterProxyModel::setFilter);
 
-    connect(ui->enabledModsList, &QTreeView::doubleClicked, this, [this](const QModelIndex &i) {
-        m_enabledModsModel->setData(i, false, ModDatabaseModel::ModRole::Enabled);
+    connect(ui->enabledModsView, &QTreeView::expanded, this, [this](const QModelIndex &index) {
+        QModelIndex sourceIndex = m_enabledModsModel->mapToSource(index);
+        m_model->setData(sourceIndex, true, ModDatabaseModel::Role::Expanded);
+    });
+    connect(ui->enabledModsView, &QTreeView::collapsed, this, [this](const QModelIndex &index) {
+        QModelIndex sourceIndex = m_enabledModsModel->mapToSource(index);
+        m_model->setData(sourceIndex, false, ModDatabaseModel::Role::Expanded);
+    });
+    connect(ui->disabledModsView, &QTreeView::expanded, this, [this](const QModelIndex &index) {
+        QModelIndex sourceIndex = m_disabledModsModel->mapToSource(index);
+        m_model->setData(sourceIndex, true, ModDatabaseModel::Role::Expanded);
+    });
+    connect(ui->disabledModsView, &QTreeView::collapsed, this, [this](const QModelIndex &index) {
+        QModelIndex sourceIndex = m_disabledModsModel->mapToSource(index);
+        m_model->setData(sourceIndex, false, ModDatabaseModel::Role::Expanded);
     });
 
-    connect(ui->disabledModsList, &QTreeView::doubleClicked, this, [this](const QModelIndex &i) {
-        m_disabledModsModel->setData(i, true, ModDatabaseModel::ModRole::Enabled);
-    });
-
-    ui->enabledModsList->setContextMenuPolicy(Qt::CustomContextMenu);
-    ui->disabledModsList->setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(ui->enabledModsList, &QTreeView::customContextMenuRequested,
+    ui->enabledModsView->setContextMenuPolicy(Qt::CustomContextMenu);
+    ui->disabledModsView->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(ui->enabledModsView, &QTreeView::customContextMenuRequested,
             this, &MainWindow::showModContextMenu);
-    connect(ui->disabledModsList, &QTreeView::customContextMenuRequested,
+    connect(ui->disabledModsView, &QTreeView::customContextMenuRequested,
             this, &MainWindow::showModContextMenu);
 
-    connect(ui->enabledModsList, &QTreeView::pressed, this, [this](){
-        ui->disabledModsList->clearSelection();
+    connect(ui->enabledModsView, &QTreeView::pressed, this, [this](){
+        ui->disabledModsView->clearSelection();
         closeViewEditor();
     });
-    connect(ui->disabledModsList, &QTreeView::pressed, this, [this](){
-        ui->enabledModsList->clearSelection();
+    connect(ui->disabledModsView, &QTreeView::pressed, this, [this](){
+        ui->enabledModsView->clearSelection();
         closeViewEditor();
     });
 
@@ -249,8 +271,8 @@ void MainWindow::requestSteamModNames()
 void MainWindow::saveDatabase() const
 {
     QJsonArray mods;
-    for (const ModInfo &modInfo : qAsConst(m_model->modList())) {
-        mods.append(modInfo.toJsonObject());
+    for (const ModInfo *modInfo : qAsConst(m_model->modList())) {
+        mods.append(modInfo->toNewJsonObject());
     }
     QJsonDocument database(mods);
     rewriteFileIfDataIsDifferent(modDatabaseFilePath(), database.toJson());
@@ -277,22 +299,52 @@ void MainWindow::addShortcutToDesktop() const
 
 void MainWindow::disableAllMods()
 {
+//    QVector<QModelIndex> expandedCollections;
+//    for (int row = 0; row < m_enabledModsModel->rowCount(); ++row)
+//    {
+//        QModelIndex index = m_enabledModsModel->index(row, 0);
+//        if (ui->enabledModsView->isExpanded(index))
+//        {
+//            expandedCollections.append(m_enabledModsModel->mapToSource(index));
+//        }
+//    }
+
     ui->searchLineEdit->clear();
     m_model->reset([this]() {
-        for (ModInfo &modInfo : m_model->modListRef()) {
-            modInfo.setEnabled(false);
+        for (ModInfo *modInfo : qAsConst(m_model->modListRef())) {
+            modInfo->setEnabled(false);
         }
     });
+
+//    for (const QModelIndex &index : expandedCollections)
+//    {
+//        ui->disabledModsView->expand(m_disabledModsModel->mapFromSource(index));
+//    }
 }
 
 void MainWindow::enableAllMods()
 {
+//    QVector<QModelIndex> expandedCollections;
+//    for (int row = 0; row < m_disabledModsModel->rowCount(); ++row)
+//    {
+//        QModelIndex index = m_disabledModsModel->index(row, 0);
+//        if (ui->disabledModsView->isExpanded(index))
+//        {
+//            expandedCollections.append(m_disabledModsModel->mapToSource(index));
+//        }
+//    }
+
     ui->searchLineEdit->clear();
     m_model->reset([this]() {
-        for (ModInfo &modInfo : m_model->modListRef()) {
-            modInfo.setEnabled(true);
+        for (ModInfo *modInfo : qAsConst(m_model->modListRef())) {
+            modInfo->setEnabled(true);
         }
     });
+
+//    for (const QModelIndex &index : expandedCollections)
+//    {
+//        ui->enabledModsView->expand(m_enabledModsModel->mapFromSource(index));
+//    }
 }
 
 void MainWindow::refreshModlist()
@@ -495,39 +547,96 @@ void MainWindow::showModContextMenu(const QPoint &pos)
         return;
     }
 
-    QModelIndex index = model->mapToSource(modList->indexAt(pos));
+    QModelIndex index = modList->indexAt(pos); model->mapToSource(modList->indexAt(pos));
     if (index.isValid()) {
-        setupItemContextMenu(m_model->modInfo(index));
+        setupItemContextMenu(model, index);
         m_itemContextMenu->exec(modList->viewport()->mapToGlobal(pos));
     }
 }
 
-void MainWindow::performOnSelectedMods(std::function<bool(ModDatabaseModel *model, QModelIndex index)> action)
+void MainWindow::performOnSelectedMods(
+    std::function<bool(QModelIndex index, QModelIndex proxyIndex)> action
+)
 {
     QTreeView *view = selectedView();
-    ModFilterProxyModel *model = view ? qobject_cast<ModFilterProxyModel *>(view->model()) : nullptr;
-    if (!view || !model) {
+    ModFilterProxyModel *model = proxyModel(view);
+    const QItemSelection& selection = this->selection(view);
+    if (!action || !view || !model || selection.isEmpty()) {
         return;
     }
 
-    const QModelIndexList &selectedIndexes = view->selectionModel()->selectedIndexes();
-    for (auto index : selectedIndexes) {
-        if (!action(m_model, model->mapToSource(index))) {
-            break;
-        }
+    const QModelIndexList& proxyIndexes = selection.indexes();
+    const QModelIndexList& indexes = model->mapSelectionToSource(selection).indexes();
+//    QSet<QModelIndex> collectionsToExpand;
+    bool ok = true;
+    for (int i = 0; ok && i < indexes.size(); ++i) {
+        ok = action(indexes[i], proxyIndexes[i]);
+
+//        QModelIndex collectionIndex = m_model->collectionIndex(indexes[i]);
+//        const ModCollection &collection = m_model->modCollection(collectionIndex);
+//        if (collection.expanded() && collection.size()) {
+//            collectionsToExpand.insert(collectionIndex);
+//        }
     }
+
+//    QTreeView *otherView = (view == ui->enabledModsView ? ui->disabledModsView : ui->enabledModsView);
+//    ModFilterProxyModel *othermodel = proxyModel(otherView);
+//    for (const QModelIndex &collectionIndex : collectionsToExpand) {
+//        view->expand(model->mapFromSource(collectionIndex));
+//        otherView->expand(othermodel->mapFromSource(collectionIndex));
+//    }
 }
 
+void MainWindow::performOnSelectedMods(std::function<void(QModelIndexList)> action)
+{
+    QTreeView *view = selectedView();
+    ModFilterProxyModel *model = proxyModel(view);
+    const QItemSelection& selection = this->selection(view);
+    if (!action || !view || !model || selection.isEmpty()) {
+        return;
+    }
+
+    QModelIndexList indexes = model->mapSelectionToSource(selection).indexes();
+//    QSet<QModelIndex> collectionsToExpand;
+//    for (int i = 0; i < indexes.size(); ++i) {
+//        QModelIndex collectionIndex = m_model->collectionIndex(indexes[i]);
+//        const ModCollection &collection = m_model->modCollection(collectionIndex);
+//        if (collection.expanded()) {
+//            collectionsToExpand.insert(collectionIndex);
+//        }
+//    }
+
+    action(std::move(indexes));
+
+//    QTreeView *otherView = (view == ui->enabledModsView ? ui->disabledModsView : ui->enabledModsView);
+//    ModFilterProxyModel *othermodel = proxyModel(otherView);
+//    for (const QModelIndex &collectionIndex : collectionsToExpand) {
+//        if (m_model->modCollection(collectionIndex).size() > 0) {
+//            view->expand(model->mapFromSource(collectionIndex));
+//            otherView->expand(othermodel->mapFromSource(collectionIndex));
+//        }
+//    }
+}
 
 //private:
 
 QTreeView *MainWindow::selectedView() const
 {
-    if (ui->disabledModsList->selectionModel()->hasSelection()) {
-        return ui->enabledModsList->selectionModel()->hasSelection() ? nullptr : ui->disabledModsList;
+    if (ui->disabledModsView->selectionModel()->hasSelection()) {
+        return ui->enabledModsView->selectionModel()->hasSelection() ? nullptr : ui->disabledModsView;
     } else {
-        return ui->enabledModsList->selectionModel()->hasSelection() ? ui->enabledModsList : nullptr;
+        return ui->enabledModsView->selectionModel()->hasSelection() ? ui->enabledModsView : nullptr;
     }
+}
+
+QItemSelection MainWindow::selection(QTreeView *view) const
+{
+    return view ? view->selectionModel()->selection() : QItemSelection();
+}
+
+ModFilterProxyModel* MainWindow::proxyModel(QTreeView *view) const
+{
+    return view ? qobject_cast<ModFilterProxyModel *>(view->model()) : nullptr;
 }
 
 void MainWindow::closeViewEditor()
@@ -543,34 +652,36 @@ void MainWindow::closeViewEditor()
 
 void MainWindow::initActions()
 {
-    m_setEnabledAction = new QAction(m_itemContextMenu);
+    m_enableAction = new QAction(tr("Enable"), m_itemContextMenu);
+    m_disableAction = new QAction(tr("Disable"), m_itemContextMenu);
     m_setLockedAction = new QAction(tr("Lock"), m_itemContextMenu);
     m_setUnlockedAction = new QAction(tr("Unlock"), m_itemContextMenu);
-    m_setMarkedAction = new QAction(tr("Toggle mark"), m_itemContextMenu);
-    m_setMarkedAction->setCheckable(true);
+    m_toggleFavoritesAction = new QAction(tr("Add/remove favorites"), m_itemContextMenu);
     m_openFolderAction = new QAction(tr("Open folder in the explorer"), m_itemContextMenu);
     m_openSteamPageAction = new QAction(tr("Open the Steam Workshop page"), m_itemContextMenu);
     m_renameAction = new QAction(tr("Rename"), m_itemContextMenu);
 
-    m_itemContextMenu->addAction(m_setEnabledAction);
+    m_itemContextMenu->addAction(m_enableAction);
+    m_itemContextMenu->addAction(m_disableAction);
     m_itemContextMenu->addAction(m_setLockedAction);
     m_itemContextMenu->addAction(m_setUnlockedAction);
-    m_itemContextMenu->addAction(m_setMarkedAction);
+    m_itemContextMenu->addAction(m_toggleFavoritesAction);
     m_itemContextMenu->addAction(m_openFolderAction);
     m_itemContextMenu->addAction(m_openSteamPageAction);
     m_itemContextMenu->addAction(m_renameAction);
+    //TODO: add submenu to add in collection
 
     connect(ui->setLockedToolButton, &QPushButton::clicked, m_setLockedAction, &QAction::trigger);
     connect(ui->setUnlockedToolButton, &QPushButton::clicked, m_setUnlockedAction, &QAction::trigger);
-    connect(ui->setMarkedToolButton, &QPushButton::clicked, m_setMarkedAction, &QAction::trigger);
+    connect(ui->toggleFavoritesToolButton, &QPushButton::clicked, m_toggleFavoritesAction, &QAction::trigger);
     connect(ui->openFolderToolButton, &QPushButton::clicked, m_openFolderAction, &QAction::trigger);
     connect(ui->openSteamPageToolButton, &QPushButton::clicked, m_openSteamPageAction, &QAction::trigger);
     connect(ui->renameToolButton, &QPushButton::clicked, m_renameAction, &QAction::trigger);
-    connect(ui->setDisabledToolButton, &QPushButton::clicked, m_setEnabledAction, &QAction::trigger);
-    connect(ui->setEnabledToolButton, &QPushButton::clicked, m_setEnabledAction, &QAction::trigger);
+    connect(ui->setEnabledToolButton, &QPushButton::clicked, m_enableAction, &QAction::trigger);
+    connect(ui->setDisabledToolButton, &QPushButton::clicked, m_disableAction, &QAction::trigger);
 
     connect(m_openSteamPageAction, &QAction::triggered, this, [this](bool /*enabled*/) {
-        performOnSelectedMods([this](ModDatabaseModel */*model*/, QModelIndex index) {
+        performOnSelectedMods([this](QModelIndex index, QModelIndex /*proxy*/) {
             QDesktopServices::openUrl(QUrl(
                 "steam://url/CommunityFilePage/" + m_model->modFolderName(index)
             ));
@@ -579,7 +690,7 @@ void MainWindow::initActions()
     });
 
     connect(m_openFolderAction, &QAction::triggered, this, [this]() {
-        performOnSelectedMods([this](ModDatabaseModel */*model*/, QModelIndex index) {
+        performOnSelectedMods([this](QModelIndex index, QModelIndex /*proxy*/) {
             openModFolder(index);
             return true;
         });
@@ -593,59 +704,73 @@ void MainWindow::initActions()
 
         const QModelIndexList &selectedIndexes = view->selectionModel()->selectedIndexes();
         if (selectedIndexes.size() > 0) {
-            view->setCurrentIndex(selectedIndexes.first());
-            view->edit(selectedIndexes.first());
-            m_viewEditorData = {view, selectedIndexes.first()};
+            QModelIndex index = selectedIndexes.first();
+            qDebug() << index;
+            view->setCurrentIndex(index);
+            view->edit(index);
+            m_viewEditorData = {view, index};
         }
     });
 
     connect(m_setLockedAction, &QAction::triggered, this, [this]() {
-        performOnSelectedMods([](ModDatabaseModel *model, QModelIndex index) {
-            model->setData(index, true, ModDatabaseModel::ModRole::Locked);
+        performOnSelectedMods([this](QModelIndex index, QModelIndex /*proxy*/) {
+            m_model->setData(index, Qt::Checked, ModDatabaseModel::Role::Locked);
             return true;
         });
     });
 
     connect(m_setUnlockedAction, &QAction::triggered, this, [this]() {
-        performOnSelectedMods([](ModDatabaseModel *model, QModelIndex index) {
-            model->setData(index, false, ModDatabaseModel::ModRole::Locked);
+        performOnSelectedMods([this](QModelIndex index, QModelIndex /*proxy*/) {
+            m_model->setData(index, Qt::Unchecked, ModDatabaseModel::Role::Locked);
             return true;
         });
     });
 
-    connect(m_setMarkedAction, &QAction::triggered, this, [this]() {
-        bool marked = false;
+    connect(m_toggleFavoritesAction, &QAction::triggered, this, [this]() {
+        bool hasNonFavorite = false;
+        Qt::CheckState enabledFilter = selectedView() == ui->enabledModsView ? Qt::Checked : Qt::Unchecked;
 
-        //If at least one mod is marked, all should set marked
-        performOnSelectedMods([&marked](ModDatabaseModel *model, QModelIndex index) {
-            marked = !model->data(index, ModDatabaseModel::ModRole::Marked).toBool();
-            return !marked; //Stop search
+        //If at least one mod is not favorite, all should set favorite
+        performOnSelectedMods([this, &hasNonFavorite](QModelIndex index, QModelIndex /*proxy*/) {
+            hasNonFavorite = !m_model->isFavorite(index);
+            return !hasNonFavorite; //Stop search if found
         });
 
-        performOnSelectedMods([&marked](ModDatabaseModel *model, QModelIndex index) {
-            model->setData(index, marked, ModDatabaseModel::ModRole::Marked);
+        performOnSelectedMods([this, &hasNonFavorite, &enabledFilter](QModelIndexList indexes) {
+            hasNonFavorite ? m_model->addFavorite(indexes, enabledFilter)
+                           : m_model->removeFavorite(indexes, enabledFilter);
             return true;
         });
     });
 
-    connect(m_setEnabledAction, &QAction::triggered, this, [this]() {
-        performOnSelectedMods([](ModDatabaseModel *model, QModelIndex index) {
-            bool enabled = model->data(index, ModDatabaseModel::ModRole::Enabled).toBool();
-            model->setData(index, !enabled, ModDatabaseModel::ModRole::Enabled);
+    connect(m_enableAction, &QAction::triggered, this, [this]() {
+        performOnSelectedMods([this](QModelIndex index, QModelIndex /*proxy*/) {
+            m_model->setData(index, Qt::Checked, ModDatabaseModel::Role::Enabled);
+            return true;
+        });
+    });
+
+    connect(m_disableAction, &QAction::triggered, this, [this]() {
+        performOnSelectedMods([this](QModelIndex index, QModelIndex /*proxy*/) {
+            m_model->setData(index, Qt::Unchecked, ModDatabaseModel::Role::Enabled);
             return true;
         });
     });
 }
 
-void MainWindow::setupItemContextMenu(const ModInfo &item) const
+void MainWindow::setupItemContextMenu(QSortFilterProxyModel *model, QModelIndex index) const
 {
-    m_setEnabledAction->setText(item.enabled() ? tr("Disable") : tr("Enable"));
-    m_setEnabledAction->setVisible(item.exists() && !item.locked());
-    m_setLockedAction->setVisible(item.exists() && !item.locked());
-    m_setUnlockedAction->setVisible(item.exists() && item.locked());
-    m_setMarkedAction->setVisible(item.exists());
-    m_setMarkedAction->setChecked(item.marked());
-    m_openFolderAction->setVisible(item.exists());
+    const AbstractModDatabaseItem &item = m_model->item(model->mapToSource(index));
+    bool exists = item.exists() != Qt::Unchecked;
+    bool locked = item.locked() == Qt::Checked;
+    bool unlocked = item.locked() == Qt::Unchecked;
+
+    m_enableAction->setVisible(exists && !locked && item.enabled() != Qt::Checked);
+    m_disableAction->setVisible(exists && !locked && item.enabled() != Qt::Unchecked);
+    m_setLockedAction->setVisible(exists && !locked);
+    m_setUnlockedAction->setVisible(exists && !unlocked);
+    m_toggleFavoritesAction->setVisible(exists);
+    m_openFolderAction->setVisible(exists);
 }
 
 bool MainWindow::isGameFolderValid(const QString &folderPath)
@@ -684,9 +809,9 @@ void MainWindow::checkAnnouncementPopup(const int loadedApplicationVersion)
 void MainWindow::updateDisabledModsFile()
 {
     QString disabledMods;
-    for (const ModInfo &modInfo : qAsConst(m_model->modList())) {
-        if (modInfo.exists() && !modInfo.enabled()) {
-            disabledMods.append(modInfo.folderName + "\n");
+    for (const ModInfo *modInfo : qAsConst(m_model->modList())) {
+        if (modInfo->exists() && !modInfo->enabled()) {
+            disabledMods.append(modInfo->folderName + "\n");
         }
     }
     rewriteFileIfDataIsDifferent(disabledModsFilePath(), disabledMods.toUtf8());
@@ -879,7 +1004,7 @@ void MainWindow::applyBackwardCompatibilityFixes(const int loadedApplicationVers
                 );
             }
 
-            if (!QDir().remove(tempModsFolderPath)) {
+            if (!QDir().rmdir(tempModsFolderPath)) {
                 QMessageBox warningMessage(
                     QMessageBox::Warning, tr("Unmoved mods"),
                     tr("Failed to move back some of mods from the temp folder.\n"
@@ -907,6 +1032,8 @@ void MainWindow::applyBackwardCompatibilityFixes(const int loadedApplicationVers
                 }
             }
         }
+
+        // TODO: mod db conversion
     }
 }
 

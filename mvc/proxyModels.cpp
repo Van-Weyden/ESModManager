@@ -26,7 +26,12 @@ bool ModFilterProxyModel::filterAccepts(const QModelIndex &sourceModelIndex) con
         return true;
     }
 
-    QString modName = sourceModel()->data(sourceModelIndex, Qt::DisplayRole).toString();
+    ModDatabaseModel *model = qobject_cast<ModDatabaseModel *>(sourceModel());
+    if (model->isCollection(sourceModelIndex)) {
+        return model->collection(sourceModelIndex).hasModWithName(m_filter, true);
+    }
+
+    QString modName = model->data(sourceModelIndex, Qt::DisplayRole).toString();
     return modName.contains(m_filter, Qt::CaseSensitivity::CaseInsensitive);
 }
 
@@ -44,6 +49,11 @@ void ModFilterProxyModel::setFilter(const QString &filter)
     }
 }
 
+Qt::CheckState ModFilterProxyModel::tristateValue(const QModelIndex &sourceModelIndex, int role) const
+{
+    return sourceModel()->data(sourceModelIndex, role).value<Qt::CheckState>();
+}
+
 
 
 EnabledModsProxyModel::EnabledModsProxyModel(QObject *parent, QAbstractItemModel *model)
@@ -53,8 +63,8 @@ EnabledModsProxyModel::EnabledModsProxyModel(QObject *parent, QAbstractItemModel
 bool EnabledModsProxyModel::filterAccepts(const QModelIndex &sourceModelIndex) const
 {
     return ModFilterProxyModel::filterAccepts(sourceModelIndex) &&
-           sourceModel()->data(sourceModelIndex, ModDatabaseModel::ModRole::Exists).toBool() &&
-           sourceModel()->data(sourceModelIndex, ModDatabaseModel::ModRole::Enabled).toBool();
+           tristateValue(sourceModelIndex, ModDatabaseModel::Role::Exists) != Qt::Unchecked &&
+           tristateValue(sourceModelIndex, ModDatabaseModel::Role::Enabled) != Qt::Unchecked;
 }
 
 
@@ -66,6 +76,6 @@ DisabledModsProxyModel::DisabledModsProxyModel(QObject *parent, QAbstractItemMod
 bool DisabledModsProxyModel::filterAccepts(const QModelIndex &sourceModelIndex) const
 {
     return ModFilterProxyModel::filterAccepts(sourceModelIndex) &&
-           sourceModel()->data(sourceModelIndex, ModDatabaseModel::ModRole::Exists).toBool() &&
-           !sourceModel()->data(sourceModelIndex, ModDatabaseModel::ModRole::Enabled).toBool();
+           tristateValue(sourceModelIndex, ModDatabaseModel::Role::Exists) != Qt::Unchecked &&
+           tristateValue(sourceModelIndex, ModDatabaseModel::Role::Enabled) != Qt::Checked;
 }

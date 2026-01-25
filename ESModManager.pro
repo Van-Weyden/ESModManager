@@ -30,12 +30,15 @@ SOURCES += \
         DatabaseEditor.cpp \
         Logger.cpp \
         MainWindow.cpp \
-        ModInfo.cpp \
         ModInfoWidget.cpp \
         ModScanner.cpp \
         SteamRequester.cpp \
         main.cpp \
+        mvc/AbstractModDatabaseItem.cpp \
+        mvc/AutoExpandTreeView.cpp \
+        mvc/ModCollection.cpp \
         mvc/ModDatabaseModel.cpp \
+        mvc/ModInfo.cpp \
         mvc/ModNameDelegate.cpp \
         mvc/ModNameEditor.cpp \
         mvc/proxyModels.cpp \
@@ -46,11 +49,14 @@ HEADERS += \
         DatabaseEditor.h \
         Logger.h \
         MainWindow.h \
-        ModInfo.h \
         ModInfoWidget.h \
         ModScanner.h \
         SteamRequester.h \
+        mvc/AbstractModDatabaseItem.h \
+        mvc/AutoExpandTreeView.h \
+        mvc/ModCollection.h \
         mvc/ModDatabaseModel.h \
+        mvc/ModInfo.h \
         mvc/ModNameDelegate.h \
         mvc/ModNameEditor.h \
         mvc/proxyModels.h \
@@ -72,3 +78,8 @@ TRANSLATIONS += lang_ru.ts
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+DISTFILES += \
+    ESModManager.rpy \
+    esmm_lib.py \
+    injection.py

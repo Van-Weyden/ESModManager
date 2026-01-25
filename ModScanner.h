@@ -39,7 +39,7 @@ private:
     };
 
 private:
-    void registerMod(ScanData data, QList<QModelIndex> &mods);
+    void registerMod(ScanData data, QList<ModInfo *> &mods);
     void tryResolveName(ModInfo &modInfo);
     int indexOfModWithUnknownNameInDatabase(ScanData& data, bool *isModNameValid);
 

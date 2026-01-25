@@ -154,7 +154,7 @@ void ModScanner::scanMods()
         m_countOfScannedMods = 0;
         int oldModelSize = m_model->size();
         QStringList modsFolders = QDir(m_modsFolderPath).entryList(QDir::Dirs | QDir::NoDotAndDotDot);
-        QList<QModelIndex> modsWithUnknownName;
+        QList<ModInfo *> modsWithUnknownName;
 
         while (!modsFolders.isEmpty()) {
             QString modFolderName = modsFolders.takeFirst();
@@ -162,7 +162,7 @@ void ModScanner::scanMods()
         }
 
         while (!modsWithUnknownName.isEmpty() && !QThread::currentThread()->isInterruptionRequested()) {
-            tryResolveName(m_model->modInfoRef(modsWithUnknownName.takeFirst()));
+            tryResolveName(*modsWithUnknownName.takeFirst());
         }
     });
     m_isRunning = false;
@@ -174,14 +174,14 @@ void ModScanner::scanMods()
 
 //private:
 
-void ModScanner::registerMod(ScanData data, QList<QModelIndex> &modsWithUnknownName)
+void ModScanner::registerMod(ScanData data, QList<ModInfo *> &modsWithUnknownName)
 {
     bool isModNameValid = false;
     int row = indexOfModWithUnknownNameInDatabase(data, &isModNameValid);
 
     if (isModNameValid) {
         if (row != -1 && m_enabledFlag != EnabledFlagInitValue::NotOverride) {
-            m_model->modInfoRef(m_model->index(row)).setEnabled(
+            m_model->modInfoRef(row).setEnabled(
                 m_enabledFlag == EnabledFlagInitValue::ForceTrue ? true : false
             );
         }
@@ -192,7 +192,7 @@ void ModScanner::registerMod(ScanData data, QList<QModelIndex> &modsWithUnknownN
     }
 
     ModInfo modInfo;
-    modInfo.name = ModInfo::generateUnknownNameStub();
+    modInfo.sourcesName = ModInfo::generateUnknownNameStub();
     modInfo.folderName = data.modFolderName;
 
     if (m_enabledFlag != EnabledFlagInitValue::NotOverride) {
@@ -204,7 +204,7 @@ void ModScanner::registerMod(ScanData data, QList<QModelIndex> &modsWithUnknownN
         m_model->add(modInfo);
     }
 
-    modsWithUnknownName.append(m_model->index(row));
+    modsWithUnknownName.append(&m_model->modInfoRef(row));
 }
 
 void ModScanner::tryResolveName(ModInfo &modInfo)
@@ -271,22 +271,22 @@ void ModScanner::tryResolveName(ModInfo &modInfo)
         initMap[prioryModNameKey] = prioryModName;
     }
 
-    modInfo.name.clear();
+    modInfo.sourcesName.clear();
     QString outOf = '/' + QString::number(initMap.count()) + "]: ";
 
     if (initMap.isEmpty()) {
-        modInfo.name = ModInfo::generateFailedToGetNameStub();
+        modInfo.sourcesName = ModInfo::generateFailedToGetNameStub();
     } else {
         if (initMap.count() == 1) {
-            modInfo.name = initMap[initKey];
+            modInfo.sourcesName = initMap[initKey];
         } else {
             int modNumber = 1;
 
             for (const QString &initKey : initMap.keys()) {
-                if (modInfo.name.isEmpty()) {
-                    modInfo.name = "[1" + outOf + initMap[initKey];
+                if (modInfo.sourcesName.isEmpty()) {
+                    modInfo.sourcesName = "[1" + outOf + initMap[initKey];
                 } else {
-                    modInfo.name.append("\n[" + QString::number(modNumber) + outOf + initMap[initKey]);
+                    modInfo.sourcesName.append("\n[" + QString::number(modNumber) + outOf + initMap[initKey]);
                 }
                 ++modNumber;
             }
@@ -310,11 +310,12 @@ int ModScanner::indexOfModWithUnknownNameInDatabase(ScanData &data, bool *isModN
     }
 
     for (int row = 0; row < data.oldModelSize; ++row) {
-        if (data.modFolderName == m_model->modFolderName(m_model->index(row))) {
-            m_model->modInfoRef(m_model->index(row)).setExists(true);
+        auto& modInfo = m_model->modInfoRef(row);
+        if (data.modFolderName == modInfo.folderName) {
+            modInfo.setExists(true);
 
             if (isModNameValid) {
-                *isModNameValid = m_model->isNameValid(m_model->modName(m_model->index(row)));
+                *isModNameValid = ModInfo::isNameValid(modInfo.sourcesName);
             }
 
             return row;

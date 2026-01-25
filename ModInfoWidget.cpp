@@ -16,8 +16,8 @@ ModInfoWidget::ModInfoWidget(QWidget *parent) :
             return;
         }
         ModInfo &info = m_model->modInfoRef(m_modIndex);
-        if (info.name != ui->modNameLineEdit->text()) {
-            info.name = ui->modNameLineEdit->text();
+        if (info.sourcesName != ui->modNameLineEdit->text()) {
+            info.sourcesName = ui->modNameLineEdit->text();
             m_model->updateRow(m_modIndex);
         }
     });
@@ -33,16 +33,16 @@ ModInfoWidget::ModInfoWidget(QWidget *parent) :
         }
     });
 
-    connect(ui->markedCheckBox, &QCheckBox::clicked, this, [this]() {
-        if (!m_model || !m_modIndex.isValid()) {
-            return;
-        }
-        ModInfo &info = m_model->modInfoRef(m_modIndex);
-        if (info.marked() != ui->markedCheckBox->isChecked()) {
-            info.setMarked(ui->markedCheckBox->isChecked());
-            m_model->updateRow(m_modIndex);
-        }
-    });
+//    connect(ui->markedCheckBox, &QCheckBox::clicked, this, [this]() {
+//        if (!m_model || !m_modIndex.isValid()) {
+//            return;
+//        }
+//        ModInfo &info = m_model->modInfoRef(m_modIndex);
+//        if (info.marked() != ui->markedCheckBox->isChecked()) {
+//            info.setMarked(ui->markedCheckBox->isChecked());
+//            m_model->updateRow(m_modIndex);
+//        }
+//    });
 
     connect(ui->openModFolderPushButton, &QPushButton::clicked, this, [this]() {
         if (!m_model || !m_modIndex.isValid()) {
@@ -78,11 +78,11 @@ void ModInfoWidget::setIndex(const QModelIndex &index)
     m_modIndex = QModelIndex(); // Disables mod info updates on the UI update
     const ModInfo &info = m_model->modInfo(index);
     ui->openModFolderPushButton->setEnabled(info.exists());
-    ui->modNameLineEdit->setText(info.name);
+    ui->modNameLineEdit->setText(info.sourcesName);
     ui->modFolderNameLineEdit->setText(info.folderName);
     ui->steamModNameLineEdit->setText(info.steamName);
     ui->lockedCheckBox->setChecked(info.locked());
-    ui->markedCheckBox->setChecked(info.marked());
+//    ui->markedCheckBox->setChecked(info.marked());
     ui->openModFolderPushButton->setEnabled(info.exists());
     ui->openWorkshopPushButton->setEnabled(ModInfo::isSteamId(info.folderName));
     m_modIndex = index;

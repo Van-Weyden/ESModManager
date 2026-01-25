@@ -40,23 +40,10 @@ void SteamRequester::processModName(QNetworkReply *reply)
         modFolderName = modData["publishedfileid"].toString();
         steamModName = modData["title"].toString();
 
-        for (int i = 0; i < m_modDatabaseModel->size(); ++i) {
-            if (QThread::currentThread()->isInterruptionRequested())
-            {
-                onFinished(ModInfo::generateUnknownNameStub());
-                return;
-            }
-
-            QModelIndex modelIndex = m_modDatabaseModel->index(i);
-            ModInfo &modInfo = m_modDatabaseModel->modInfoRef(modelIndex);
-            if (modInfo.folderName == modFolderName) {
-                //During the processing of the request, the data could change, so check again
-                if (!steamModName.isEmpty() && !m_modDatabaseModel->isNameValid(modInfo.steamName)) {
-                    modInfo.steamName = steamModName;
-                    m_modDatabaseModel->updateRow(modelIndex);
-                }
-                break;
-            }
+        if (QThread::currentThread()->isInterruptionRequested()) {
+            onFinished(ModInfo::generateUnknownNameStub());
+        } else {
+            m_modDatabaseModel->setSteamName(modFolderName, steamModName);
         }
     }
     ///Debug block
@@ -89,12 +76,11 @@ void SteamRequester::requestModNames()
             return;
         }
 
-        QModelIndex modelIndex = m_modDatabaseModel->index(i);
-        ModInfo &modInfo = m_modDatabaseModel->modInfoRef(modelIndex);
-        if (!m_modDatabaseModel->isNameValid(modInfo.steamName)) {
+        ModInfo &modInfo = m_modDatabaseModel->modInfoRef(i);
+        if (!ModInfo::isNameValid(modInfo.steamName)) {
             if (ModInfo::isSteamId(modInfo.folderName)) {
                 modInfo.steamName = ModInfo::generateWaitingForSteamResponseStub();
-                m_modDatabaseModel->updateRow(modelIndex);
+                m_modDatabaseModel->onModInfoUpdated(i, { Qt::DisplayRole });
                 data.clear();
                 params.clear();
                 params.addQueryItem("itemcount", "1");
@@ -105,7 +91,7 @@ void SteamRequester::requestModNames()
                 m_networkAccessManager->post(request, data);
             } else {
                 modInfo.steamName = ModInfo::generateFailedToGetNameStub();
-                m_modDatabaseModel->updateRow(modelIndex);
+                m_modDatabaseModel->onModInfoUpdated(i, { Qt::DisplayRole });
                 modNameProcessed();
             }
         } else {
@@ -127,11 +113,10 @@ void SteamRequester::modNameProcessed()
 void SteamRequester::onFinished(const QString &failedStub)
 {
     for (int i = 0; i < m_modDatabaseModel->size(); ++i) {
-        QModelIndex modelIndex = m_modDatabaseModel->index(i);
-        ModInfo &modInfo = m_modDatabaseModel->modInfoRef(modelIndex);
+        ModInfo &modInfo = m_modDatabaseModel->modInfoRef(i);
         if (modInfo.steamName.contains(ModInfo::generateWaitingForSteamResponseStub())) {
             modInfo.steamName = failedStub;
-            m_modDatabaseModel->updateRow(modelIndex);
+            m_modDatabaseModel->onModInfoUpdated(i, { Qt::DisplayRole });
         }
     }
     m_isRunning = false;

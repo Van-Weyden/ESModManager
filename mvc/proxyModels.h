@@ -15,6 +15,9 @@ public:
 public slots:
     void setFilter(const QString &filter);
 
+protected:
+    Qt::CheckState tristateValue(const QModelIndex &sourceModelIndex, int role) const;
+
 private:
     QString m_filter = "";
 };

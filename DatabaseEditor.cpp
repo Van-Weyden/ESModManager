@@ -93,7 +93,7 @@ void DatabaseEditor::setModsDisplay(const bool modlistOnly)
     int databaseSize = m_model->size();
     if (modlistOnly) {
         for (int row = 0; row < databaseSize; ++row) {
-            if (m_model->modIsExists(m_model->index(row))) {
+            if (m_model->modInfo(row).exists()) {
                 ui->databaseView->setRowHidden(row, false);
             }
         }
@@ -114,9 +114,9 @@ void DatabaseEditor::filterModsDisplay(const QString &str)
 
     int rowCount = m_model->size();
     for (int row = 0; row < rowCount; ++row) {
-        if (ui->showAllModsCheckBox->isChecked() || m_model->modIsExists(m_model->index(row))) {
+        if (ui->showAllModsCheckBox->isChecked() || m_model->modInfo(row).exists()) {
             ui->databaseView->setRowHidden(row, false);
-            QString modName = m_model->data(m_model->index(row)).toString();
+            QString modName = m_model->modInfo(row).displayedName();
             if (!modName.contains(str, Qt::CaseSensitivity::CaseInsensitive)) {
                 ui->databaseView->setRowHidden(row, true);
             }
@@ -131,7 +131,7 @@ void DatabaseEditor::removeSelectedMod()
         return;
     }
 
-    m_model->removeFromDatabase(modIndex);
+    m_model->removeItem(modIndex);
 }
 
 void DatabaseEditor::show()

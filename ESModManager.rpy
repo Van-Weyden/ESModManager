@@ -55,7 +55,7 @@ init -999 python:
                     mods[self.label] = "Mod Manager"
                 
                 try:
-                    modsImages[self.label] = ("bin/ESModManager.png", False, '')
+                    modsImages[self.label] = ("ESModManager.png", False, '')
                     imgsModsMenu_polyMods.append(self.label)
                 except:
                     pass
