@@ -330,7 +330,11 @@ QVariant ModDatabaseModel::data(const QModelIndex &index, int role) const
         break;
 
         case Qt::DecorationRole:
-            if (itemPtr(index)->locked() == Qt::Checked) {
+            if (isCollection(index)) {
+                return QIcon(QString(":/images/ui_outline/%1.svg").arg(
+                    collectionPtr(index)->expanded() ? "collapse" : "expand"
+                ));
+            } else if (itemPtr(index)->locked() == Qt::Checked) {
                 return QIcon(":/images/ui_outline/lock.svg");
             }
         break;
