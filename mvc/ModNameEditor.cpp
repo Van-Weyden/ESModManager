@@ -30,6 +30,9 @@ void ModNameEditor::setText(const QString &text)
 {
     if (text != this->text()) {
         setPlainText(text);
+        QTextCursor cursor = textCursor();
+        cursor.movePosition(QTextCursor::MoveOperation::End);
+        setTextCursor(cursor);
     }
 }
 
