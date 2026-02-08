@@ -5,6 +5,8 @@
 #include <QDebug>
 #include <QFont>
 #include <QIcon>
+#include <QJsonArray>
+#include <QJsonObject>
 #include <QThread>
 
 #include "utils/RegExpPatterns.h"
@@ -25,6 +27,11 @@ ModDatabaseModel::ModDatabaseModel()
     qRegisterMetaType<QVector<int>>("QVector<int>");
 }
 
+ModDatabaseModel::~ModDatabaseModel()
+{
+    clear(true);
+}
+
 void ModDatabaseModel::add(const ModInfo &modInfo)
 {
     ModCollection *collection = uncategorizedCollection();
@@ -39,17 +46,6 @@ void ModDatabaseModel::add(const ModInfo &modInfo)
     }
     collection->insertMod(index, m_database.last());
     endInsertRows();
-}
-
-void ModDatabaseModel::clear()
-{
-    beginResetModel();
-    qDeleteAll(m_database);
-    m_database.clear();
-    for (ModCollection *collection : qAsConst(m_collections)) {
-        collection->clear();
-    }
-    endResetModel();
 }
 
 bool ModDatabaseModel::isFavorite(const QModelIndex &index) const
@@ -564,6 +560,13 @@ void ModDatabaseModel::onModInfoUpdated(int index, const QVector<int> &roles)
     }
 }
 
+void ModDatabaseModel::reset()
+{
+    beginResetModel();
+    clear();
+    endResetModel();
+}
+
 void ModDatabaseModel::reset(std::function<void()> actions)
 {
     beginResetModel();
@@ -591,6 +594,85 @@ void ModDatabaseModel::revert()
     m_editingName.clear();
 }
 
+void ModDatabaseModel::fromJson(const QJsonObject &json)
+{
+    beginResetModel();
+    clear(true);
+    QJsonArray mods = json["mods"].toArray();
+    for (int i = 0; i < mods.size(); i++) {
+        m_database.append(new ModInfo(mods[i].toObject()));
+    }
+
+    QJsonArray collections = json["collections"].toArray();
+    for (int i = 0; i < collections.size(); i++) {
+        QJsonObject json = collections[i].toObject();
+        m_collections.append(new ModCollection(json));
+        QStringList mods = json["mods"].toString().split(';', Qt::SkipEmptyParts);
+        for (const QString &range : qAsConst(mods)) {
+            int first;
+            int last;
+            if (range.contains('-')) {
+                QStringList parts = range.split('-', Qt::SkipEmptyParts);
+                first = parts[0].toInt();
+                last = parts[1].toInt();
+            } else {
+                first = last = range.toInt();
+            }
+
+            for (int i = first; i <= last; ++i) {
+                m_collections.last()->addMod(m_database[i]);
+            }
+        }
+    }
+    endResetModel();
+}
+
+QJsonObject ModDatabaseModel::toJson() const
+{
+    QJsonArray mods;
+    for (const ModInfo *modInfo : qAsConst(m_database)) {
+        mods.append(modInfo->toNewJsonObject());
+    }
+
+    QJsonArray collections;
+    for (const ModCollection *collection : qAsConst(m_collections)) {
+        QJsonObject json = collection->toNewJsonObject();
+        QString mods;
+        int first = -1;
+        int last = -1;
+        for (ModInfo *modInfo : collection->mods()) {
+            int index = m_database.indexOf(modInfo);
+            if (first < 0) {
+                first = last = index;
+            } else if (index == last + 1) {
+                last += 1;
+            } else {
+                mods += QString::number(first);
+                if (last > first) {
+                    mods += '-' + QString::number(last);
+                }
+                mods += ';';
+                first = last = index;
+            }
+        }
+
+        if (first >= 0) {
+            mods += QString::number(first);
+            if (last > first) {
+                mods += '-' + QString::number(last);
+            }
+        }
+
+        json["mods"] = mods;
+        collections.append(std::move(json));
+    }
+
+    QJsonObject database;
+    database["mods"] = mods;
+    database["collections"] = collections;
+    return database;
+}
+
 //public slots:
 
 void ModDatabaseModel::setCompleteModNames(const bool enabled)
@@ -614,6 +696,26 @@ void ModDatabaseModel::setUsingSteamModNames(const bool use)
 }
 
 //private:
+
+void ModDatabaseModel::clear(bool removeBuiltInCollections)
+{
+    for (ModCollection *collection : qAsConst(m_collections)) {
+        collection->clear();
+    }
+
+    QVector<ModCollection *>::iterator begin = m_collections.begin();
+    QVector<ModCollection *>::iterator end = m_collections.end();
+    if (!removeBuiltInCollections) {
+        ++begin;
+        --end;
+    }
+
+    qDeleteAll(begin, end);
+    m_collections.erase(begin, end);
+
+    qDeleteAll(m_database);
+    m_database.clear();
+}
 
 QModelIndex ModDatabaseModel::collectionIndex(ModCollection *collection, int column) const
 {

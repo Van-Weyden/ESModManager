@@ -34,12 +34,12 @@ void AbstractModDatabaseItem::setName(const QString &name)
 
 void AbstractModDatabaseItem::fromJsonObject(const QJsonObject &object)
 {
-    m_name = object["Name"].toString();
+    m_name = object["name"].toString();
 }
 
 void AbstractModDatabaseItem::toJsonObject(QJsonObject &object) const
 {
-    object["Name"] = m_name;
+    object["name"] = m_name;
 }
 
 QJsonObject AbstractModDatabaseItem::toNewJsonObject() const

@@ -1,4 +1,5 @@
 #include <QCollator>
+#include <QJsonObject>
 
 #include "ModInfo.h"
 
@@ -116,11 +117,13 @@ bool ModCollection::setExpanded(bool expanded)
 void ModCollection::fromJsonObject(const QJsonObject &object)
 {
     AbstractModDatabaseItem::fromJsonObject(object);
+    m_expanded = object["expanded"].toBool(true);
 }
 
 void ModCollection::toJsonObject(QJsonObject &object) const
 {
     AbstractModDatabaseItem::toJsonObject(object);
+    object["expanded"] = m_expanded;
 }
 
 int ModCollection::size() const

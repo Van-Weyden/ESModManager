@@ -26,7 +26,7 @@ public:
 
 public:
     ModDatabaseModel();
-    ~ModDatabaseModel() = default;
+    ~ModDatabaseModel();
 
     inline QVector<ModInfo *> &modListRef();
     inline const QVector<ModInfo *> &modList() const;
@@ -34,7 +34,6 @@ public:
     inline const QVector<ModCollection *> &collectionList() const;
 
     void add(const ModInfo &modInfo);
-    void clear();
     inline int size() const;
 
     bool isFavorite(const QModelIndex &index) const;
@@ -90,16 +89,21 @@ public:
     inline void updateRow(const QModelIndex &index);
     void onModInfoUpdated(int index, const QVector<int> &roles);
 
+    void reset();
     void reset(std::function<void ()> actions);
 
     bool submit() override;
     void revert() override;
+
+    void fromJson(const QJsonObject &json);
+    QJsonObject toJson() const;
 
 public slots:
     void setCompleteModNames(const bool enabled = true);
     void setUsingSteamModNames(const bool use = true);
 
 private:
+    void clear(bool removeBuiltInCollections = false);
     QModelIndex collectionIndex(ModCollection *collection, int column = 0) const;
     QModelIndex	modInfoIndex(const QModelIndex &collectionIndex, int modIndex) const;
     QModelIndex	modInfoIndex(ModCollection *collection, ModInfo *modInfo) const;

@@ -32,6 +32,7 @@ public:
     bool setLocked(const bool locked) override;
     bool setExpanded(bool expanded);
 
+    // Don't save/load mod list; model handles this
     void fromJsonObject(const QJsonObject &object) override;
     void toJsonObject(QJsonObject &object) const override;
 

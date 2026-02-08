@@ -118,19 +118,19 @@ QSet<ModCollection *> &ModInfo::collectionsRef()
 void ModInfo::fromJsonObject(const QJsonObject &object)
 {
     AbstractModDatabaseItem::fromJsonObject(object);
-    sourcesName = object["Sources name"].toString();
-    folderName  = object["Folder name"].toString();
-    steamName   = object["Steam name"].toString();
-    m_enabled   = object["Enabled"].toBool(true);
-    m_locked    = object["Locked"].toBool(false);
+    sourcesName = object["sources_name"].toString();
+    folderName  = object["folder_name"].toString();
+    steamName   = object["steam_name"].toString();
+    m_enabled   = object["enabled"].toBool(true);
+    m_locked    = object["locked"].toBool(false);
 }
 
 void ModInfo::toJsonObject(QJsonObject &object) const
 {
     AbstractModDatabaseItem::toJsonObject(object);
-    object["Sources name"] = sourcesName;
-    object["Folder name"]  = folderName;
-    object["Steam name"]   = steamName;
-    object["Enabled"]      = m_enabled;
-    object["Locked"]       = m_locked;
+    object["sources_name"] = sourcesName;
+    object["folder_name"]  = folderName;
+    object["steam_name"]   = steamName;
+    object["enabled"]      = m_enabled;
+    object["locked"]       = m_locked;
 }

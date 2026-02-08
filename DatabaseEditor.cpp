@@ -154,7 +154,7 @@ void DatabaseEditor::showSelectedModInfo()
 
 void DatabaseEditor::eraseDatabase()
 {
-    m_model->clear();
+    m_model->reset();
 }
 
 //protected:

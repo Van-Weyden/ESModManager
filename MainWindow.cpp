@@ -254,10 +254,7 @@ void MainWindow::loadDatabase()
         database = QJsonDocument::fromJson(file.readAll()/*, &err*/);
         file.close();
 
-        QJsonArray mods = database.array();
-        for (int i = 0; i < mods.size(); i++) {
-            m_model->add(ModInfo(mods[i].toObject()));
-        }
+        m_model->fromJson(database.object());
     }
 }
 
@@ -270,11 +267,7 @@ void MainWindow::requestSteamModNames()
 
 void MainWindow::saveDatabase() const
 {
-    QJsonArray mods;
-    for (const ModInfo *modInfo : qAsConst(m_model->modList())) {
-        mods.append(modInfo->toNewJsonObject());
-    }
-    QJsonDocument database(mods);
+    QJsonDocument database(m_model->toJson());
     rewriteFileIfDataIsDifferent(modDatabaseFilePath(), database.toJson());
 }
 
@@ -377,6 +370,7 @@ void MainWindow::refreshModlist()
     ui->progressBar->setMaximum(modsCount);
     ui->progressBar->setValue(0);
 
+    m_model->setModsExistsState(false);
     m_scanner->setModsFolderPath(m_modsFolderPath);
     m_scannerThread->start();
     progressDialog.exec();
@@ -1033,7 +1027,30 @@ void MainWindow::applyBackwardCompatibilityFixes(const int loadedApplicationVers
             }
         }
 
-        // TODO: mod db conversion
+        ///Conversion from old version of DB
+        {
+            QFile file(QString("../") + ModDatabaseFileName);
+            if (file.exists()) {
+                QJsonDocument database;
+                //QJsonParseError err;
+
+                file.open(QFile::ReadOnly);
+                database = QJsonDocument::fromJson(file.readAll()/*, &err*/);
+                file.close();
+                // File will remove automatically after workshop update
+
+                QJsonArray mods = database.array();
+                for (int i = 0; i < mods.size(); i++) {
+                    QJsonObject mod = mods[i].toObject();
+                    ModInfo modInfo;
+                    modInfo.setName(mod["Name"].toString());
+                    modInfo.folderName = mod["Folder name"].toString();
+                    modInfo.steamName = mod["Steam name"].toString();
+                    modInfo.setEnabled(mod["Is enabled"].toBool());
+                    m_model->add(modInfo);
+                }
+            }
+        }
     }
 }
 
