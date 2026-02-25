@@ -201,7 +201,7 @@ void ModScanner::registerMod(ScanData data, QList<ModInfo *> &modsWithUnknownNam
 
     if (row == -1) {
         row = m_model->size();
-        m_model->add(modInfo);
+        m_model->addMod(modInfo);
     }
 
     modsWithUnknownName.append(&m_model->modInfoRef(row));

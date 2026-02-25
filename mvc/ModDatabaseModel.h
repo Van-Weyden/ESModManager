@@ -30,26 +30,33 @@ public:
 
     inline QVector<ModInfo *> &modListRef();
     inline const QVector<ModInfo *> &modList() const;
-    inline QVector<ModCollection *> &collectionListRef();
-    inline const QVector<ModCollection *> &collectionList() const;
+    const QVector<ModCollection *> userCollectionList() const;
+    const QVector<ModCollection *> userCollectionList(const QModelIndex &modIndex) const;
+    const QVector<ModCollection *> userCollectionList(const QModelIndexList &indexes) const;
 
-    void add(const ModInfo &modInfo);
+    void addMod(const ModInfo &modInfo);
+    void addUserCollection(ModCollection *collection);
     inline int size() const;
 
     bool isFavorite(const QModelIndex &index) const;
     bool isUncategorized(const QModelIndex &index) const;
 
-    void addFavorite(QModelIndexList indexes, Qt::CheckState enabledFilter = Qt::PartiallyChecked);
-    void removeFavorite(QModelIndexList indexes, Qt::CheckState enabledFilter = Qt::PartiallyChecked);
+    void addFavorite(const QModelIndexList &indexes, Qt::CheckState enabledFilter = Qt::PartiallyChecked);
+    void removeFavorite(const QModelIndexList &indexes, Qt::CheckState enabledFilter = Qt::PartiallyChecked);
 
     void addToCollection(const QModelIndex &index, const QModelIndex &collectionIndex,
                          Qt::CheckState enabledFilter = Qt::PartiallyChecked);
     void removeFromCollection(const QModelIndex &index, const QModelIndex &collectionIndex,
                               Qt::CheckState enabledFilter = Qt::PartiallyChecked);
 
-    void addToCollection(QModelIndexList indexes, const QModelIndex &collectionIndex,
+    void addToCollection(const QModelIndexList &indexes, const QModelIndex &collectionIndex,
                          Qt::CheckState enabledFilter = Qt::PartiallyChecked);
-    void removeFromCollection(QModelIndexList indexes, const QModelIndex &collectionIndex,
+    void removeFromCollection(const QModelIndexList &indexes, const QModelIndex &collectionIndex,
+                              Qt::CheckState enabledFilter = Qt::PartiallyChecked);
+
+    void addToCollection(const QModelIndexList &indexes, ModCollection *collection,
+                         Qt::CheckState enabledFilter = Qt::PartiallyChecked);
+    void removeFromCollection(const QModelIndexList &indexes, ModCollection *collection,
                               Qt::CheckState enabledFilter = Qt::PartiallyChecked);
 
     inline const AbstractModDatabaseItem& item(const QModelIndex &index) const;
@@ -113,6 +120,9 @@ private:
     ModInfo *modInfoPtr(const QModelIndex &index) const;
     ModCollection *collectionPtr(const QModelIndex &index) const;
 
+    bool setData(ModCollection *collection, const QVariant &value, int role);
+    bool setData(ModInfo *mod, const QVariant &value, int role);
+
     /**
      * @brief Preprocessor method for the addToCollection(QVector<ModInfo *>, ModCollection *)
      * @note Collection may contain passed mods and all mods must be arranged in sort order
@@ -135,8 +145,10 @@ private:
      */
     void removeFromCollection(const QVector<ModInfo *> &mods, ModCollection *collection);
 
+    bool hasUserCollections() const;
     ModCollection *favoriteCollection() const;
     ModCollection *uncategorizedCollection() const;
+    int newCollectionIndex(ModCollection *collection) const;
 
 private:
     QVector<ModInfo *> m_database;
@@ -159,16 +171,6 @@ inline QVector<ModInfo *> &ModDatabaseModel::modListRef()
 inline const QVector<ModInfo *> &ModDatabaseModel::modList() const
 {
     return m_database;
-}
-
-inline QVector<ModCollection *> &ModDatabaseModel::collectionListRef()
-{
-    return m_collections;
-}
-
-inline const QVector<ModCollection *> &ModDatabaseModel::collectionList() const
-{
-    return m_collections;
 }
 
 inline int ModDatabaseModel::columnCount(const QModelIndex &/*parent*/) const

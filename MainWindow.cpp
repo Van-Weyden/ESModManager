@@ -1047,7 +1047,7 @@ void MainWindow::applyBackwardCompatibilityFixes(const int loadedApplicationVers
                     modInfo.folderName = mod["Folder name"].toString();
                     modInfo.steamName = mod["Steam name"].toString();
                     modInfo.setEnabled(mod["Is enabled"].toBool());
-                    m_model->add(modInfo);
+                    m_model->addMod(modInfo);
                 }
             }
         }
