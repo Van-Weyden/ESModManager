@@ -41,6 +41,7 @@ SOURCES += \
         mvc/ModInfo.cpp \
         mvc/ModNameDelegate.cpp \
         mvc/ModNameEditor.cpp \
+        mvc/TreeView.cpp \
         mvc/proxyModels.cpp \
         utils/RegExpPatterns.cpp \
         utils/applicationVersion.cpp
@@ -59,6 +60,7 @@ HEADERS += \
         mvc/ModInfo.h \
         mvc/ModNameDelegate.h \
         mvc/ModNameEditor.h \
+        mvc/TreeView.h \
         mvc/proxyModels.h \
         utils/RegExpPatterns.h \
         utils/applicationVersion.h
