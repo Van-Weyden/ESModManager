@@ -17,29 +17,15 @@
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
      <layout class="QGridLayout" name="topGridLayout">
+      <property name="leftMargin">
+       <number>1</number>
+      </property>
+      <property name="rightMargin">
+       <number>1</number>
+      </property>
       <property name="horizontalSpacing">
        <number>2</number>
       </property>
-      <item row="0" column="2">
-       <widget class="QLabel" name="disabledModsLabel">
-        <property name="text">
-         <string>Disabled mods:</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0">
-       <widget class="QLabel" name="enabledModsLabel">
-        <property name="text">
-         <string>Enabled mods:</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
-        </property>
-       </widget>
-      </item>
       <item row="1" column="1">
        <layout class="QVBoxLayout" name="toolbarLayout" stretch="1,1">
         <property name="spacing">
@@ -93,7 +79,7 @@
           <item>
            <widget class="QToolButton" name="toggleFavoritesToolButton">
             <property name="toolTip">
-             <string>Toggle selected mods checkbox mark</string>
+             <string>Add / remove mods to favorites</string>
             </property>
             <property name="text">
              <string/>
@@ -101,12 +87,6 @@
             <property name="icon">
              <iconset resource="resources.qrc">
               <normaloff>:/images/ui_outline/favorite.svg</normaloff>:/images/ui_outline/favorite.svg</iconset>
-            </property>
-            <property name="checkable">
-             <bool>true</bool>
-            </property>
-            <property name="checked">
-             <bool>false</bool>
             </property>
             <property name="arrowType">
              <enum>Qt::NoArrow</enum>
@@ -116,7 +96,7 @@
           <item>
            <widget class="QToolButton" name="renameToolButton">
             <property name="toolTip">
-             <string>Rename last selected mod</string>
+             <string>Rename first selected mod</string>
             </property>
             <property name="text">
              <string/>
@@ -133,7 +113,7 @@
           <item>
            <widget class="QToolButton" name="openFolderToolButton">
             <property name="toolTip">
-             <string>Open the mod folder in the explorer</string>
+             <string>Open selected mod folders in the explorer</string>
             </property>
             <property name="text">
              <string/>
@@ -150,7 +130,7 @@
           <item>
            <widget class="QToolButton" name="openSteamPageToolButton">
             <property name="toolTip">
-             <string>Open the mod page in the Steam Workshop</string>
+             <string>Open the first selected mod page in the Steam Workshop</string>
             </property>
             <property name="text">
              <string/>
@@ -281,6 +261,26 @@
         </property>
        </widget>
       </item>
+      <item row="0" column="2">
+       <widget class="QLabel" name="disabledModsLabel">
+        <property name="text">
+         <string>Disabled mods:</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="enabledModsLabel">
+        <property name="text">
+         <string>Enabled mods:</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
       <item row="1" column="2">
        <widget class="TreeView" name="disabledModsView">
         <property name="focusPolicy">
@@ -328,7 +328,7 @@
     </item>
     <item>
      <layout class="QGridLayout" name="bottomGridLayout" columnstretch="0,0,1,0,0,0,0">
-      <property name="verticalSpacing">
+      <property name="spacing">
        <number>2</number>
       </property>
       <item row="0" column="6">
@@ -434,14 +434,33 @@
        </widget>
       </item>
       <item row="0" column="0" colspan="6">
-       <widget class="QLineEdit" name="searchLineEdit">
-        <property name="frame">
-         <bool>true</bool>
+       <layout class="QHBoxLayout" name="searchhorizontalLayout">
+        <property name="spacing">
+         <number>0</number>
         </property>
-        <property name="placeholderText">
-         <string>Enter mod name for search...</string>
+        <property name="leftMargin">
+         <number>1</number>
         </property>
-       </widget>
+        <property name="rightMargin">
+         <number>1</number>
+        </property>
+        <item>
+         <widget class="QLineEdit" name="searchLineEdit">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>21</height>
+           </size>
+          </property>
+          <property name="frame">
+           <bool>true</bool>
+          </property>
+          <property name="placeholderText">
+           <string>Enter mod name for search...</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
      </layout>
     </item>
