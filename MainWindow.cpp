@@ -548,7 +548,19 @@ void MainWindow::showModContextMenu(const QPoint &pos)
     }
 }
 
-void MainWindow::performOnSelectedMods(
+QModelIndexList MainWindow::selectedIndexes() const
+{
+    QTreeView *view = selectedView();
+    ModFilterProxyModel *model = proxyModel(view);
+    const QItemSelection& selection = this->selection(view);
+    if (!view || !model || selection.isEmpty()) {
+        return QModelIndexList();
+    }
+
+    return model->mapSelectionToSource(selection).indexes();
+}
+
+void MainWindow::performOnSelectedRows(
     std::function<bool(QModelIndex index, QModelIndex proxyIndex)> action
 )
 {
@@ -581,45 +593,34 @@ void MainWindow::performOnSelectedMods(
 //    }
 }
 
-void MainWindow::performOnSelectedMods(std::function<void(QModelIndexList)> action)
+void MainWindow::performOnSelectedRows(std::function<void(QModelIndexList)> action)
 {
-    QTreeView *view = selectedView();
-    ModFilterProxyModel *model = proxyModel(view);
-    const QItemSelection& selection = this->selection(view);
-    if (!action || !view || !model || selection.isEmpty()) {
-        return;
+    if (action) {
+        action(selectedIndexes());
     }
-
-    QModelIndexList indexes = model->mapSelectionToSource(selection).indexes();
-//    QSet<QModelIndex> collectionsToExpand;
-//    for (int i = 0; i < indexes.size(); ++i) {
-//        QModelIndex collectionIndex = m_model->collectionIndex(indexes[i]);
-//        const ModCollection &collection = m_model->modCollection(collectionIndex);
-//        if (collection.expanded()) {
-//            collectionsToExpand.insert(collectionIndex);
-//        }
-//    }
-
-    action(std::move(indexes));
-
-//    QTreeView *otherView = (view == ui->enabledModsView ? ui->disabledModsView : ui->enabledModsView);
-//    ModFilterProxyModel *othermodel = proxyModel(otherView);
-//    for (const QModelIndex &collectionIndex : collectionsToExpand) {
-//        if (m_model->modCollection(collectionIndex).size() > 0) {
-//            view->expand(model->mapFromSource(collectionIndex));
-//            otherView->expand(othermodel->mapFromSource(collectionIndex));
-//        }
-//    }
 }
 
 //private:
 
+Qt::CheckState MainWindow::enabledFilter() const
+{
+    if (ui->enabledModsView->selectionModel()->hasSelection()) {
+        return Qt::CheckState::Checked;
+    } else if (ui->disabledModsView->selectionModel()->hasSelection()) {
+        return Qt::CheckState::Unchecked;
+    } else {
+        return Qt::CheckState::PartiallyChecked;
+    }
+}
+
 QTreeView *MainWindow::selectedView() const
 {
-    if (ui->disabledModsView->selectionModel()->hasSelection()) {
-        return ui->enabledModsView->selectionModel()->hasSelection() ? nullptr : ui->disabledModsView;
+    if (ui->enabledModsView->selectionModel()->hasSelection()) {
+        return ui->enabledModsView;
+    } else if (ui->disabledModsView->selectionModel()->hasSelection()) {
+        return ui->disabledModsView;
     } else {
-        return ui->enabledModsView->selectionModel()->hasSelection() ? ui->enabledModsView : nullptr;
+        return nullptr;
     }
 }
 
@@ -675,7 +676,7 @@ void MainWindow::initActions()
     connect(ui->setDisabledToolButton, &QPushButton::clicked, m_disableAction, &QAction::trigger);
 
     connect(m_openSteamPageAction, &QAction::triggered, this, [this](bool /*enabled*/) {
-        performOnSelectedMods([this](QModelIndex index, QModelIndex /*proxy*/) {
+        performOnSelectedRows([this](QModelIndex index, QModelIndex /*proxy*/) {
             QDesktopServices::openUrl(QUrl(
                 "steam://url/CommunityFilePage/" + m_model->modFolderName(index)
             ));
@@ -684,7 +685,7 @@ void MainWindow::initActions()
     });
 
     connect(m_openFolderAction, &QAction::triggered, this, [this]() {
-        performOnSelectedMods([this](QModelIndex index, QModelIndex /*proxy*/) {
+        performOnSelectedRows([this](QModelIndex index, QModelIndex /*proxy*/) {
             openModFolder(index);
             return true;
         });
@@ -707,14 +708,14 @@ void MainWindow::initActions()
     });
 
     connect(m_setLockedAction, &QAction::triggered, this, [this]() {
-        performOnSelectedMods([this](QModelIndex index, QModelIndex /*proxy*/) {
+        performOnSelectedRows([this](QModelIndex index, QModelIndex /*proxy*/) {
             m_model->setData(index, Qt::Checked, ModDatabaseModel::Role::Locked);
             return true;
         });
     });
 
     connect(m_setUnlockedAction, &QAction::triggered, this, [this]() {
-        performOnSelectedMods([this](QModelIndex index, QModelIndex /*proxy*/) {
+        performOnSelectedRows([this](QModelIndex index, QModelIndex /*proxy*/) {
             m_model->setData(index, Qt::Unchecked, ModDatabaseModel::Role::Locked);
             return true;
         });
@@ -725,27 +726,30 @@ void MainWindow::initActions()
         Qt::CheckState enabledFilter = selectedView() == ui->enabledModsView ? Qt::Checked : Qt::Unchecked;
 
         //If at least one mod is not favorite, all should set favorite
-        performOnSelectedMods([this, &hasNonFavorite](QModelIndex index, QModelIndex /*proxy*/) {
+        performOnSelectedRows([this, &hasNonFavorite](QModelIndex index, QModelIndex /*proxy*/) {
             hasNonFavorite = !m_model->isFavorite(index);
             return !hasNonFavorite; //Stop search if found
         });
 
-        performOnSelectedMods([this, &hasNonFavorite, &enabledFilter](QModelIndexList indexes) {
-            hasNonFavorite ? m_model->addFavorite(indexes, enabledFilter)
-                           : m_model->removeFavorite(indexes, enabledFilter);
-            return true;
-        });
+        QModelIndexList indexes = selectedIndexes();
+        if (!indexes.isEmpty()) {
+            if (hasNonFavorite) {
+                m_model->addFavorite(indexes, enabledFilter);
+            } else {
+                m_model->removeFavorite(indexes, enabledFilter);
+            }
+        }
     });
 
     connect(m_enableAction, &QAction::triggered, this, [this]() {
-        performOnSelectedMods([this](QModelIndex index, QModelIndex /*proxy*/) {
+        performOnSelectedRows([this](QModelIndex index, QModelIndex /*proxy*/) {
             m_model->setData(index, Qt::Checked, ModDatabaseModel::Role::Enabled);
             return true;
         });
     });
 
     connect(m_disableAction, &QAction::triggered, this, [this]() {
-        performOnSelectedMods([this](QModelIndex index, QModelIndex /*proxy*/) {
+        performOnSelectedRows([this](QModelIndex index, QModelIndex /*proxy*/) {
             m_model->setData(index, Qt::Unchecked, ModDatabaseModel::Role::Enabled);
             return true;
         });

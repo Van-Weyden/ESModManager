@@ -65,18 +65,21 @@ private slots:
     void steamModNameProcessed();
     void showModContextMenu(const QPoint &pos);
 
+    QModelIndexList selectedIndexes() const;
+
     /**
      * @brief Perform function 'action' on the each mod in the selection.
      * Action may return false to stop mod processing.
      */
-    void performOnSelectedMods(std::function<bool(QModelIndex index, QModelIndex proxyIndex)> action);
+    void performOnSelectedRows(std::function<bool(QModelIndex index, QModelIndex proxyIndex)> action);
 
     /**
      * @brief Perform function 'action' on the each mod in the selection.
      */
-    void performOnSelectedMods(std::function<void(QModelIndexList)> action);
+    void performOnSelectedRows(std::function<void(QModelIndexList)> action);
 
 private:
+    Qt::CheckState enabledFilter() const;
     QTreeView *selectedView() const;
     QItemSelection selection(QTreeView *view) const;
     ModFilterProxyModel* proxyModel(QTreeView *view) const;
