@@ -87,16 +87,21 @@ const QVector<ModCollection *> ModDatabaseModel::userCollectionList(const QModel
 
 void ModDatabaseModel::addMod(const ModInfo &modInfo)
 {
+    ModInfo *mod = new ModInfo(modInfo);
+    if (!mod->name().isEmpty() && !ModInfo::isNameValid(mod->name())) {
+        mod->setName("");
+    }
+    if (mod->steamName.isEmpty()) {
+        mod->steamName = ModInfo::failedToGetNameStub();
+//        mod.steamName = ModInfo::waitingForSteamResponseStub();
+    }
+
     ModCollection *collection = uncategorizedCollection();
     auto it = std::upper_bound(collection->mods().begin(), collection->mods().end(), &modInfo, ModCollection::comparator());
     int index = it - collection->mods().begin();
 
     beginInsertRows(collectionIndex(collection), index, index);
     m_database.append(new ModInfo(modInfo));
-    if (m_database.last()->steamName.isEmpty()) {
-        m_database.last()->steamName = ModInfo::generateFailedToGetNameStub();
-        //m_database.last().steamName = ModInfo::generateWaitingForSteamResponseStub();
-    }
     collection->insertMod(index, m_database.last());
     endInsertRows();
 }
@@ -605,10 +610,14 @@ void ModDatabaseModel::fromJson(const QJsonObject &json)
     clear(true);
     QJsonArray mods = json["mods"].toArray();
     for (int i = 0; i < mods.size(); i++) {
-        m_database.append(new ModInfo(mods[i].toObject()));
+        ModInfo *mod = new ModInfo(mods[i].toObject());
+        if (!mod->name().isEmpty() && !ModInfo::isNameValid(mod->name())) {
+            mod->setName("");
+        }
+
+        m_database.append(mod);
     }
 
-    QJsonArray collections = json["collections"].toArray();
     for (int i = 0; i < collections.size(); i++) {
         QJsonObject json = collections[i].toObject();
         m_collections.append(new ModCollection(json));

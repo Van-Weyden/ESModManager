@@ -104,8 +104,8 @@ MainWindow::MainWindow(QWidget *parent) :
     qDebug() << settingsFilePath();
     qDebug() << QDir(settingsFilePath()).absolutePath();
     m_settings = new QSettings(settingsFilePath(), QSettings::IniFormat, this);
-    m_qtTranslator = new QTranslator();
-    m_translator = new QTranslator();
+    m_translators[EnglishLocaleCode] = {nullptr, nullptr};
+    m_translators[RussianLocaleCode] = {new QTranslator(), new QTranslator()};
 
     m_itemContextMenu = new QMenu(this);
     initActions();
@@ -214,8 +214,11 @@ MainWindow::~MainWindow()
         file.remove();
     }
 
-    QApplication::removeTranslator(m_translator);
-    QApplication::removeTranslator(m_qtTranslator);
+    if (m_translators[m_lang].first) {
+        ModInfo::setTranslator(nullptr);
+        QApplication::removeTranslator(m_translators[m_lang].first);
+        QApplication::removeTranslator(m_translators[m_lang].second);
+    }
 
     m_requesterThread->requestInterruption();
     m_requesterThread->quit();
@@ -227,8 +230,11 @@ MainWindow::~MainWindow()
     m_scannerThread->deleteLater();
     m_scanner->deleteLater();
 
-    delete m_translator;
-    delete m_qtTranslator;
+    for (auto pair : qAsConst(m_translators)) {
+        delete pair.first;
+        delete pair.second;
+    }
+
     delete m_settings;
     delete m_model;
     delete m_databaseEditor;
@@ -271,15 +277,29 @@ void MainWindow::saveDatabase() const
     rewriteFileIfDataIsDifferent(modDatabaseFilePath(), database.toJson());
 }
 
-bool MainWindow::setLanguage(const QString &lang)
+void MainWindow::setLanguage(const QString &lang)
 {
-    m_lang = lang;
-    bool isTranslationLoaded = m_translator->load(QString(":/lang/lang_") + m_lang, ":/lang/");
-    QApplication::installTranslator(m_translator);
-    m_qtTranslator->load(QString(":/lang/qtbase_") + m_lang, ":/lang/");
-    QApplication::installTranslator(m_qtTranslator);
+    if (!m_translators.contains(lang) || m_lang == lang) {
+        return;
+    }
 
-    return isTranslationLoaded;
+    if (m_translators[lang].first) {
+        m_translators[lang].first->load(QString(":/lang/lang_") + lang, ":/lang/");
+        QApplication::installTranslator(m_translators[lang].first);
+        m_translators[lang].second->load(QString(":/lang/qtbase_") + lang, ":/lang/");
+        QApplication::installTranslator(m_translators[lang].second);
+    }
+
+    for (ModInfo *mod : m_model->modList()) {
+        mod->updateStubs(m_translators[lang].first);
+    }
+    ModInfo::setTranslator(m_translators[lang].first);
+
+    if (!m_lang.isEmpty() && m_translators[m_lang].first) {
+        QApplication::removeTranslator(m_translators[m_lang].first);
+        QApplication::removeTranslator(m_translators[m_lang].second);
+    }
+    m_lang = lang;
 }
 
 //public slots:
@@ -829,23 +849,19 @@ void MainWindow::readSettings()
     }
 
     if (m_settings->contains("General/sLang")) {
+        QString lang;
         value = m_settings->value("General/sLang");
         if (value != invalidValue) {
-            m_lang = value.toString();
+            lang = value.toString();
         }
-    }
 
-    if (m_lang.isEmpty()) {
-        if (m_translator->load(QString(":/lang/lang_") + QLocale::system().name(), ":/lang/")) {
-            QApplication::installTranslator(m_translator);
-            m_qtTranslator->load(QString(":/lang/qtbase_") + QLocale::system().name(), ":/lang/");
-            QApplication::installTranslator(m_qtTranslator);
-            m_lang = QLocale::system().name();
-        } else {
-            m_lang = "en_US";
+        if (lang.isEmpty()) {
+            lang = QLocale::system().name();
+            if (!m_translators.contains(lang)) {
+                lang = EnglishLocaleCode;
+            }
         }
-    } else {
-        setLanguage(m_lang);
+        setLanguage(lang);
     }
 
     if (m_settings->contains("General/bMaximized")) {

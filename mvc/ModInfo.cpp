@@ -1,10 +1,16 @@
 #include <QCoreApplication>
 #include <QJsonObject>
 #include <QRegExpValidator>
+#include <QTranslator>
 
 #include "utils/RegExpPatterns.h"
 
 #include "ModInfo.h"
+
+QTranslator *ModInfo::s_translator = nullptr;
+QString ModInfo::s_unknownNameStub = QCoreApplication::tr(UnknownNameStub);
+QString ModInfo::s_failedToGetNameStub = QCoreApplication::tr(FailedToGetNameStub);
+QString ModInfo::s_waitingForSteamResponseStub = QCoreApplication::tr(WaitingForSteamResponseStub);
 
 bool ModInfo::isSteamId(QString str)
 {
@@ -14,28 +20,30 @@ bool ModInfo::isSteamId(QString str)
 
 bool ModInfo::isNameValid(const QString &name)
 {
-    return !(
-        name.isEmpty() ||
-        name.contains(ModInfo::generateUnknownNameStub()) ||
-        name.contains(ModInfo::generateFailedToGetNameStub()) ||
-        name.contains(ModInfo::generateWaitingForSteamResponseStub()) ||
-        QRegExp(RegExpPatterns::whitespace).exactMatch(name)
-    );
+    return isNameValid(name, s_translator);
 }
 
-QString ModInfo::generateUnknownNameStub()
+QString ModInfo::unknownNameStub()
 {
-    return QCoreApplication::tr("WARNING: unknown mod name. Set the name manually.");
+    return s_unknownNameStub;
 }
 
-QString ModInfo::generateFailedToGetNameStub()
+QString ModInfo::failedToGetNameStub()
 {
-    return QCoreApplication::tr("WARNING: couldn't get the name of the mod. Set the name manually.");
+    return s_failedToGetNameStub;
 }
 
-QString ModInfo::generateWaitingForSteamResponseStub()
+QString ModInfo::waitingForSteamResponseStub()
 {
-    return QCoreApplication::tr("Waiting for Steam mod name response...");
+    return s_waitingForSteamResponseStub;
+}
+
+void ModInfo::setTranslator(QTranslator *translator)
+{
+    s_translator = translator;
+    s_unknownNameStub = generateUnknownNameStub(s_translator);
+    s_failedToGetNameStub = generateFailedToGetNameStub(s_translator);
+    s_waitingForSteamResponseStub = generateWaitingForSteamResponseStub(s_translator);
 }
 
 ModInfo::ModInfo(const QString &name)
@@ -133,4 +141,58 @@ void ModInfo::toJsonObject(QJsonObject &object) const
     object["steam_name"]   = steamName;
     object["enabled"]      = m_enabled;
     object["locked"]       = m_locked;
+}
+
+void ModInfo::updateStubs(QTranslator *newTranslator)
+{
+    if (!isNameValid(name()) || !isNameValid(name(), newTranslator)) {
+        setName("");
+    }
+
+    if (sourcesName == unknownNameStub()) {
+        sourcesName = newTranslator->translate(StubsContext, UnknownNameStub);
+    } else if (sourcesName == failedToGetNameStub()) {
+        sourcesName = newTranslator->translate(StubsContext, FailedToGetNameStub);
+    } else if (sourcesName == waitingForSteamResponseStub()) {
+        sourcesName = newTranslator->translate(StubsContext, WaitingForSteamResponseStub);
+    }
+
+    if (steamName == unknownNameStub()) {
+        steamName = newTranslator->translate(StubsContext, UnknownNameStub);
+    } else if (steamName == failedToGetNameStub()) {
+        steamName = newTranslator->translate(StubsContext, FailedToGetNameStub);
+    } else if (steamName == waitingForSteamResponseStub()) {
+        steamName = newTranslator->translate(StubsContext, WaitingForSteamResponseStub);
+    }
+}
+
+// private:
+
+bool ModInfo::isNameValid(const QString &name, QTranslator *translator)
+{
+    return !(
+        name.isEmpty() ||
+        name == generateUnknownNameStub(translator) ||
+        name == generateFailedToGetNameStub(translator) ||
+        name == generateWaitingForSteamResponseStub(translator) ||
+        QRegExp(RegExpPatterns::whitespace).exactMatch(name)
+    );
+}
+
+QString ModInfo::generateUnknownNameStub(QTranslator *translator)
+{
+    return translator ? translator->translate(StubsContext, UnknownNameStub)
+                      : QCoreApplication::tr(UnknownNameStub);
+}
+
+QString ModInfo::generateFailedToGetNameStub(QTranslator *translator)
+{
+    return translator ? translator->translate(StubsContext, FailedToGetNameStub)
+                      : QCoreApplication::tr(FailedToGetNameStub);
+}
+
+QString ModInfo::generateWaitingForSteamResponseStub(QTranslator *translator)
+{
+    return translator ? translator->translate(StubsContext, WaitingForSteamResponseStub)
+                      : QCoreApplication::tr(WaitingForSteamResponseStub);
 }

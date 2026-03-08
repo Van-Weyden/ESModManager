@@ -38,7 +38,7 @@ public:
     void requestSteamModNames();
     void saveDatabase() const;
 
-    bool setLanguage(const QString &lang);
+    void setLanguage(const QString &lang);
 
 public slots:
     void addShortcutToDesktop() const;
@@ -117,8 +117,7 @@ private:
     SteamRequester *m_steamRequester = nullptr;
     ModScanner *m_scanner = nullptr;
     QSettings *m_settings = nullptr;
-    QTranslator *m_qtTranslator = nullptr;
-    QTranslator *m_translator = nullptr;
+    QMap<QString, QPair<QTranslator *, QTranslator *>> m_translators;
 
     QString m_lang = "";
     QString m_gameFolderPath = "";
@@ -149,6 +148,8 @@ private:
     static constexpr const char *DisabledModsFileName      = "disabled_mods.txt";
     static constexpr const char *DisableAutolaunchFileName = "disable_autolaunch";
     static constexpr const char *ExecutableExtension       = ".exe";
+    static constexpr const char *EnglishLocaleCode         = "en_US";
+    static constexpr const char *RussianLocaleCode         = "ru_RU";
 
     static const bool Is64BitOs;
     QString m_gameFileName;
@@ -160,12 +161,12 @@ private:
 
 inline void MainWindow::setEnglishLanguage()
 {
-    setLanguage("en_US");
+    setLanguage(EnglishLocaleCode);
 }
 
 inline void MainWindow::setRussianLanguage()
 {
-    setLanguage("ru_RU");
+    setLanguage(RussianLocaleCode);
 }
 
 //private:

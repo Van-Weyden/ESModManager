@@ -192,7 +192,7 @@ void ModScanner::registerMod(ScanData data, QList<ModInfo *> &modsWithUnknownNam
     }
 
     ModInfo modInfo;
-    modInfo.sourcesName = ModInfo::generateUnknownNameStub();
+    modInfo.sourcesName = ModInfo::unknownNameStub();
     modInfo.folderName = data.modFolderName;
 
     if (m_enabledFlag != EnabledFlagInitValue::NotOverride) {
@@ -275,14 +275,15 @@ void ModScanner::tryResolveName(ModInfo &modInfo)
     QString outOf = '/' + QString::number(initMap.count()) + "]: ";
 
     if (initMap.isEmpty()) {
-        modInfo.sourcesName = ModInfo::generateFailedToGetNameStub();
+        modInfo.sourcesName = ModInfo::failedToGetNameStub();
     } else {
         if (initMap.count() == 1) {
             modInfo.sourcesName = initMap[initKey];
         } else {
             int modNumber = 1;
 
-            for (const QString &initKey : initMap.keys()) {
+            QStringList initKeys = initMap.keys();
+            for (const QString &initKey : qAsConst(initKeys)) {
                 if (modInfo.sourcesName.isEmpty()) {
                     modInfo.sourcesName = "[1" + outOf + initMap[initKey];
                 } else {
