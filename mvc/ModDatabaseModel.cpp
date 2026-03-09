@@ -607,7 +607,8 @@ void ModDatabaseModel::revert()
 void ModDatabaseModel::fromJson(const QJsonObject &json)
 {
     beginResetModel();
-    clear(true);
+    QJsonArray collections = json["collections"].toArray();
+    clear(!collections.isEmpty());
     QJsonArray mods = json["mods"].toArray();
     for (int i = 0; i < mods.size(); i++) {
         ModInfo *mod = new ModInfo(mods[i].toObject());
