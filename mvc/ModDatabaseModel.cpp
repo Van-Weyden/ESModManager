@@ -21,6 +21,7 @@ ModDatabaseModel::ModDatabaseModel()
     m_completeModNames = true;
     m_useSteamModNames = true;
 
+    m_collections.append(new ModCollection(tr("All mods")));
     m_collections.append(new ModCollection(tr("Favorites")));
     m_collections.append(new ModCollection(tr("Uncategorized")));
 
@@ -32,34 +33,47 @@ ModDatabaseModel::~ModDatabaseModel()
     clear(true);
 }
 
-const QVector<ModCollection *> ModDatabaseModel::userCollectionList() const
+QVector<ModInfo *> ModDatabaseModel::modList(const QModelIndexList &indexes) const
+{
+    QSet<ModInfo *> modSet;
+    for (const QModelIndex &index : indexes) {
+        if (!index.isValid() || isCollection(index)) {
+            continue;
+        }
+
+        modSet |= modInfoPtr(index);
+    }
+
+    QList<ModInfo *> mods = modSet.values();
+
+    if (!mods.isEmpty()) {
+        QCollator collator;
+        collator.setNumericMode(true);
+        std::sort(mods.begin(), mods.end(), [collator](ModInfo *i, ModInfo *j) {
+            return collator(i->displayedName(), j->displayedName());
+        });
+    }
+
+    return mods.toVector();
+}
+
+QVector<ModCollection *> ModDatabaseModel::userCollectionList() const
 {
     QVector<ModCollection *> collections = m_collections;
-    collections.removeOne(favoriteCollection());
-    collections.removeOne(uncategorizedCollection());
+    removeBuiltInCollections(collections, false);
     return collections;
 }
 
-const QVector<ModCollection *> ModDatabaseModel::userCollectionList(const QModelIndex &modIndex) const
+QVector<ModCollection *> ModDatabaseModel::userCollectionList(const QModelIndex &modIndex) const
 {
     Q_ASSERT_X(!isCollection(modIndex), "userCollectionList(QModelIndex)", "not a mod index");
 
     QVector<ModCollection *> collections = modInfo(modIndex).collections().values().toVector();
-    collections.removeOne(favoriteCollection());
-    collections.removeOne(uncategorizedCollection());
-
-    if (!collections.isEmpty()) {
-        QCollator collator;
-        collator.setNumericMode(true);
-        std::sort(collections.begin(), collections.end(), [collator](ModCollection *i, ModCollection *j) {
-            return collator.compare(i->displayedName(), j->displayedName());
-        });
-    }
-
+    removeBuiltInCollections(collections, true);
     return collections;
 }
 
-const QVector<ModCollection *> ModDatabaseModel::userCollectionList(const QModelIndexList &indexes) const
+QVector<ModCollection *> ModDatabaseModel::userCollectionList(const QModelIndexList &indexes) const
 {
     QSet<ModCollection *> collectionSet;
     for (const QModelIndex &index : indexes) {
@@ -70,18 +84,13 @@ const QVector<ModCollection *> ModDatabaseModel::userCollectionList(const QModel
         collectionSet |= modInfo(index).collections();
     }
 
-    QVector<ModCollection *> collections = collectionSet.values().toVector();
-    collections.removeOne(favoriteCollection());
-    collections.removeOne(uncategorizedCollection());
-
-    if (!collections.isEmpty()) {
-        QCollator collator;
-        collator.setNumericMode(true);
-        std::sort(collections.begin(), collections.end(), [collator](ModCollection *i, ModCollection *j) {
-            return collator.compare(i->displayedName(), j->displayedName());
-        });
+    QVector<ModCollection *> collections;
+    collections.reserve(collectionSet.size());
+    for (ModCollection *collection: qAsConst(collectionSet)) {
+        collections.append(collection);
     }
 
+    removeBuiltInCollections(collections, true);
     return collections;
 }
 
@@ -96,13 +105,19 @@ void ModDatabaseModel::addMod(const ModInfo &modInfo)
 //        mod.steamName = ModInfo::waitingForSteamResponseStub();
     }
 
-    ModCollection *collection = uncategorizedCollection();
+    ModCollection *collection = allModsCollection();
     auto it = std::upper_bound(collection->mods().begin(), collection->mods().end(), &modInfo, ModCollection::comparator());
     int index = it - collection->mods().begin();
-
     beginInsertRows(collectionIndex(collection), index, index);
-    m_database.append(new ModInfo(modInfo));
-    collection->insertMod(index, m_database.last());
+    m_database.insert(index, mod);
+    collection->insertMod(index, mod, false);
+    endInsertRows();
+
+    collection = uncategorizedCollection();
+    it = std::upper_bound(collection->mods().begin(), collection->mods().end(), &modInfo, ModCollection::comparator());
+    index = it - collection->mods().begin();
+    beginInsertRows(collectionIndex(collection), index, index);
+    collection->insertMod(index, mod);
     endInsertRows();
 }
 
@@ -114,6 +129,16 @@ void ModDatabaseModel::addUserCollection(ModCollection *collection)
     beginInsertRows(QModelIndex(), index, index);
     m_collections.insert(index, collection);
     endInsertRows();
+}
+
+void ModDatabaseModel::removeUserCollection(ModCollection *collection)
+{
+    Q_ASSERT_X(m_collections.contains(collection), "remove(ModCollection)", "don't have this collection");
+    Q_ASSERT_X(collection != allModsCollection(), "remove(ModCollection)", "can't remove 'all mods' collection");
+    Q_ASSERT_X(collection != favoriteCollection(), "remove(ModCollection)", "can't remove 'favorite' collection");
+    Q_ASSERT_X(collection != uncategorizedCollection(), "remove(ModCollection)", "can't remove 'uncategorized' collection");
+
+    removeRow(m_collections.indexOf(collection));
 }
 
 bool ModDatabaseModel::isFavorite(const QModelIndex &index) const
@@ -349,6 +374,14 @@ bool ModDatabaseModel::isCollection(const QModelIndex &index) const
     return !index.internalPointer();
 }
 
+bool ModDatabaseModel::isUserCollection(const QModelIndex &index) const
+{
+    Q_ASSERT(index.isValid());
+    return isCollection(index)
+            && index.row() >= firstUserCollectionIndex()
+            && index.row() <= lastUserCollectionIndex();
+}
+
 QModelIndex ModDatabaseModel::collectionIndex(const QModelIndex &index) const
 {
     return index.parent().isValid() ? index.parent() : index;
@@ -466,7 +499,7 @@ QVariant ModDatabaseModel::headerData(int section, Qt::Orientation orientation, 
     return QVariant();
 }
 
-void ModDatabaseModel::removeItem(QModelIndex index)
+void ModDatabaseModel::removeItem(const QModelIndex &index)
 {
     removeRows(index.row(), 1, index.parent());
 }
@@ -477,6 +510,8 @@ bool ModDatabaseModel::setData(const QModelIndex &index, const QVariant &value, 
         return false;
     }
 
+    QModelIndexList changedIndexes;
+
     bool isDataChanged = false;
     switch (role) {
         case Qt::EditRole:
@@ -486,14 +521,32 @@ bool ModDatabaseModel::setData(const QModelIndex &index, const QVariant &value, 
 
         default:
             if (isCollection(index)) {
-                isDataChanged = setData(collectionPtr(index), value, role);
+                // Recursive calls current function for collection mods
+                if (setData(collectionPtr(index), value, role)) {
+                    isDataChanged = true;
+                    changedIndexes.append(index);
+                }
             } else {
-                isDataChanged = setData(modInfoPtr(index), value, role);
+                ModInfo *mod = modInfoPtr(index);
+                // Emits dataChanged for collections if needed
+                if (setData(mod, value, role)) {
+                    isDataChanged = true;
+                    changedIndexes.append(index);
+                    for (int i = 0; i < m_collections.size(); ++i) {
+                        int indexInCollection = m_collections[i]->modIndex(mod);
+                        if (indexInCollection >= 0) {
+                            QModelIndex modIndex = modInfoIndex(i, indexInCollection);
+                            if (modIndex != index) {
+                                changedIndexes.append(modIndex);
+                            }
+                        }
+                    }
+                }
             }
         break;
     }
 
-    if (isDataChanged) {
+    for (const QModelIndex &index : qAsConst(changedIndexes)) {
         emit dataChanged(index, index, {role});
     }
 
@@ -609,6 +662,8 @@ void ModDatabaseModel::fromJson(const QJsonObject &json)
     beginResetModel();
     QJsonArray collections = json["collections"].toArray();
     clear(!collections.isEmpty());
+    m_collections.append(new ModCollection(tr("All mods")));
+
     QJsonArray mods = json["mods"].toArray();
     for (int i = 0; i < mods.size(); i++) {
         ModInfo *mod = new ModInfo(mods[i].toObject());
@@ -617,6 +672,7 @@ void ModDatabaseModel::fromJson(const QJsonObject &json)
         }
 
         m_database.append(mod);
+        allModsCollection()->insertMod(allModsCollection()->size(), mod, false);
     }
 
     for (int i = 0; i < collections.size(); i++) {
@@ -651,6 +707,10 @@ QJsonObject ModDatabaseModel::toJson() const
 
     QJsonArray collections;
     for (const ModCollection *collection : qAsConst(m_collections)) {
+        if (collection == allModsCollection()) {
+            continue;
+        }
+
         QJsonObject json = collection->toNewJsonObject();
         QString mods;
         int first = -1;
@@ -721,7 +781,7 @@ void ModDatabaseModel::clear(bool removeBuiltInCollections)
     QVector<ModCollection *>::iterator begin = m_collections.begin();
     QVector<ModCollection *>::iterator end = m_collections.end();
     if (!removeBuiltInCollections) {
-        ++begin;
+        begin += firstUserCollectionIndex();
         --end;
     }
 
@@ -1054,12 +1114,27 @@ void ModDatabaseModel::removeFromCollection(const QVector<ModInfo *> &mods, ModC
 
 bool ModDatabaseModel::hasUserCollections() const
 {
-    return m_collections.size() > 2;
+    return m_collections.size() > 3;
+}
+
+int ModDatabaseModel::firstUserCollectionIndex() const
+{
+    return hasUserCollections() ? 2 : -1;
+}
+
+int ModDatabaseModel::lastUserCollectionIndex() const
+{
+    return hasUserCollections() ? m_collections.size() - 2 : -1;
+}
+
+ModCollection *ModDatabaseModel::allModsCollection() const
+{
+    return m_collections.first();
 }
 
 ModCollection *ModDatabaseModel::favoriteCollection() const
 {
-    return m_collections.first();
+    return m_collections[1];
 }
 
 ModCollection *ModDatabaseModel::uncategorizedCollection() const
@@ -1067,17 +1142,32 @@ ModCollection *ModDatabaseModel::uncategorizedCollection() const
     return m_collections.last();
 }
 
+void ModDatabaseModel::removeBuiltInCollections(QVector<ModCollection *> &collections, bool sort) const
+{
+    collections.removeOne(allModsCollection());
+    collections.removeOne(favoriteCollection());
+    collections.removeOne(uncategorizedCollection());
+
+    if (sort && !collections.isEmpty()) {
+        QCollator collator;
+        collator.setNumericMode(true);
+        std::sort(collections.begin(), collections.end(), [collator](ModCollection *i, ModCollection *j) {
+            return collator(i->displayedName(), j->displayedName());
+        });
+    }
+}
+
 int ModDatabaseModel::newCollectionIndex(ModCollection *collection) const
 {
     if (!hasUserCollections())
     {
-        return 1;
+        return m_collections.size() - 1;
     }
 
     QCollator collator;
     collator.setNumericMode(true);
-    int i = 1;
-    while (i < m_collections.size() - 1 && collator(m_collections[i]->name(), collection->name())) {
+    int i = firstUserCollectionIndex();
+    while (i <= lastUserCollectionIndex() && collator(m_collections[i]->name(), collection->name())) {
         ++i;
     }
 

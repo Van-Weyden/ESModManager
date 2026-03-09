@@ -228,6 +228,26 @@ bool ModCollection::contains(ModInfo *mod) const
     return m_mods.contains(mod);
 }
 
+bool ModCollection::containsAll(const QVector<ModInfo *> &mods) const
+{
+    for (ModInfo *mod : mods) {
+        if (!contains(mod)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool ModCollection::containsAny(const QVector<ModInfo *> &mods) const
+{
+    for (ModInfo *mod : mods) {
+        if (contains(mod)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 int ModCollection::modIndex(ModInfo *mod) const
 {
     return m_mods.indexOf(mod);

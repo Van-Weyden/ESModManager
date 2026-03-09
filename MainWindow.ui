@@ -145,6 +145,23 @@
            </widget>
           </item>
           <item>
+           <widget class="QToolButton" name="createCollectionToolButton">
+            <property name="toolTip">
+             <string>Create new mod collection</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="resources.qrc">
+              <normaloff>:/images/ui_outline/add.svg</normaloff>:/images/ui_outline/add.svg</iconset>
+            </property>
+            <property name="arrowType">
+             <enum>Qt::NoArrow</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
            <spacer name="toolbarTopVerticalSpacer">
             <property name="orientation">
              <enum>Qt::Vertical</enum>

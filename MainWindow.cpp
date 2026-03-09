@@ -19,9 +19,11 @@
 
 #include "mvc/ModDatabaseModel.h"
 #include "mvc/ModNameDelegate.h"
-#include "mvc/proxyModels.h"
+#include "mvc/proxyModels/EnabledModProxyModel.h"
+#include "mvc/proxyModels/DisabledModProxyModel.h"
 #include "utils/applicationVersion.h"
 
+#include "EditModCollectionDialog.h"
 #include "DatabaseEditor.h"
 #include "ModScanner.h"
 #include "SteamRequester.h"
@@ -68,8 +70,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->disabledModsView->header(), &QHeaderView::sectionResized,
             ui->disabledModsView, &QTreeView::doItemsLayout);
 
-    m_enabledModsModel = new EnabledModsProxyModel(this, m_model);
-    m_disabledModsModel = new DisabledModsProxyModel(this, m_model);
+    m_enabledModsModel = new EnabledModProxyModel(this, m_model);
+    m_disabledModsModel = new DisabledModProxyModel(this, m_model);
 
     ui->enabledModsView->setModel(m_enabledModsModel);
     ui->disabledModsView->setModel(m_disabledModsModel);
@@ -132,8 +134,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->runButton, &QPushButton::clicked, this, &MainWindow::runGame);
 
     connect(ui->clearSearchPushButton, &QPushButton::clicked, ui->searchLineEdit, &QLineEdit::clear);
-//    connect(ui->searchLineEdit, &QLineEdit::textChanged, m_enabledModsModel, &ModFilterProxyModel::setFilter);
-    connect(ui->searchLineEdit, &QLineEdit::textChanged, m_disabledModsModel, &ModFilterProxyModel::setFilter);
+    connect(ui->searchLineEdit, &QLineEdit::textChanged, m_enabledModsModel, &NameFilterProxyModel::setNameFilter);
+    connect(ui->searchLineEdit, &QLineEdit::textChanged, m_disabledModsModel, &NameFilterProxyModel::setNameFilter);
 
     connect(ui->enabledModsView, &QTreeView::expanded, this, [this](const QModelIndex &index) {
         QModelIndex sourceIndex = m_enabledModsModel->mapToSource(index);
@@ -561,17 +563,67 @@ void MainWindow::showModContextMenu(const QPoint &pos)
         return;
     }
 
-    QModelIndex index = modList->indexAt(pos); model->mapToSource(modList->indexAt(pos));
+    QModelIndex index = modList->indexAt(pos);
     if (index.isValid()) {
         setupItemContextMenu(model, index);
         m_itemContextMenu->exec(modList->viewport()->mapToGlobal(pos));
     }
 }
 
+void MainWindow::showCreateModCollectionDialog()
+{
+    EditModCollectionDialog dialog(m_model);
+    dialog.setWindowTitle(tr("Mod collection create"));
+    if (dialog.exec() == QDialog::DialogCode::Rejected) {
+        return;
+    }
+
+    m_model->addUserCollection(dialog.collection());
+}
+
+void MainWindow::setupContextMenu()
+{
+    setupAddToCollectionContextMenu(m_model->userCollectionList());
+    setupRemoveFromCollectionContextMenu(m_model->userCollectionList(selectedIndexes()));
+}
+
+void MainWindow::setupAddToCollectionContextMenu(const QVector<ModCollection *> &collections)
+{
+    m_addToCollectionContextMenu->clear();
+    const QVector<ModInfo *> &mods = m_model->modList(selectedIndexes());
+
+    for (ModCollection *collection : collections) {
+        if (!collection->containsAll(mods)) {
+            QAction *action = m_addToCollectionContextMenu->addAction(collection->name());
+            connect(action, &QAction::triggered, action, [this, collection]() {
+                m_model->addToCollection(selectedIndexes(), collection, enabledFilter());
+            });
+            m_addToCollectionContextMenu->addAction(action);
+        }
+    }
+
+    m_addToCollectionContextMenu->menuAction()->setVisible(!m_addToCollectionContextMenu->isEmpty());
+}
+
+void MainWindow::setupRemoveFromCollectionContextMenu(const QVector<ModCollection *> &collections)
+{
+    m_removeFromCollectionContextMenu->clear();
+
+    for (ModCollection *collection : collections) {
+        QAction *action = m_removeFromCollectionContextMenu->addAction(collection->name());
+        connect(action, &QAction::triggered, action, [this, collection]() {
+            m_model->removeFromCollection(selectedIndexes(), collection, enabledFilter());
+        });
+        m_removeFromCollectionContextMenu->addAction(action);
+    }
+
+    m_removeFromCollectionContextMenu->menuAction()->setVisible(!m_removeFromCollectionContextMenu->isEmpty());
+}
+
 QModelIndexList MainWindow::selectedIndexes() const
 {
     QTreeView *view = selectedView();
-    ModFilterProxyModel *model = proxyModel(view);
+    NameFilterProxyModel *model = proxyModel(view);
     const QItemSelection& selection = this->selection(view);
     if (!view || !model || selection.isEmpty()) {
         return QModelIndexList();
@@ -585,7 +637,7 @@ void MainWindow::performOnSelectedRows(
 )
 {
     QTreeView *view = selectedView();
-    ModFilterProxyModel *model = proxyModel(view);
+    NameFilterProxyModel *model = proxyModel(view);
     const QItemSelection& selection = this->selection(view);
     if (!action || !view || !model || selection.isEmpty()) {
         return;
@@ -644,14 +696,25 @@ QTreeView *MainWindow::selectedView() const
     }
 }
 
+QModelIndex MainWindow::currentIndex() const
+{
+    QTreeView *view = selectedView();
+    if (!view) {
+        return QModelIndex();
+    }
+
+    NameFilterProxyModel* model = proxyModel(view);
+    return model->mapToSource(view->currentIndex());
+}
+
 QItemSelection MainWindow::selection(QTreeView *view) const
 {
     return view ? view->selectionModel()->selection() : QItemSelection();
 }
 
-ModFilterProxyModel* MainWindow::proxyModel(QTreeView *view) const
+NameFilterProxyModel* MainWindow::proxyModel(QTreeView *view) const
 {
-    return view ? qobject_cast<ModFilterProxyModel *>(view->model()) : nullptr;
+    return view ? qobject_cast<NameFilterProxyModel *>(view->model()) : nullptr;
 }
 
 void MainWindow::closeViewEditor()
@@ -675,16 +738,26 @@ void MainWindow::initActions()
     m_openFolderAction = new QAction(tr("Open folder in the explorer"), m_itemContextMenu);
     m_openSteamPageAction = new QAction(tr("Open the Steam Workshop page"), m_itemContextMenu);
     m_renameAction = new QAction(tr("Rename"), m_itemContextMenu);
+    m_createCollectionAction = new QAction(ui->createCollectionToolButton->toolTip());
+    m_removeCollectionAction = new QAction(tr("Remove collection"), m_itemContextMenu);
+    m_addToCollectionContextMenu = new QMenu(tr("Add to..."), m_itemContextMenu);
+    m_removeFromCollectionContextMenu = new QMenu(tr("Remove from..."), m_itemContextMenu);
 
     m_itemContextMenu->addAction(m_enableAction);
     m_itemContextMenu->addAction(m_disableAction);
     m_itemContextMenu->addAction(m_setLockedAction);
     m_itemContextMenu->addAction(m_setUnlockedAction);
+    m_itemContextMenu->addSeparator();
     m_itemContextMenu->addAction(m_toggleFavoritesAction);
+    m_itemContextMenu->addMenu(m_addToCollectionContextMenu);
+    m_itemContextMenu->addMenu(m_removeFromCollectionContextMenu);
+    m_itemContextMenu->addSeparator();
+    m_itemContextMenu->addAction(m_removeCollectionAction);
+    m_removeCollectionActionSeparator = m_itemContextMenu->addSeparator();
     m_itemContextMenu->addAction(m_openFolderAction);
     m_itemContextMenu->addAction(m_openSteamPageAction);
     m_itemContextMenu->addAction(m_renameAction);
-    //TODO: add submenu to add in collection
+
 
     connect(ui->setLockedToolButton, &QPushButton::clicked, m_setLockedAction, &QAction::trigger);
     connect(ui->setUnlockedToolButton, &QPushButton::clicked, m_setUnlockedAction, &QAction::trigger);
@@ -692,6 +765,7 @@ void MainWindow::initActions()
     connect(ui->openFolderToolButton, &QPushButton::clicked, m_openFolderAction, &QAction::trigger);
     connect(ui->openSteamPageToolButton, &QPushButton::clicked, m_openSteamPageAction, &QAction::trigger);
     connect(ui->renameToolButton, &QPushButton::clicked, m_renameAction, &QAction::trigger);
+    connect(ui->createCollectionToolButton, &QPushButton::clicked, m_createCollectionAction, &QAction::trigger);
     connect(ui->setEnabledToolButton, &QPushButton::clicked, m_enableAction, &QAction::trigger);
     connect(ui->setDisabledToolButton, &QPushButton::clicked, m_disableAction, &QAction::trigger);
 
@@ -774,11 +848,19 @@ void MainWindow::initActions()
             return true;
         });
     });
+
+    connect(m_createCollectionAction, &QAction::triggered, this, &MainWindow::showCreateModCollectionDialog);
+    connect(m_removeCollectionAction, &QAction::triggered, this, [this]() {
+        m_model->removeItem(currentIndex());
+    });
+
+    connect(m_itemContextMenu, &QMenu::aboutToShow, this, &MainWindow::setupContextMenu);
 }
 
 void MainWindow::setupItemContextMenu(QSortFilterProxyModel *model, QModelIndex index) const
 {
-    const AbstractModDatabaseItem &item = m_model->item(model->mapToSource(index));
+    QModelIndex sourceModelIndex = model->mapToSource(index);
+    const AbstractModDatabaseItem &item = m_model->item(sourceModelIndex);
     bool exists = item.exists() != Qt::Unchecked;
     bool locked = item.locked() == Qt::Checked;
     bool unlocked = item.locked() == Qt::Unchecked;
@@ -789,6 +871,10 @@ void MainWindow::setupItemContextMenu(QSortFilterProxyModel *model, QModelIndex 
     m_setUnlockedAction->setVisible(exists && !unlocked);
     m_toggleFavoritesAction->setVisible(exists);
     m_openFolderAction->setVisible(exists);
+
+    bool hasCollectionSelected = (index.isValid() && m_model->isUserCollection(sourceModelIndex));
+    m_removeCollectionAction->setVisible(hasCollectionSelected);
+    m_removeCollectionActionSeparator->setVisible(hasCollectionSelected);
 }
 
 bool MainWindow::isGameFolderValid(const QString &folderPath)

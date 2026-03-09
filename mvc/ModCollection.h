@@ -51,6 +51,8 @@ public:
     int addMod(ModInfo *mod, bool updateLinks = true);
     void insertMod(int index, ModInfo *mod, bool updateLinks = true);
     bool contains(ModInfo *mod) const;
+    bool containsAll(const QVector<ModInfo *> &mods) const;
+    bool containsAny(const QVector<ModInfo *> &mods) const;
     int modIndex(ModInfo *mod) const;
     bool removeMod(int pos, bool updateLinks = true);
     void setId(int id);

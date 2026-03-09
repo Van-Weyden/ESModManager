@@ -13,8 +13,9 @@ class QTranslator;
 class QTreeView;
 
 class DatabaseEditor;
+class ModCollection;
 class ModDatabaseModel;
-class ModFilterProxyModel;
+class NameFilterProxyModel;
 class ModInfo;
 class ModNameDelegate;
 class ModScanner;
@@ -64,6 +65,8 @@ private slots:
     bool openModFolder(const QModelIndex &index);
     void steamModNameProcessed();
     void showModContextMenu(const QPoint &pos);
+    void showCreateModCollectionDialog();
+    void setupContextMenu();
 
     QModelIndexList selectedIndexes() const;
 
@@ -81,11 +84,14 @@ private slots:
 private:
     Qt::CheckState enabledFilter() const;
     QTreeView *selectedView() const;
+    QModelIndex currentIndex() const;
     QItemSelection selection(QTreeView *view) const;
-    ModFilterProxyModel* proxyModel(QTreeView *view) const;
+    NameFilterProxyModel* proxyModel(QTreeView *view) const;
     void closeViewEditor();
     void initActions();
     void setupItemContextMenu(QSortFilterProxyModel *model, QModelIndex index) const;
+    void setupAddToCollectionContextMenu(const QVector<ModCollection *> &collections);
+    void setupRemoveFromCollectionContextMenu(const QVector<ModCollection *> &collections);
     bool isGameFolderValid(const QString &folderPath);
     void checkAnnouncementPopup(const int loadedApplicationVersion);
 
@@ -124,8 +130,8 @@ private:
     QString m_modsFolderPath = "";
 
     ModDatabaseModel *m_model = nullptr;
-    ModFilterProxyModel *m_enabledModsModel = nullptr;
-    ModFilterProxyModel *m_disabledModsModel = nullptr;
+    NameFilterProxyModel *m_enabledModsModel = nullptr;
+    NameFilterProxyModel *m_disabledModsModel = nullptr;
     ModNameDelegate* m_modNameDelegate = nullptr;
     QPair<QTreeView*, QModelIndex> m_viewEditorData = {nullptr, QModelIndex()};
 
@@ -138,6 +144,11 @@ private:
     QAction *m_openFolderAction = nullptr;
     QAction *m_renameAction = nullptr;
     QAction *m_openSteamPageAction = nullptr;
+    QAction *m_createCollectionAction = nullptr;
+    QAction *m_removeCollectionAction = nullptr;
+    QAction *m_removeCollectionActionSeparator = nullptr;
+    QMenu *m_addToCollectionContextMenu = nullptr;
+    QMenu *m_removeFromCollectionContextMenu = nullptr;
 
     static constexpr const char *DefaultGameFolderPath =
         "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Everlasting Summer\\";

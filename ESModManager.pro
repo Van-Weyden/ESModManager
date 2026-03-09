@@ -28,6 +28,7 @@ CONFIG += c++11
 
 SOURCES += \
         DatabaseEditor.cpp \
+        EditModCollectionDialog.cpp \
         Logger.cpp \
         MainWindow.cpp \
         ModInfoWidget.cpp \
@@ -42,12 +43,19 @@ SOURCES += \
         mvc/ModNameDelegate.cpp \
         mvc/ModNameEditor.cpp \
         mvc/TreeView.cpp \
-        mvc/proxyModels.cpp \
+        mvc/proxyModels/BaseFilterProxyModel.cpp \
+        mvc/proxyModels/CollectionModsProxyModel.cpp \
+        mvc/proxyModels/DisabledModProxyModel.cpp \
+        mvc/proxyModels/EnabledModProxyModel.cpp \
+        mvc/proxyModels/ExcludedAllModsProxyModel.cpp \
+        mvc/proxyModels/ExistsModProxyModel.cpp \
+        mvc/proxyModels/NameFilterProxyModel.cpp \
         utils/RegExpPatterns.cpp \
         utils/applicationVersion.cpp
 
 HEADERS += \
         DatabaseEditor.h \
+        EditModCollectionDialog.h \
         Logger.h \
         MainWindow.h \
         ModInfoWidget.h \
@@ -61,12 +69,19 @@ HEADERS += \
         mvc/ModNameDelegate.h \
         mvc/ModNameEditor.h \
         mvc/TreeView.h \
-        mvc/proxyModels.h \
+        mvc/proxyModels/BaseFilterProxyModel.h \
+        mvc/proxyModels/CollectionModsProxyModel.h \
+        mvc/proxyModels/DisabledModProxyModel.h \
+        mvc/proxyModels/EnabledModProxyModel.h \
+        mvc/proxyModels/ExcludedAllModsProxyModel.h \
+        mvc/proxyModels/ExistsModProxyModel.h \
+        mvc/proxyModels/NameFilterProxyModel.h \
         utils/RegExpPatterns.h \
         utils/applicationVersion.h
 
 FORMS += \
         DatabaseEditor.ui \
+        EditModCollectionDialog.ui \
         MainWindow.ui \
         ModInfoWidget.ui
 

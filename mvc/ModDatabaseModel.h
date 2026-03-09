@@ -30,12 +30,14 @@ public:
 
     inline QVector<ModInfo *> &modListRef();
     inline const QVector<ModInfo *> &modList() const;
-    const QVector<ModCollection *> userCollectionList() const;
-    const QVector<ModCollection *> userCollectionList(const QModelIndex &modIndex) const;
-    const QVector<ModCollection *> userCollectionList(const QModelIndexList &indexes) const;
+    QVector<ModInfo *> modList(const QModelIndexList &indexes) const;
+    QVector<ModCollection *> userCollectionList() const;
+    QVector<ModCollection *> userCollectionList(const QModelIndex &modIndex) const;
+    QVector<ModCollection *> userCollectionList(const QModelIndexList &indexes) const;
 
     void addMod(const ModInfo &modInfo);
     void addUserCollection(ModCollection *collection);
+    void removeUserCollection(ModCollection *collection);
     inline int size() const;
 
     bool isFavorite(const QModelIndex &index) const;
@@ -75,6 +77,7 @@ public:
     void setSteamName(const QString &modFolder, const QString &name);
 
     bool isCollection(const QModelIndex &index) const;
+    bool isUserCollection(const QModelIndex &index) const;
     inline const ModCollection &collection(const QModelIndex &index) const;
     inline ModCollection &collectionRef(const QModelIndex &index) const;
 
@@ -91,7 +94,7 @@ public:
     void sort(int column = 0, Qt::SortOrder order = Qt::AscendingOrder) override;
     bool removeRows(int row, int count, const QModelIndex &parent = QModelIndex()) override;
 
-    void removeItem(QModelIndex index);
+    void removeItem(const QModelIndex &index);
     void setModsExistsState(const bool isExists);
     inline void updateRow(const QModelIndex &index);
     void onModInfoUpdated(int index, const QVector<int> &roles);
@@ -146,8 +149,12 @@ private:
     void removeFromCollection(const QVector<ModInfo *> &mods, ModCollection *collection);
 
     bool hasUserCollections() const;
+    int firstUserCollectionIndex() const;
+    int lastUserCollectionIndex() const;
+    ModCollection *allModsCollection() const;
     ModCollection *favoriteCollection() const;
     ModCollection *uncategorizedCollection() const;
+    void removeBuiltInCollections(QVector<ModCollection *> &collections, bool sort) const;
     int newCollectionIndex(ModCollection *collection) const;
 
 private:
